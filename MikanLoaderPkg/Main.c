@@ -76,7 +76,7 @@ EFI_STATUS SaveMemoryMap(struct MemoryMap* map, EFI_FILE_PROTOCOL* file) {
   for (iter = (EFI_PHYSICAL_ADDRESS)map->buffer, i = 0;
        iter < (EFI_PHYSICAL_ADDRESS)map->buffer + map->map_size;
        iter += map->descriptor_size, i++) {
-    EFI_MEMORY_DESCRIPTOR *desc = (EFI_MEMORY_DESCRIPTOR*)iter;
+    EFI_MEMORY_DESCRIPTOR* desc = (EFI_MEMORY_DESCRIPTOR*)iter;
     len = AsciiSPrint(
         buf, sizeof(buf),
         "%u, %x, %-ls, %08lx, %lx, %lx\n",
@@ -90,9 +90,9 @@ EFI_STATUS SaveMemoryMap(struct MemoryMap* map, EFI_FILE_PROTOCOL* file) {
 }
 // #@@range_end(save_memory_map)
 
-EFI_STATUS OpenRootDir(EFI_HANDLE image_handle, EFI_FILE_PROTOCOL **root) {
+EFI_STATUS OpenRootDir(EFI_HANDLE image_handle, EFI_FILE_PROTOCOL** root) {
   EFI_LOADED_IMAGE_PROTOCOL* loaded_image;
-  EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *fs;
+  EFI_SIMPLE_FILE_SYSTEM_PROTOCOL* fs;
 
   gBS->OpenProtocol(
       image_handle,
@@ -117,7 +117,7 @@ EFI_STATUS OpenRootDir(EFI_HANDLE image_handle, EFI_FILE_PROTOCOL **root) {
 
 EFI_STATUS EFIAPI UefiMain(
     EFI_HANDLE image_handle,
-    EFI_SYSTEM_TABLE *system_table) {
+    EFI_SYSTEM_TABLE* system_table) {
   Print(L"Hello, Mikan World!\n");
 
   // #@@range_begin(main)
