@@ -174,9 +174,9 @@ EFI_STATUS EFIAPI UefiMain(
   typedef void EntryPointType(void);
   EntryPointType* entry_point = (EntryPointType*)entry_addr;
   entry_point();
-  // #@@range_end(call_kernel)
 
   Print(L"All done\n");
+  // #@@range_end(call_kernel)
 
   while (1);
   return EFI_SUCCESS;
