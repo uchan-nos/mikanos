@@ -171,11 +171,9 @@ const CHAR16* GetPixelFormatUnicode(EFI_GRAPHICS_PIXEL_FORMAT fmt) {
   }
 }
 
-// #@@range_begin(halt)
 void Halt(void) {
   while (1) __asm__("hlt");
 }
-// #@@range_end(halt)
 
 EFI_STATUS EFIAPI UefiMain(
     EFI_HANDLE image_handle,
