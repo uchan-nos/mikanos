@@ -3,8 +3,8 @@
 #include <stdint.h>
 
 enum PixelFormat {
-  PixelRGBResv8BitPerColor,
-  PixelBGRResv8BitPerColor,
+  kPixelRGBResv8BitPerColor,
+  kPixelBGRResv8BitPerColor,
 };
 
 struct FrameBufferConfig {

@@ -9,12 +9,12 @@ struct PixelColor {
 
 int WritePixel(const FrameBufferConfig& config,
                 int x, int y, const PixelColor& c) {
-  if (config.pixel_format == PixelRGBResv8BitPerColor) {
+  if (config.pixel_format == kPixelRGBResv8BitPerColor) {
     uint8_t* p = &config.frame_buffer[4 * (config.pixels_per_scan_line * y + x)];
     p[0] = c.r;
     p[1] = c.g;
     p[2] = c.b;
-  } else if (config.pixel_format == PixelBGRResv8BitPerColor) {
+  } else if (config.pixel_format == kPixelBGRResv8BitPerColor) {
     uint8_t* p = &config.frame_buffer[4 * (config.pixels_per_scan_line * y + x)];
     p[0] = c.b;
     p[1] = c.g;
