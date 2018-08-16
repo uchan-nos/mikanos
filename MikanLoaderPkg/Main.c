@@ -307,10 +307,10 @@ EFI_STATUS EFIAPI UefiMain(
   };
   switch (gop->Mode->Info->PixelFormat) {
     case PixelRedGreenBlueReserved8BitPerColor:
-      config.pixel_format = PixelRGBResv8BitPerColor;
+      config.pixel_format = kPixelRGBResv8BitPerColor;
       break;
     case PixelBlueGreenRedReserved8BitPerColor:
-      config.pixel_format = PixelBGRResv8BitPerColor;
+      config.pixel_format = kPixelBGRResv8BitPerColor;
       break;
     default:
       Print(L"Unimplemented pixel format: %d\n", gop->Mode->Info->PixelFormat);
