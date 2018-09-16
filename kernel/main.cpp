@@ -28,12 +28,10 @@ const uint8_t FontA[16] = {
   0b00000000,
 };
 
-// #@@range_begin(write_pixel)
 struct PixelColor {
   uint8_t r, g, b;
 };
 
-// #@@range_begin(pixel_writer)
 class PixelWriter {
  public:
   PixelWriter(const FrameBufferConfig& config) : config_{config} {
@@ -49,9 +47,7 @@ class PixelWriter {
  private:
   const FrameBufferConfig& config_;
 };
-// #@@range_end(pixel_writer)
 
-// #@@range_begin(derived_pixel_writer)
 class RGBResv8BitPerColorPixelWriter : public PixelWriter {
  public:
   using PixelWriter::PixelWriter;
@@ -75,22 +71,18 @@ class BGRResv8BitPerColorPixelWriter : public PixelWriter {
     p[2] = c.r;
   }
 };
-// #@@range_end(derived_pixel_writer)
 
-// #@@range_begin(placement_new)
 void* operator new(size_t size, void* buf) {
   return buf;
 }
 
 void operator delete(void* obj) noexcept {
 }
-// #@@range_end(placement_new)
 
 char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
 PixelWriter* pixel_writer;
 
 extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
-  // #@@range_begin(call_pixel_writer)
   switch (frame_buffer_config.pixel_format) {
     case kPixelRGBResv8BitPerColor:
       pixel_writer = new(pixel_writer_buf)
@@ -112,6 +104,5 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
       pixel_writer->Write(x, y, {0, 255, 0});
     }
   }
-  // #@@range_end(call_pixel_writer)
   while (1) __asm__("hlt");
 }
