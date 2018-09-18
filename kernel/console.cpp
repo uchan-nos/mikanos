@@ -9,12 +9,15 @@
 #include <cstring>
 #include "font.hpp"
 
+// #@@range_begin(constructor)
 Console::Console(PixelWriter& writer,
     const PixelColor& fg_color, const PixelColor& bg_color)
     : writer_{writer}, fg_color_{fg_color}, bg_color_{bg_color},
       buffer_{}, cursor_row_{0}, cursor_column_{0} {
 }
+// #@@range_end(constructor)
 
+// #@@range_begin(put_string)
 void Console::PutString(const char* s) {
   while (*s) {
     if (*s == '\n') {
@@ -27,7 +30,9 @@ void Console::PutString(const char* s) {
     ++s;
   }
 }
+// #@@range_end(put_string)
 
+// #@@range_begin(newline)
 void Console::Newline() {
   cursor_column_ = 0;
   if (cursor_row_ < kRows - 1) {
@@ -45,3 +50,4 @@ void Console::Newline() {
     memset(buffer_[kRows - 1], 0, kColumns + 1);
   }
 }
+// #@@range_end(newline)
