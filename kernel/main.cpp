@@ -109,11 +109,8 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   console = new(console_buf) Console{
     *pixel_writer, kDesktopFGColor, kDesktopBGColor
   };
+  printk("Welcome to MikanOS!\n");
   // #@@range_end(draw_desktop)
-
-  for (int i = 0; i < 27; ++i) {
-    printk("printk: %d\n", i);
-  }
 
   // #@@range_begin(draw_mouse_cursor)
   for (int dy = 0; dy < kMouseCursorHeight; ++dy) {
@@ -126,5 +123,6 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
     }
   }
   // #@@range_end(draw_mouse_cursor)
+
   while (1) __asm__("hlt");
 }
