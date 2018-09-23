@@ -11,6 +11,7 @@
 namespace {
   using namespace pci;
 
+  // #@@range_begin(add_device)
   /** @brief devices[num_device] に情報を書き込み num_device をインクリメントする． */
   Error AddDevice(uint8_t bus, uint8_t device,
                   uint8_t function, uint8_t header_type) {
@@ -22,9 +23,11 @@ namespace {
     ++num_device;
     return Error::kSuccess;
   }
+  // #@@range_end(add_device)
 
   Error ScanBus(uint8_t bus);
 
+  // #@@range_begin(scan_function)
   /** @brief 指定のファンクションを devices に追加する．
    * もし PCI-PCI ブリッジなら，セカンダリバスに対し ScanBus を実行する
    */
@@ -47,7 +50,9 @@ namespace {
 
     return Error::kSuccess;
   }
+  // #@@range_end(scan_function)
 
+  // #@@range_begin(scan_device)
   /** @brief 指定のデバイス番号の各ファンクションをスキャンする．
    * 有効なファンクションを見つけたら ScanFunction を実行する．
    */
@@ -69,7 +74,9 @@ namespace {
     }
     return Error::kSuccess;
   }
+  // #@@range_end(scan_device)
 
+  // #@@range_begin(scan_bus)
   /** @brief 指定のバス番号の各デバイスをスキャンする．
    * 有効なデバイスを見つけたら ScanDevice を実行する．
    */
@@ -84,9 +91,11 @@ namespace {
     }
     return Error::kSuccess;
   }
+  // #@@range_end(scan_bus)
 }
 
 namespace pci {
+  // #@@range_begin(config_addr_data)
   void WriteAddress(uint32_t address) {
     IoOut32(kConfigAddress, address);
   }
@@ -103,6 +112,7 @@ namespace pci {
     WriteAddress(MakeAddress(bus, device, function, 0x00));
     return ReadData() & 0xffffu;
   }
+  // #@@range_end(config_addr_data)
 
   uint16_t ReadDeviceId(uint8_t bus, uint8_t device, uint8_t function) {
     WriteAddress(MakeAddress(bus, device, function, 0x00));
@@ -128,6 +138,7 @@ namespace pci {
     return (header_type & 0x80u) == 0;
   }
 
+  // #@@range_begin(scan_all_bus)
   std::array<Device, 32> devices;
   int num_device;
 
@@ -149,4 +160,5 @@ namespace pci {
     }
     return Error::kSuccess;
   }
+  // #@@range_end(scan_all_bus)
 }
