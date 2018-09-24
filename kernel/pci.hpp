@@ -17,6 +17,7 @@ namespace pci {
   /** @brief CONFIG_DATA レジスタの IO ポートアドレス */
   const uint16_t kConfigData = 0x0cfc;
 
+  // #@@range_begin(class_code)
   /** @brief PCI デバイスのクラスコード */
   struct ClassCode {
     uint8_t base, sub, interface;
@@ -40,6 +41,7 @@ namespace pci {
     uint8_t bus, device, function, header_type;
     ClassCode class_code;
   };
+  // #@@range_end(class_code)
 
   /** @brief CONFIG_ADDRESS 用の 32 ビット整数を生成する */
   constexpr uint32_t MakeAddress(uint8_t bus, uint8_t device,
