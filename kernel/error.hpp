@@ -8,7 +8,11 @@ class Error {
     kSuccess,
     kFull,
     kEmpty,
-    kLastOfCode,
+    kNoEnoughMemory,
+    kIndexOutOfRange,
+    kHostControllerNotHalted,
+    kInvalidDeviceId,
+    kLastOfCode,  // この列挙子は常に最後に配置する
   };
 
   Error(Code code) : code_{code} {}
@@ -22,11 +26,21 @@ class Error {
   }
 
  private:
-  static constexpr std::array<const char*, 3> code_names_ = {
+  static constexpr std::array<const char*, kLastOfCode> code_names_ = {
     "kSuccess",
     "kFull",
     "kEmpty",
+    "kNoEnoughMemory",
+    "kIndexOutOfRange",
+    "kHostControllerNotHalted",
+    "kInvalidDeviceId",
   };
 
   Code code_;
+};
+
+template <class T>
+struct WithError {
+  T value;
+  Error error;
 };
