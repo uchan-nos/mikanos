@@ -12,14 +12,11 @@
 #include "error.hpp"
 
 namespace pci {
-  // #@@range_begin(config_addr)
   /** @brief CONFIG_ADDRESS レジスタの IO ポートアドレス */
   const uint16_t kConfigAddress = 0x0cf8;
   /** @brief CONFIG_DATA レジスタの IO ポートアドレス */
   const uint16_t kConfigData = 0x0cfc;
-  // #@@range_end(config_addr)
 
-  // #@@range_begin(make_address)
   /** @brief CONFIG_ADDRESS 用の 32 ビット整数を生成する */
   constexpr uint32_t MakeAddress(uint8_t bus, uint8_t device,
                                  uint8_t function, uint8_t reg_addr) {
@@ -33,7 +30,6 @@ namespace pci {
         | shl(function, 8)
         | (reg_addr & 0xfcu);
   }
-  // #@@range_end(make_address)
 
   /** @brief CONFIG_ADDRESS に指定された整数を書き込む */
   void WriteAddress(uint32_t address);
