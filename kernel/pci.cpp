@@ -162,4 +162,34 @@ namespace pci {
     }
     return Error::kSuccess;
   }
+
+  uint32_t ReadConfReg(const Device& dev, uint8_t reg_addr) {
+    WriteAddress(MakeAddress(dev.bus, dev.device, dev.function, reg_addr));
+    return ReadData();
+  }
+
+  WithError<uint64_t> ReadBar(Device& device, unsigned int bar_index) {
+    if (bar_index >= 6) {
+      return {0, Error::kIndexOutOfRange};
+    }
+
+    const auto addr = CalcBarAddress(bar_index);
+    const auto bar = ReadConfReg(device, addr);
+
+    // 32 bit address
+    if ((bar & 4u) == 0) {
+      return {bar, Error::kSuccess};
+    }
+
+    // 64 bit address
+    if (bar_index >= 5) {
+      return {0, Error::kIndexOutOfRange};
+    }
+
+    const auto bar_upper = ReadConfReg(device, addr + 4);
+    return {
+      bar | (static_cast<uint64_t>(bar_upper) << 32),
+      Error::kSuccess
+    };
+  }
 }

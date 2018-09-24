@@ -8,11 +8,17 @@
 #include <cstddef>
 #include <cstdio>
 
+#include <numeric>
+#include <vector>
+
 #include "frame_buffer_config.hpp"
 #include "graphics.hpp"
 #include "font.hpp"
 #include "console.hpp"
 #include "pci.hpp"
+#include "usb/memory.hpp"
+#include "usb/xhci/xhci.hpp"
+#include "usb/xhci/trb.hpp"
 
 void operator delete(void* obj) noexcept {
 }
@@ -142,6 +148,40 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
         xhc_dev->bus, xhc_dev->device, xhc_dev->function);
   }
   // #@@range_end(find_xhc)
+
+  std::vector<int, usb::Allocator<int>> v;
+  for (int i = 0; i <= 100; ++i) {
+    v.push_back(i);
+  }
+  /*
+  int sum = 0;
+  for (auto x : v) {
+    sum += x;
+  }
+  */
+  printk("sum: %d\n", std::accumulate(v.begin(), v.end(), 0));
+
+  const auto bar = pci::ReadBar(*xhc_dev, 0);
+  //const auto mmio_base = bitutil::ClearBits(bar.value, 0xf);
+  const auto mmio_base = bar.value & ~static_cast<uint64_t>(0xf);
+  printk("xHC mmio_base = %08lx\n", mmio_base);
+  usb::xhci::Controller xhc{mmio_base};
+
+  xhc.Initialize();
+  xhc.Run();
+
+  printk("xHC start running\n");
+
+  for (int i = 1; i <= xhc.MaxPorts(); ++i) {
+    auto port = xhc.PortAt(i);
+    printk("Port %d: IsConnected=%d\n", i, port.IsConnected());
+  }
+
+  while (!xhc.PrimaryEventRing()->HasFront()) {
+  }
+
+  printk("xHC has least one event: %s\n", usb::xhci::kTRBTypeToName[
+      xhc.PrimaryEventRing()->Front()->bits.trb_type]);
 
   while (1) __asm__("hlt");
 }
