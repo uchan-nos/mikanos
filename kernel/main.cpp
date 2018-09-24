@@ -115,8 +115,6 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
     }
   }
 
-
-  // #@@range_begin(show_devices)
   auto err = pci::ScanAllBus();
   printk("ScanAllBus: %s\n", err.Name());
 
@@ -128,7 +126,6 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
         dev.bus, dev.device, dev.function,
         vendor_id, class_code, dev.header_type);
   }
-  // #@@range_end(show_devices)
 
   while (1) __asm__("hlt");
 }

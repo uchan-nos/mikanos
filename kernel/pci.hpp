@@ -12,12 +12,10 @@
 #include "error.hpp"
 
 namespace pci {
-  // #@@range_begin(config_addr)
   /** @brief CONFIG_ADDRESS レジスタの IO ポートアドレス */
   const uint16_t kConfigAddress = 0x0cf8;
   /** @brief CONFIG_DATA レジスタの IO ポートアドレス */
   const uint16_t kConfigData = 0x0cfc;
-  // #@@range_end(config_addr)
 
   /** @brief CONFIG_ADDRESS に指定された整数を書き込む */
   void WriteAddress(uint32_t address);
@@ -63,7 +61,6 @@ namespace pci {
     uint8_t bus, device, function, header_type;
   };
 
-  // #@@range_begin(var_devices)
   /** @brief ScanAllBus() により発見された PCI デバイスの一覧 */
   inline std::array<Device, 32> devices;
   /** @brief devices の有効な要素の数 */
@@ -74,5 +71,4 @@ namespace pci {
    * 発見したデバイスの数を num_devices に設定する．
    */
   Error ScanAllBus();
-  // #@@range_end(var_devices)
 }
