@@ -167,7 +167,9 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   printk("xHC mmio_base = %08lx\n", mmio_base);
   usb::xhci::Controller xhc{mmio_base};
 
-  xhc.Initialize();
+  if (auto err = xhc.Initialize()) {
+    printk("xhc.Initialize: %s\n", err.Name());
+  }
   xhc.Run();
 
   printk("xHC start running\n");
@@ -175,6 +177,10 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   for (int i = 1; i <= xhc.MaxPorts(); ++i) {
     auto port = xhc.PortAt(i);
     printk("Port %d: IsConnected=%d\n", i, port.IsConnected());
+
+    if (port.IsConnected()) {
+      AddressPort(xhc, port);
+    }
   }
 
   while (!xhc.PrimaryEventRing()->HasFront()) {
