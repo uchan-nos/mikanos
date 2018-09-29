@@ -12,6 +12,7 @@ class Error {
     kIndexOutOfRange,
     kHostControllerNotHalted,
     kInvalidDeviceId,
+    kPortNotConnected,
     kLastOfCode,  // この列挙子は常に最後に配置する
   };
 
@@ -34,6 +35,7 @@ class Error {
     "kIndexOutOfRange",
     "kHostControllerNotHalted",
     "kInvalidDeviceId",
+    "kPortNotConnected",
   };
 
   Code code_;
