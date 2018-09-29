@@ -52,4 +52,6 @@ namespace usb::xhci {
       return {mmio_base_ + cap_->DBOFF.Read().Offset(), 256};
     }
   };
+
+  Error AddressPort(Controller& xhc, Port& port);
 }

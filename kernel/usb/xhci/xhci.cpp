@@ -1,5 +1,7 @@
 #include "usb/xhci/xhci.hpp"
 
+int printk(const char* format, ...);
+
 namespace {
   using namespace usb::xhci;
 
@@ -28,9 +30,12 @@ namespace usb::xhci {
       return err;
     }
 
-    // Host controller must be halted.
+    // Host controller must be halted before resetting it.
     if (!op_->USBSTS.Read().bits.host_controller_halted) {
-      return Error::kHostControllerNotHalted;
+      auto usbcmd = op_->USBCMD.Read();
+      usbcmd.bits.run_stop = false;  // stop
+      op_->USBCMD.Write(usbcmd);
+      while (!op_->USBSTS.Read().bits.host_controller_halted);
     }
 
     // Reset controller
@@ -89,5 +94,42 @@ namespace usb::xhci {
 
   DoorbellRegister* Controller::DoorbellRegisterAt(uint8_t index) {
     return &DoorbellRegisters()[index];
+  }
+
+  Error AddressPort(Controller& xhc, Port& port) {
+    if (!port.IsConnected()) {
+      return Error::kPortNotConnected;
+    }
+
+    printk("Resetting port %d\n", port.Number());
+    port.Reset();
+
+    printk("Waiting port %d to be enabled\n", port.Number());
+    while (!port.IsEnabled());
+
+    EnableSlotCommandTRB cmd{};
+    xhc.CommandRing()->Push(cmd);
+    xhc.DoorbellRegisterAt(0)->Ring(0);
+
+    printk("Waiting reply for the enable slot command\n");
+    while (true) {
+      while (!xhc.PrimaryEventRing()->HasFront());
+
+      if (auto trb = TRBDynamicCast<CommandCompletionEventTRB>(
+            xhc.PrimaryEventRing()->Front())) {
+        if (TRBDynamicCast<EnableSlotCommandTRB>(trb->Pointer())) {
+          break;
+        }
+        printk("event was received but it's not a response of EnableSlotCommandTRB\n");
+      } else {
+        printk("event was received but it's not CommandCompletionEventTRB\n");
+      }
+
+      xhc.PrimaryEventRing()->Pop();
+    }
+
+    printk("received a response of EnableSlotCommand\n");
+
+    return Error::kSuccess;
   }
 }
