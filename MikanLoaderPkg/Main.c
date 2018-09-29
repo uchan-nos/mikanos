@@ -151,6 +151,23 @@ EFI_STATUS EFIAPI UefiMain(
       (kernel_file_size + 0xfff) / 0x1000, &kernel_base_addr);
   // #@@range_end(read_kernel)
 
+  // #@@range_begin(exit_bs)
+  EFI_STATUS status;
+  status = gBS->ExitBootServices(image_handle, memmap.map_key);
+  if (EFI_ERROR(status)) {
+    status = GetMemoryMap(&memmap);
+    if (EFI_ERROR(status)) {
+      Print(L"failed to get memory map: %r\n", status);
+      while (1);
+    }
+    status = gBS->ExitBootServices(image_handle, memmap.map_key);
+    if (EFI_ERROR(status)) {
+      Print(L"Could not exit boot service: %r\n", status);
+      while (1);
+    }
+  }
+  // #@@range_end(exit_bs)
+
   Print(L"All done\n");
 
   while (1);
