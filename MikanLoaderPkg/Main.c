@@ -204,18 +204,18 @@ EFI_STATUS EFIAPI UefiMain(
       EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE | EFI_FILE_MODE_CREATE, 0);
   if (EFI_ERROR(status)) {
     Print(L"failed to open file '\\memmap': %r\n", status);
-    Halt();
-  }
-
-  status = SaveMemoryMap(&memmap, memmap_file);
-  if (EFI_ERROR(status)) {
-    Print(L"failed to save memory map: %r\n", status);
-    Halt();
-  }
-  status = memmap_file->Close(memmap_file);
-  if (EFI_ERROR(status)) {
-    Print(L"failed to close memory map: %r\n", status);
-    Halt();
+    Print(L"Ignored.\n");
+  } else {
+    status = SaveMemoryMap(&memmap, memmap_file);
+    if (EFI_ERROR(status)) {
+      Print(L"failed to save memory map: %r\n", status);
+      Halt();
+    }
+    status = memmap_file->Close(memmap_file);
+    if (EFI_ERROR(status)) {
+      Print(L"failed to close memory map: %r\n", status);
+      Halt();
+    }
   }
 
   EFI_GRAPHICS_OUTPUT_PROTOCOL* gop;
