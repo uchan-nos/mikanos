@@ -10,6 +10,7 @@
 #include <cstdint>
 
 #include "error.hpp"
+#include "usb/device.hpp"
 #include "usb/xhci/context.hpp"
 #include "usb/xhci/trb.hpp"
 
@@ -42,7 +43,7 @@ namespace usb::xhci {
 
     void SelectForSlotAssignment();
     void AssignSlot(uint8_t slot_id);
-    Error AllocTransferRing(DeviceContextIndex index, size_t buf_size);
+    Ring* AllocTransferRing(DeviceContextIndex index, size_t buf_size);
 
    private:
     alignas(64) struct DeviceContext ctx_;
@@ -50,6 +51,8 @@ namespace usb::xhci {
 
     enum State state_;
     uint8_t slot_id_;
+
+    std::array<Ring*, 31> transfer_rings_; // index = dci - 1
 
     //usb::Device* usb_device_;
   };

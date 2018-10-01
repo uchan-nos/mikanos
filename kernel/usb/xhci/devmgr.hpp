@@ -22,8 +22,8 @@ namespace usb::xhci {
     Device* FindByPort(uint8_t port_num, uint32_t route_string) const;
     Device* FindByState(enum Device::State state) const;
     Device* FindBySlot(uint8_t slot_id) const;
-    WithError<Device*> Get(uint8_t device_id) const;
-    Error AssignSlot(Device* dev, uint8_t slot_id);
+    //WithError<Device*> Get(uint8_t device_id) const;
+    Error LoadDCBAA(uint8_t slot_id);
     Error Remove(Device* dev);
 
    private:
@@ -32,5 +32,9 @@ namespace usb::xhci {
     DeviceContext** device_context_pointers_;
     Device* devices_;
     size_t num_devices_;
+
+    static uint8_t SlotIDToDeviceID(uint8_t slot_id) {
+      return slot_id - 1;
+    }
   };
 }

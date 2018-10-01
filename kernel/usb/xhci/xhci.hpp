@@ -53,5 +53,5 @@ namespace usb::xhci {
     }
   };
 
-  Error AddressPort(Controller& xhc, Port& port);
+  Error ConfigurePort(Controller& xhc, Port& port);
 }

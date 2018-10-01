@@ -179,7 +179,9 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
     printk("Port %d: IsConnected=%d\n", i, port.IsConnected());
 
     if (port.IsConnected()) {
-      AddressPort(xhc, port);
+      if (auto err = ConfigurePort(xhc, port)) {
+        printk("failed to configure port: %s\n", err.Name());
+      }
     }
   }
 
