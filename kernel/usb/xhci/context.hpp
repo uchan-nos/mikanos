@@ -1,6 +1,8 @@
 #pragma once
 
 namespace usb::xhci {
+  class Ring;
+
   union SlotContext {
     uint32_t dwords[8];
     struct {
@@ -55,12 +57,12 @@ namespace usb::xhci {
       uint32_t max_esit_payload_lo : 16;
     } __attribute__((packed)) bits;
 
-    uint64_t TransferRing() const {
-      return bits.tr_dequeue_pointer << 4;
+    Ring* TransferRing() const {
+      return reinterpret_cast<Ring*>(bits.tr_dequeue_pointer << 4);
     }
 
-    void SetTransferRing(uint64_t value) {
-      bits.tr_dequeue_pointer = value >> 4;
+    void SetTransferRing(Ring* p) {
+      bits.tr_dequeue_pointer = reinterpret_cast<uint64_t>(p) >> 4;
     }
   } __attribute__((packed));
 

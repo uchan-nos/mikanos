@@ -51,26 +51,28 @@ namespace usb::xhci {
   }
 
   Device* DeviceManager::FindBySlot(uint8_t slot_id) const {
-    for (size_t i = 0; i < num_devices_; ++i) {
-      auto dev = &devices_[i];
-      if (dev->SlotID() == slot_id) {
-        return dev;
-      }
+    if (SlotIDToDeviceID(slot_id) >= num_devices_) {
+      return nullptr;
     }
-    return nullptr;
+    return &devices_[SlotIDToDeviceID(slot_id)];
   }
 
+  /*
   WithError<Device*> DeviceManager::Get(uint8_t device_id) const {
     if (device_id >= num_devices_) {
       return {nullptr, Error::kInvalidDeviceId};
     }
     return {&devices_[device_id], Error::kSuccess};
   }
+  */
 
-  Error DeviceManager::AssignSlot(Device* dev, uint8_t slot_id) {
-    dev->AssignSlot(slot_id);
+  Error DeviceManager::LoadDCBAA(uint8_t slot_id) {
+    if (SlotIDToDeviceID(slot_id) >= num_devices_) {
+      return Error::kIndexOutOfRange;
+    }
+
+    auto dev = &devices_[SlotIDToDeviceID(slot_id)];
     device_context_pointers_[slot_id] = dev->DeviceContext();
-
     return Error::kSuccess;
   }
 
