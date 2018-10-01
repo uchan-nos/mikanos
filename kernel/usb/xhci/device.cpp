@@ -22,12 +22,16 @@ namespace usb::xhci {
     state_ = State::kSlotAssigned;
   }
 
-  Error Device::AllocTransferRing(DeviceContextIndex index, size_t buf_size) {
+  Ring* Device::AllocTransferRing(DeviceContextIndex index, size_t buf_size) {
     int i = index.value - 1;
     auto tr = AllocArray<Ring>(1, 64, 4096);
-    tr->Initialize(buf_size);
+    if (tr) {
+      tr->Initialize(buf_size);
+    }
+    transfer_rings_[i] = tr;
+    return tr;
+
     //reinterpret_cast<usb::xhci::EndpointSet*>(usb_device_->EndpointSet())
     //  ->SetTransferRing(index, tr);
-    return Error::kSuccess;
   }
 }

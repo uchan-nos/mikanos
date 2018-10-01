@@ -12,6 +12,125 @@ namespace {
     crcr->Write(value);
     return Error::kSuccess;
   }
+
+  CommandCompletionEventTRB* WaitCommandCompletionEvent(Controller& xhc) {
+    while (true) {
+      while (!xhc.PrimaryEventRing()->HasFront());
+      if (auto trb = TRBDynamicCast<CommandCompletionEventTRB>(
+            xhc.PrimaryEventRing()->Front())) {
+        return trb;
+      }
+      xhc.PrimaryEventRing()->Pop();
+    }
+  }
+
+  template <class TRBType>
+  struct CommandCompletionEventIssuer {
+    CommandCompletionEventTRB* event_trb;
+    TRBType* issuer;
+  };
+
+  template <class TRBType>
+  CommandCompletionEventIssuer<TRBType>
+  WaitCommandCompletionEvent(Controller& xhc) {
+    while (true) {
+      auto event_trb = WaitCommandCompletionEvent(xhc);
+      if (auto issuer = TRBDynamicCast<TRBType>(event_trb->Pointer())) {
+        return {event_trb, issuer};
+      }
+      xhc.PrimaryEventRing()->Pop();
+    }
+  }
+
+  void ResetPort(Port& port, bool debug = false) {
+    if (debug) {
+      printk("Resetting port %d\n", port.Number());
+    }
+    port.Reset();
+
+    if (debug) {
+      printk("Waiting port %d to be enabled\n", port.Number());
+    }
+    while (!port.IsEnabled());
+  }
+
+  uint8_t EnableSlot(Controller& xhc, bool debug = false) {
+    EnableSlotCommandTRB cmd{};
+    xhc.CommandRing()->Push(cmd);
+    xhc.DoorbellRegisterAt(0)->Ring(0);
+
+    if (debug) {
+      printk("Waiting reply for the enable slot command\n");
+    }
+    auto event =
+      WaitCommandCompletionEvent<EnableSlotCommandTRB>(xhc);
+    uint8_t slot_id = event.event_trb->bits.slot_id;
+
+    if (debug) {
+      printk("received a response of EnableSlotCommand\n");
+    }
+    xhc.PrimaryEventRing()->Pop();
+
+    return slot_id;
+  }
+
+  Error AddressDevice(Controller& xhc, Port& port, uint8_t slot_id, bool debug = false) {
+    Device* dev = xhc.DeviceManager()->FindBySlot(slot_id);
+    if (dev == nullptr) {
+      if (debug) {
+        printk("failed to get a device: slot = %d\n", slot_id);
+      }
+      return Error::kInvalidSlotID;
+    }
+
+    auto slot_ctx = dev->InputContext()->EnableSlotContext();
+    auto ep0_ctx = dev->InputContext()->EnableEndpoint(DeviceContextIndex(0, false));
+
+    slot_ctx->bits.route_string = 0;
+    slot_ctx->bits.root_hub_port_num = port.Number();
+    slot_ctx->bits.context_entries = 1;
+    slot_ctx->bits.speed = port.Speed();
+    if (debug) {
+      printk("Slot %llu: port %llu, speed %llu\n",
+          slot_id, port.Number(), slot_ctx->bits.speed);
+    }
+
+    Ring* ep0_ring = dev->AllocTransferRing(DeviceContextIndex(0, false), 32);
+
+    ep0_ctx->bits.ep_type = 4; // Control Endpoint. Bidirectional.
+    switch (slot_ctx->bits.speed)
+    {
+    case 4: // Super Speed
+        ep0_ctx->bits.max_packet_size = 512; // shall be set to 512 for control endpoints
+        break;
+    case 3: // High Speed
+        ep0_ctx->bits.max_packet_size = 64;
+        break;
+    default:
+        ep0_ctx->bits.max_packet_size = 8;
+    }
+    ep0_ctx->bits.max_burst_size = 0;
+    ep0_ctx->SetTransferRing(ep0_ring);
+    ep0_ctx->bits.dequeue_cycle_state = 1;
+    ep0_ctx->bits.interval = 0;
+    ep0_ctx->bits.max_primary_streams = 0;
+    ep0_ctx->bits.mult = 0;
+    ep0_ctx->bits.error_count = 3;
+
+    xhc.DeviceManager()->LoadDCBAA(slot_id);
+
+    AddressDeviceCommandTRB addr_dev_cmd{dev->InputContext(), slot_id};
+    xhc.CommandRing()->Push(addr_dev_cmd);
+    xhc.DoorbellRegisterAt(0)->Ring(0);
+
+    auto addr_dev_cmd_event =
+      WaitCommandCompletionEvent<AddressDeviceCommandTRB>(xhc);
+    printk("received a response of AddressDeviceCommand: slot id %d\n",
+        addr_dev_cmd_event.event_trb->bits.slot_id);
+    xhc.PrimaryEventRing()->Pop();
+
+    return Error::kSuccess;
+  }
 }
 
 namespace usb::xhci {
@@ -60,8 +179,7 @@ namespace usb::xhci {
         return err;
     }
     if (auto err = RegisterCommandRing(&cr_, &op_->CRCR)) {
-        return err;
-    }
+        return err; }
     if (auto err = er_.Initialize(32, primary_interrupter)) {
         return err;
     }
@@ -96,39 +214,16 @@ namespace usb::xhci {
     return &DoorbellRegisters()[index];
   }
 
-  Error AddressPort(Controller& xhc, Port& port) {
+  Error ConfigurePort(Controller& xhc, Port& port) {
     if (!port.IsConnected()) {
       return Error::kPortNotConnected;
     }
 
-    printk("Resetting port %d\n", port.Number());
-    port.Reset();
-
-    printk("Waiting port %d to be enabled\n", port.Number());
-    while (!port.IsEnabled());
-
-    EnableSlotCommandTRB cmd{};
-    xhc.CommandRing()->Push(cmd);
-    xhc.DoorbellRegisterAt(0)->Ring(0);
-
-    printk("Waiting reply for the enable slot command\n");
-    while (true) {
-      while (!xhc.PrimaryEventRing()->HasFront());
-
-      if (auto trb = TRBDynamicCast<CommandCompletionEventTRB>(
-            xhc.PrimaryEventRing()->Front())) {
-        if (TRBDynamicCast<EnableSlotCommandTRB>(trb->Pointer())) {
-          break;
-        }
-        printk("event was received but it's not a response of EnableSlotCommandTRB\n");
-      } else {
-        printk("event was received but it's not CommandCompletionEventTRB\n");
-      }
-
-      xhc.PrimaryEventRing()->Pop();
+    ResetPort(port);
+    auto slot_id = EnableSlot(xhc);
+    if (auto err = AddressDevice(xhc, port, slot_id, true)) {
+      return err;
     }
-
-    printk("received a response of EnableSlotCommand\n");
 
     return Error::kSuccess;
   }
