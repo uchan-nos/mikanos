@@ -11,7 +11,8 @@ class Error {
     kNoEnoughMemory,
     kIndexOutOfRange,
     kHostControllerNotHalted,
-    kInvalidDeviceId,
+    kInvalidDeviceID,
+    kInvalidSlotID,
     kPortNotConnected,
     kLastOfCode,  // この列挙子は常に最後に配置する
   };
