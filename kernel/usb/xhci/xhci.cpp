@@ -74,48 +74,54 @@ namespace {
     return slot_id;
   }
 
+  void InitializeSlotContext(SlotContext& ctx) {
+    ctx.bits.route_string = 0;
+    ctx.bits.root_hub_port_num = port.Number();
+    ctx.bits.context_entries = 1;
+    ctx.bits.speed = port.Speed();
+  }
+
+  unsigned int DetermineMaxPacketSizeForControlPipe(unsigned int slot_speed) {
+    switch (slot_speed) {
+    case 4: // Super Speed
+        return 512;
+    case 3: // High Speed
+        return 64;
+    default:
+        return 8;
+    }
+  }
+
+  void InitializeEP0Context(EndpointContext& ctx,
+                            Ring* transfer_ring,
+                            unsigned int max_packet_size) {
+    ctx.bits.ep_type = 4; // Control Endpoint. Bidirectional.
+    ctx.bits.max_packet_size = max_packet_size;
+    ctx.bits.max_burst_size = 0;
+    ctx.SetTransferRing(transfer_ring);
+    ctx.bits.dequeue_cycle_state = 1;
+    ctx.bits.interval = 0;
+    ctx.bits.max_primary_streams = 0;
+    ctx.bits.mult = 0;
+    ctx.bits.error_count = 3;
+  }
+
   Error AddressDevice(Controller& xhc, Port& port, uint8_t slot_id, bool debug = false) {
     Device* dev = xhc.DeviceManager()->FindBySlot(slot_id);
     if (dev == nullptr) {
-      if (debug) {
-        printk("failed to get a device: slot = %d\n", slot_id);
-      }
+      if (debug) printk("failed to get a device: slot = %d\n", slot_id);
       return Error::kInvalidSlotID;
     }
 
+    const auto ep0_dci = DeviceContextIndex(0, false);
     auto slot_ctx = dev->InputContext()->EnableSlotContext();
-    auto ep0_ctx = dev->InputContext()->EnableEndpoint(DeviceContextIndex(0, false));
+    auto ep0_ctx = dev->InputContext()->EnableEndpoint(ep0_dci);
 
-    slot_ctx->bits.route_string = 0;
-    slot_ctx->bits.root_hub_port_num = port.Number();
-    slot_ctx->bits.context_entries = 1;
-    slot_ctx->bits.speed = port.Speed();
-    if (debug) {
-      printk("Slot %llu: port %llu, speed %llu\n",
-          slot_id, port.Number(), slot_ctx->bits.speed);
-    }
+    InitializeSlotContext(*slot_ctx);
 
-    Ring* ep0_ring = dev->AllocTransferRing(DeviceContextIndex(0, false), 32);
-
-    ep0_ctx->bits.ep_type = 4; // Control Endpoint. Bidirectional.
-    switch (slot_ctx->bits.speed)
-    {
-    case 4: // Super Speed
-        ep0_ctx->bits.max_packet_size = 512; // shall be set to 512 for control endpoints
-        break;
-    case 3: // High Speed
-        ep0_ctx->bits.max_packet_size = 64;
-        break;
-    default:
-        ep0_ctx->bits.max_packet_size = 8;
-    }
-    ep0_ctx->bits.max_burst_size = 0;
-    ep0_ctx->SetTransferRing(ep0_ring);
-    ep0_ctx->bits.dequeue_cycle_state = 1;
-    ep0_ctx->bits.interval = 0;
-    ep0_ctx->bits.max_primary_streams = 0;
-    ep0_ctx->bits.mult = 0;
-    ep0_ctx->bits.error_count = 3;
+    InitializeEP0Context(
+        *ep0_ctx, dev->AllocTransferRing(ep0_dci, 32),
+        DetermineMaxPacketSizeForControlPipe(slot_ctx->bits.speed));
 
     xhc.DeviceManager()->LoadDCBAA(slot_id);
 
@@ -125,9 +131,17 @@ namespace {
 
     auto addr_dev_cmd_event =
       WaitCommandCompletionEvent<AddressDeviceCommandTRB>(xhc);
-    printk("received a response of AddressDeviceCommand: slot id %d\n",
-        addr_dev_cmd_event.event_trb->bits.slot_id);
+
+    if (auto sid = addr_dev_cmd_event.event_trb->bits.slot_id; sid != slot_id) {
+      if (debug) printk("Unexpected slot id: %u\n", sid);
+      return Error::kInvalidSlotId;
+    }
     xhc.PrimaryEventRing()->Pop();
+
+    if (debug) {
+      printk("Addressed a device: slot id %u, port %u, speed %u\n",
+             slot_id, port.Number(), slot_ctx->bits.speed);
+    }
 
     return Error::kSuccess;
   }
