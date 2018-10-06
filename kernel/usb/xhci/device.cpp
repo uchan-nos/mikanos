@@ -30,8 +30,5 @@ namespace usb::xhci {
     }
     transfer_rings_[i] = tr;
     return tr;
-
-    //reinterpret_cast<usb::xhci::EndpointSet*>(usb_device_->EndpointSet())
-    //  ->SetTransferRing(index, tr);
   }
 }
