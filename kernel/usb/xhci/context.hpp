@@ -2,6 +2,7 @@
 
 namespace usb::xhci {
   class Ring;
+  union TRB;
 
   union SlotContext {
     uint32_t dwords[8];
@@ -57,12 +58,12 @@ namespace usb::xhci {
       uint32_t max_esit_payload_lo : 16;
     } __attribute__((packed)) bits;
 
-    Ring* TransferRing() const {
-      return reinterpret_cast<Ring*>(bits.tr_dequeue_pointer << 4);
+    TRB* TransferRingBuffer() const {
+      return reinterpret_cast<TRB*>(bits.tr_dequeue_pointer << 4);
     }
 
-    void SetTransferRing(Ring* p) {
-      bits.tr_dequeue_pointer = reinterpret_cast<uint64_t>(p) >> 4;
+    void SetTransferRingBuffer(TRB* buffer) {
+      bits.tr_dequeue_pointer = reinterpret_cast<uint64_t>(buffer) >> 4;
     }
   } __attribute__((packed));
 
