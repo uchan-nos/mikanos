@@ -11,9 +11,12 @@ class Error {
     kNoEnoughMemory,
     kIndexOutOfRange,
     kHostControllerNotHalted,
-    kInvalidDeviceID,
     kInvalidSlotID,
     kPortNotConnected,
+    kInvalidEndpointNumber,
+    kTransferRingNotSet,
+    kAlreadyAllocated,
+    kNotImplemented,
     kLastOfCode,  // この列挙子は常に最後に配置する
   };
 
@@ -35,8 +38,12 @@ class Error {
     "kNoEnoughMemory",
     "kIndexOutOfRange",
     "kHostControllerNotHalted",
-    "kInvalidDeviceId",
+    "kInvalidSlotID",
     "kPortNotConnected",
+    "kInvalidEndpointNumber",
+    "kAlreadyAllocated",
+    "kTransferRingNotSet",
+    "kNotImplemented",
   };
 
   Code code_;

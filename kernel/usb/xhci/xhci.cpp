@@ -1,5 +1,7 @@
 #include "usb/xhci/xhci.hpp"
 
+#include "usb/device.hpp"
+
 int printk(const char* format, ...);
 
 namespace {
@@ -13,10 +15,11 @@ namespace {
     return Error::kSuccess;
   }
 
-  CommandCompletionEventTRB* WaitCommandCompletionEvent(Controller& xhc) {
+  template <class EventTRBType>
+  EventTRBType* WaitEvent(Controller& xhc) {
     while (true) {
       while (!xhc.PrimaryEventRing()->HasFront());
-      if (auto trb = TRBDynamicCast<CommandCompletionEventTRB>(
+      if (auto trb = TRBDynamicCast<EventTRBType>(
             xhc.PrimaryEventRing()->Front())) {
         return trb;
       }
@@ -24,18 +27,17 @@ namespace {
     }
   }
 
-  template <class TRBType>
-  struct CommandCompletionEventIssuer {
-    CommandCompletionEventTRB* event_trb;
-    TRBType* issuer;
+  template <class EventTRBType, class IssuerTRBType>
+  struct EventIssuer {
+    EventTRBType* event_trb;
+    IssuerTRBType* issuer_trb;
   };
 
-  template <class TRBType>
-  CommandCompletionEventIssuer<TRBType>
-  WaitCommandCompletionEvent(Controller& xhc) {
+  template <class EventTRBType, class IssuerTRBType>
+  EventIssuer<EventTRBType, IssuerTRBType> WaitEvent(Controller& xhc) {
     while (true) {
-      auto event_trb = WaitCommandCompletionEvent(xhc);
-      if (auto issuer = TRBDynamicCast<TRBType>(event_trb->Pointer())) {
+      auto event_trb = WaitEvent<EventTRBType>(xhc);
+      if (auto issuer = TRBDynamicCast<IssuerTRBType>(event_trb->Pointer())) {
         return {event_trb, issuer};
       }
       xhc.PrimaryEventRing()->Pop();
@@ -63,7 +65,7 @@ namespace {
       printk("Waiting reply for the enable slot command\n");
     }
     auto event =
-      WaitCommandCompletionEvent<EnableSlotCommandTRB>(xhc);
+      WaitEvent<CommandCompletionEventTRB, EnableSlotCommandTRB>(xhc);
     uint8_t slot_id = event.event_trb->bits.slot_id;
 
     if (debug) {
@@ -74,7 +76,7 @@ namespace {
     return slot_id;
   }
 
-  void InitializeSlotContext(SlotContext& ctx) {
+  void InitializeSlotContext(SlotContext& ctx, Port& port) {
     ctx.bits.route_string = 0;
     ctx.bits.root_hub_port_num = port.Number();
     ctx.bits.context_entries = 1;
@@ -98,7 +100,7 @@ namespace {
     ctx.bits.ep_type = 4; // Control Endpoint. Bidirectional.
     ctx.bits.max_packet_size = max_packet_size;
     ctx.bits.max_burst_size = 0;
-    ctx.SetTransferRing(transfer_ring);
+    ctx.SetTransferRingBuffer(transfer_ring->Buffer());
     ctx.bits.dequeue_cycle_state = 1;
     ctx.bits.interval = 0;
     ctx.bits.max_primary_streams = 0;
@@ -117,7 +119,7 @@ namespace {
     auto slot_ctx = dev->InputContext()->EnableSlotContext();
     auto ep0_ctx = dev->InputContext()->EnableEndpoint(ep0_dci);
 
-    InitializeSlotContext(*slot_ctx);
+    InitializeSlotContext(*slot_ctx, port);
 
     InitializeEP0Context(
         *ep0_ctx, dev->AllocTransferRing(ep0_dci, 32),
@@ -130,11 +132,11 @@ namespace {
     xhc.DoorbellRegisterAt(0)->Ring(0);
 
     auto addr_dev_cmd_event =
-      WaitCommandCompletionEvent<AddressDeviceCommandTRB>(xhc);
+      WaitEvent<CommandCompletionEventTRB, AddressDeviceCommandTRB>(xhc);
 
     if (auto sid = addr_dev_cmd_event.event_trb->bits.slot_id; sid != slot_id) {
       if (debug) printk("Unexpected slot id: %u\n", sid);
-      return Error::kInvalidSlotId;
+      return Error::kInvalidSlotID;
     }
     xhc.PrimaryEventRing()->Pop();
 
@@ -235,9 +237,28 @@ namespace usb::xhci {
 
     ResetPort(port);
     auto slot_id = EnableSlot(xhc);
+    xhc.DeviceManager()->AllocDevice(slot_id, xhc.DoorbellRegisterAt(slot_id));
+
     if (auto err = AddressDevice(xhc, port, slot_id, true)) {
       return err;
     }
+
+    auto dev = xhc.DeviceManager()->FindBySlot(slot_id);
+    uint8_t buf[256];
+    printk("Getting device descriptor\n");
+    if (auto err = GetDescriptor(*dev, 0, 1, 0, buf, 256, true)) {
+      return err;
+    }
+
+    printk("Waiting TransferEventTRB\n");
+    WaitEvent<TransferEventTRB>(xhc);
+    xhc.PrimaryEventRing()->Pop();
+
+    printk("device descriptor:");
+    for (int i = 0; i < 18; ++i) {
+      printk(" %02x", buf[i]);
+    }
+    printk("\n");
 
     return Error::kSuccess;
   }

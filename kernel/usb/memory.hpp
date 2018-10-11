@@ -49,7 +49,7 @@ namespace usb {
     Allocator& operator=(const Allocator&) = default;
 
     pointer allocate(size_type n) {
-      return reinterpret_cast<pointer>(AllocMem(n, Alignment, Boundary));
+      return AllocArray<T>(n, Alignment, Boundary);
     }
 
     void deallocate(pointer p, size_type num) {
