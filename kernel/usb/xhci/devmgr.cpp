@@ -3,25 +3,24 @@
 #include "usb/memory.hpp"
 
 namespace usb::xhci {
-  Error DeviceManager::Initialize(size_t num_devices) {
-    num_devices_ = num_devices;
+  Error DeviceManager::Initialize(size_t max_slots) {
+    max_slots_ = max_slots;
 
-    devices_ = AllocArray<Device>(num_devices_, 0, 0);
+    devices_ = AllocArray<Device*>(max_slots_ + 1, 0, 0);
     if (devices_ == nullptr) {
       return Error::kNoEnoughMemory;
     }
 
-    device_context_pointers_ = AllocArray<DeviceContext*>(num_devices_ + 1, 0, 0);
+    device_context_pointers_ = AllocArray<DeviceContext*>(max_slots_ + 1, 0, 0);
     if (device_context_pointers_ == nullptr) {
       FreeMem(devices_);
       return Error::kNoEnoughMemory;
     }
 
-    for (size_t i = 0; i < num_devices_; ++i) {
-      devices_[i].Initialize();
-      device_context_pointers_[i + 1] = nullptr;
+    for (size_t i = 0; i <= max_slots_; ++i) {
+      devices_[i] = nullptr;
+      device_context_pointers_[i] = nullptr;
     }
-    device_context_pointers_[0] = nullptr; // scratch pad buffer
 
     return Error::kSuccess;
   }
@@ -31,8 +30,9 @@ namespace usb::xhci {
   }
 
   Device* DeviceManager::FindByPort(uint8_t port_num, uint32_t route_string) const {
-    for (size_t i = 0; i < num_devices_; ++i) {
-      auto dev = &devices_[i];
+    for (size_t i = 1; i <= max_slots_; ++i) {
+      auto dev = devices_[i];
+      if (dev == nullptr) continue;
       if (dev->DeviceContext()->slot_context.bits.root_hub_port_num == port_num) {
         return dev;
       }
@@ -41,8 +41,9 @@ namespace usb::xhci {
   }
 
   Device* DeviceManager::FindByState(enum Device::State state) const {
-    for (size_t i = 0; i < num_devices_; ++i) {
-      auto dev = &devices_[i];
+    for (size_t i = 1; i <= max_slots_; ++i) {
+      auto dev = devices_[i];
+      if (dev == nullptr) continue;
       if (dev->State() == state) {
         return dev;
       }
@@ -51,10 +52,10 @@ namespace usb::xhci {
   }
 
   Device* DeviceManager::FindBySlot(uint8_t slot_id) const {
-    if (SlotIDToDeviceID(slot_id) >= num_devices_) {
+    if (slot_id > max_slots_) {
       return nullptr;
     }
-    return &devices_[SlotIDToDeviceID(slot_id)];
+    return devices_[slot_id];
   }
 
   /*
@@ -66,19 +67,34 @@ namespace usb::xhci {
   }
   */
 
-  Error DeviceManager::LoadDCBAA(uint8_t slot_id) {
-    if (SlotIDToDeviceID(slot_id) >= num_devices_) {
-      return Error::kIndexOutOfRange;
+  Error DeviceManager::AllocDevice(uint8_t slot_id, DoorbellRegister* dbreg) {
+    if (slot_id > max_slots_) {
+      return Error::kInvalidSlotID;
     }
 
-    auto dev = &devices_[SlotIDToDeviceID(slot_id)];
+    if (devices_[slot_id] != nullptr) {
+      return Error::kAlreadyAllocated;
+    }
+
+    devices_[slot_id] = AllocArray<Device>(1, 64, 4096);
+    new(devices_[slot_id]) Device(slot_id, dbreg);
+    return Error::kSuccess;
+  }
+
+  Error DeviceManager::LoadDCBAA(uint8_t slot_id) {
+    if (slot_id > max_slots_) {
+      return Error::kInvalidSlotID;
+    }
+
+    auto dev = devices_[slot_id];
     device_context_pointers_[slot_id] = dev->DeviceContext();
     return Error::kSuccess;
   }
 
-  Error DeviceManager::Remove(Device* dev) {
-    device_context_pointers_[dev->SlotID()] = nullptr;
-    dev->Initialize();
+  Error DeviceManager::Remove(uint8_t slot_id) {
+    device_context_pointers_[slot_id] = nullptr;
+    FreeMem(devices_[slot_id]);
+    devices_[slot_id] = nullptr;
     return Error::kSuccess;
   }
 }
