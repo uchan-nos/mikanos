@@ -17,6 +17,8 @@ namespace usb {
                              const void* buf, int len) = 0;
   };
 
-  Error GetDescriptor(Device& dev, bool debug = false);
+  Error GetDescriptor(Device& dev, int ep_num,
+                      uint8_t desc_type, uint8_t desc_index,
+                      void* buf, int len, bool debug = false);
   Error ConfigureEndpoints(Device& dev, bool debug = false);
 }

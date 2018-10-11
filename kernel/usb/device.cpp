@@ -1,7 +1,11 @@
 #include "usb/device.hpp"
 
+#include "usb/setupdata.hpp"
+
 namespace usb {
-  Error GetDescriptor(Device& dev, bool debug = false) {
+  Error GetDescriptor(Device& dev, int ep_num,
+                      uint8_t desc_type, uint8_t desc_index,
+                      void* buf, int len, bool debug) {
     SetupData setup_data{};
     setup_data.bits.direction = request_type::kIn;
     setup_data.bits.type = request_type::kStandard;
@@ -13,6 +17,7 @@ namespace usb {
     return dev.ControlIn(ep_num, setup_data.data, buf, len);
   }
 
+  /*
   Error ConfigureEndpoints(Device& dev, bool debug) {
     if (debug) printk("configuring endpoints\n");
 
@@ -26,4 +31,5 @@ namespace usb {
 
     return error::kSuccess;
   }
+  */
 }
