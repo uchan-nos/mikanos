@@ -1,5 +1,6 @@
 #include "usb/xhci/xhci.hpp"
 
+#include "usb/setupdata.hpp"
 #include "usb/device.hpp"
 
 int printk(const char* format, ...);
@@ -72,6 +73,7 @@ namespace {
       printk("received a response of EnableSlotCommand\n");
     }
     xhc.PrimaryEventRing()->Pop();
+    xhc.DeviceManager()->AllocDevice(slot_id, xhc.DoorbellRegisterAt(slot_id));
 
     return slot_id;
   }
@@ -146,6 +148,20 @@ namespace {
     }
 
     return Error::kSuccess;
+  }
+
+  WithError<size_t> GetDescriptorWait(Controller& xhc, usb::xhci::Device& dev,
+                                      int desc_type, uint8_t* buf, size_t n) {
+    if (auto err = GetDescriptor(dev, 0, desc_type, 0,
+                                 buf, n, true)) {
+      return {0, err};
+    }
+
+    auto event_trb = WaitEvent<TransferEventTRB>(xhc);
+    const auto transfer_length = event_trb->bits.trb_transfer_length;
+    xhc.PrimaryEventRing()->Pop();
+
+    return {n - transfer_length, Error::kSuccess};
   }
 }
 
@@ -237,25 +253,25 @@ namespace usb::xhci {
 
     ResetPort(port);
     auto slot_id = EnableSlot(xhc);
-    xhc.DeviceManager()->AllocDevice(slot_id, xhc.DoorbellRegisterAt(slot_id));
 
     if (auto err = AddressDevice(xhc, port, slot_id, true)) {
       return err;
     }
 
     auto dev = xhc.DeviceManager()->FindBySlot(slot_id);
-    uint8_t buf[256];
-    printk("Getting device descriptor\n");
-    if (auto err = GetDescriptor(*dev, 0, 1, 0, buf, 256, true)) {
-      return err;
+    if (dev == nullptr) {
+      return Error::kInvalidSlotID;
     }
 
-    printk("Waiting TransferEventTRB\n");
-    WaitEvent<TransferEventTRB>(xhc);
-    xhc.PrimaryEventRing()->Pop();
+    uint8_t buf[256];
+    auto desc_length = GetDescriptorWait(xhc, *dev, descriptor_type::kDevice,
+                                         buf, sizeof(buf));
+    if (desc_length.error) {
+      return desc_length.error;
+    }
 
-    printk("device descriptor:");
-    for (int i = 0; i < 18; ++i) {
+    printk("device descriptor (%lu bytes):", desc_length.value);
+    for (int i = 0; i < desc_length.value; ++i) {
       printk(" %02x", buf[i]);
     }
     printk("\n");
