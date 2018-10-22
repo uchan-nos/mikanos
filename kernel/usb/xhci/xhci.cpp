@@ -2,6 +2,7 @@
 
 #include "usb/setupdata.hpp"
 #include "usb/device.hpp"
+#include "usb/descriptor.hpp"
 
 int printk(const char* format, ...);
 
@@ -151,8 +152,9 @@ namespace {
   }
 
   WithError<size_t> GetDescriptorWait(Controller& xhc, usb::xhci::Device& dev,
-                                      int desc_type, uint8_t* buf, size_t n) {
-    if (auto err = GetDescriptor(dev, 0, desc_type, 0,
+                                      int desc_type, int desc_index,
+                                      uint8_t* buf, size_t n) {
+    if (auto err = GetDescriptor(dev, 0, desc_type, desc_index,
                                  buf, n, true)) {
       return {0, err};
     }
@@ -265,9 +267,13 @@ namespace usb::xhci {
 
     uint8_t buf[256];
     auto desc_length = GetDescriptorWait(xhc, *dev, descriptor_type::kDevice,
-                                         buf, sizeof(buf));
+                                         0, buf, sizeof(buf));
     if (desc_length.error) {
       return desc_length.error;
+    }
+    auto device_desc = DescriptorDynamicCast<DeviceDescriptor>(buf);
+    if (device_desc == nullptr) {
+      return Error::kInvalidDescriptor;
     }
 
     printk("device descriptor (%lu bytes):", desc_length.value);
@@ -275,6 +281,63 @@ namespace usb::xhci {
       printk(" %02x", buf[i]);
     }
     printk("\n");
+
+    const auto num_configurations = device_desc->bits.num_configurations;
+    for (int config_index = 0; config_index < num_configurations; ++config_index) {
+      printk("Getting Configuration Descriptor: index=%d\n", config_index);
+      desc_length = GetDescriptorWait(xhc, *dev, descriptor_type::kConfiguration,
+                                      config_index, buf, sizeof(buf));
+      if (desc_length.error) {
+        return desc_length.error;
+      }
+      auto config_desc = DescriptorDynamicCast<ConfigurationDescriptor>(buf);
+      if (config_desc == nullptr) {
+        return Error::kInvalidDescriptor;
+      }
+      if (desc_length.value < config_desc->bits.total_length) {
+        return Error::kBufferTooSmall;
+      }
+
+      uint8_t* p = buf + config_desc->bits.length;
+      const auto num_interfaces = config_desc->bits.num_interfaces;
+      for (int if_index = 0; if_index < num_interfaces; ++if_index) {
+        auto if_desc = DescriptorDynamicCast<InterfaceDescriptor>(p);
+        if (if_desc == nullptr) {
+          return Error::kInvalidDescriptor;
+        }
+        printk("Interface Descriptor: class=%d, sub=%d, protocol=%d\n",
+            if_desc->bits.interface_class,
+            if_desc->bits.interface_sub_class,
+            if_desc->bits.interface_protocol);
+
+        p += if_desc->bits.length;
+        const auto num_endpoints = if_desc->bits.num_endpoints;
+        int num_endpoints_found = 0;
+
+        while (num_endpoints_found < num_endpoints) {
+          if (auto if_desc = DescriptorDynamicCast<InterfaceDescriptor>(p)) {
+            return Error::kInvalidDescriptor;
+          }
+          if (auto ep_desc = DescriptorDynamicCast<EndpointDescriptor>(p)) {
+            printk("Endpoint Descriptor: addr=0x%02x, attr=0x%02x\n",
+                ep_desc->bits.endpoint_address,
+                ep_desc->bits.attributes);
+            ++num_endpoints_found;
+          } else if (auto hid_desc = DescriptorDynamicCast<HIDDescriptor>(p)) {
+            printk("HID Descriptor: release=0x%02x, num_desc=%d",
+                hid_desc->bits.hid_release,
+                hid_desc->bits.num_descriptors);
+            for (int i = 0; i < hid_desc->bits.num_descriptors; ++i) {
+              printk(", desc_type=%d, len=%d",
+                  hid_desc->GetClassDescriptor(i)->descriptor_type,
+                  hid_desc->GetClassDescriptor(i)->descriptor_length);
+            }
+            printk("\n");
+          }
+          p += p[0];
+        }
+      }
+    }
 
     return Error::kSuccess;
   }
