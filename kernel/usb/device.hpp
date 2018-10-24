@@ -22,8 +22,6 @@ namespace usb {
     Error StartInitialize();
     Error OnControlOutCompleted(const void* buf, size_t len);
     Error OnControlInCompleted(const void* buf, size_t len);
-    Error OnDeviceDescriptorReceived(const uint8_t* desc_data, size_t len);
-    Error OnConfigurationDescriptorReceived(const uint8_t* desc_data, size_t len);
     bool IsInitialized() { return is_initialized_; }
 
     uint8_t* Buffer() { return buf_.data(); }
@@ -31,6 +29,13 @@ namespace usb {
    private:
     std::array<uint8_t, 256> buf_{};
     bool is_initialized_ = false;
+
+    // following fields are used during initialization
+    uint8_t num_configurations_;
+    uint8_t config_index_;
+
+    Error OnDeviceDescriptorReceived(const uint8_t* buf, size_t len);
+    Error OnConfigurationDescriptorReceived(const uint8_t* buf, size_t len);
   };
 
   Error GetDescriptor(Device& dev, int ep_num,
