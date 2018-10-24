@@ -93,7 +93,7 @@ namespace usb {
      * @param index  取得するディスクリプタの番号．0 <= index < num_descriptors.
      * @return index で指定されたディスクリプタの情報．index が範囲外なら nullptr.
      */
-    ClassDescriptor* GetClassDescriptor(size_t index) {
+    ClassDescriptor* GetClassDescriptor(size_t index) const {
       if (index >= num_descriptors) {
         return nullptr;
       }
@@ -107,6 +107,14 @@ namespace usb {
   T* DescriptorDynamicCast(uint8_t* desc_data) {
     if (desc_data[1] == T::kType) {
       return reinterpret_cast<T*>(desc_data);
+    }
+    return nullptr;
+  }
+
+  template <class T>
+  const T* DescriptorDynamicCast(const uint8_t* desc_data) {
+    if (desc_data[1] == T::kType) {
+      return reinterpret_cast<const T*>(desc_data);
     }
     return nullptr;
   }
