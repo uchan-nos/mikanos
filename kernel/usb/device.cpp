@@ -1,8 +1,38 @@
 #include "usb/device.hpp"
 
+#include "usb/descriptor.hpp"
 #include "usb/setupdata.hpp"
 
+int printk(const char* format, ...);
+
 namespace usb {
+  Device::~Device() {
+  }
+
+  Error Device::StartInitialize() {
+    is_initialized_ = false;
+    return GetDescriptor(*this, 0, DeviceDescriptor::kType, 0,
+                         buf_.data(), buf_.size(), true);
+  }
+
+  Error Device::OnControlOutCompleted(const void* buf, size_t len) {
+    printk("OnControlOutCompleted: %p, %d\n", buf, len);
+    return Error::kSuccess;
+  }
+
+  Error Device::OnControlInCompleted(const void* buf, size_t len) {
+    printk("OnControlInCompleted: %p, %d\n", buf, len);
+    return Error::kSuccess;
+  }
+
+  Error Device::OnDeviceDescriptorReceived(const uint8_t* desc_data, size_t len) {
+    return Error::kNotImplemented;
+  }
+
+  Error Device::OnConfigurationDescriptorReceived(const uint8_t* desc_data, size_t len) {
+    return Error::kNotImplemented;
+  }
+
   Error GetDescriptor(Device& dev, int ep_num,
                       uint8_t desc_type, uint8_t desc_index,
                       void* buf, int len, bool debug) {

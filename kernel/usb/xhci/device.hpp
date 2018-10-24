@@ -50,6 +50,8 @@ namespace usb::xhci {
     Error ControlIn(int ep_num, uint64_t setup_data, void* buf, int len);
     Error ControlOut(int ep_num, uint64_t setup_data, const void* buf, int len);
 
+    Error OnTransferEventReceived(const TransferEventTRB& trb);
+
    private:
     alignas(64) struct DeviceContext ctx_;
     alignas(64) struct InputContext input_ctx_;
