@@ -27,7 +27,7 @@ namespace usb {
     uint8_t product;            // offset 15
     uint8_t serial_number;      // offset 16
     uint8_t num_configurations; // offset 17
-  } __attribute__((packed)) bits;
+  } __attribute__((packed));
 
   struct ConfigurationDescriptor {
     static const uint8_t kType = 2;
@@ -40,7 +40,7 @@ namespace usb {
     uint8_t configuration_id;   // offset 6
     uint8_t attributes;         // offset 7
     uint8_t max_power;          // offset 8
-  } __attribute__((packed)) bits;
+  } __attribute__((packed));
 
   struct InterfaceDescriptor {
     static const uint8_t kType = 4;
@@ -54,7 +54,7 @@ namespace usb {
     uint8_t interface_sub_class;// offset 6
     uint8_t interface_protocol; // offset 7
     uint8_t interface_id;       // offset 8
-  } __attribute__((packed)) bits;
+  } __attribute__((packed));
 
   struct EndpointDescriptor {
     static const uint8_t kType = 5;
@@ -65,7 +65,7 @@ namespace usb {
     uint8_t attributes;         // offset 3
     uint16_t max_packet_size;   // offset 4
     uint8_t interval;           // offset 6
-  } __attribute__((packed)) bits;
+  } __attribute__((packed));
 
   struct HIDDescriptor {
     static const uint8_t kType = 33;
@@ -94,12 +94,14 @@ namespace usb {
      * @return index で指定されたディスクリプタの情報．index が範囲外なら nullptr.
      */
     ClassDescriptor* GetClassDescriptor(size_t index) {
-      if (index >= bits.num_descriptors) {
+      if (index >= num_descriptors) {
         return nullptr;
       }
-      return reinterpret_cast<ClassDescriptor*>(data.data() + 6) + index;
+      const auto end_of_struct =
+        reinterpret_cast<uintptr_t>(this) + sizeof(HIDDescriptor);
+      return reinterpret_cast<ClassDescriptor*>(end_of_struct) + index;
     }
-  } __attribute__((packed)) bits;
+  } __attribute__((packed));
 
   template <class T>
   T* DescriptorDynamicCast(uint8_t* desc_data) {
