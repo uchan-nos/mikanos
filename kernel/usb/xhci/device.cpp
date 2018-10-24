@@ -19,7 +19,7 @@ namespace {
 
   DataStageTRB MakeDataStageTRB(const void* buf, int len, bool dir_in) {
     DataStageTRB data{};
-    data.bits.data_buffer_pointer = reinterpret_cast<uint64_t>(buf);
+    data.SetPointer(buf);
     data.bits.trb_transfer_length = len;
     data.bits.td_size = 0;
     data.bits.direction = dir_in;
@@ -90,6 +90,24 @@ namespace usb::xhci {
 
   Error Device::ControlOut(int ep_num, uint64_t setup_data,
                            const void* buf, int len) {
+    return Error::kSuccess;
+  }
+
+  Error Device::OnTransferEventReceived(const TransferEventTRB& trb) {
+    const auto residual_length = trb.bits.trb_transfer_length;
+
+    TRB* issuer_trb = trb.Pointer();
+    if (auto data_stage_trb = TRBDynamicCast<DataStageTRB>(issuer_trb)) {
+      const auto transfer_length =
+        data_stage_trb->bits.trb_transfer_length - residual_length;
+      if (data_stage_trb->bits.direction == 0) { // direction: out
+        this->OnControlOutCompleted(data_stage_trb->Pointer(), transfer_length);
+      } else { // direction: in
+        this->OnControlInCompleted(data_stage_trb->Pointer(), transfer_length);
+      }
+    } else {
+      return Error::kNotImplemented;
+    }
     return Error::kSuccess;
   }
 }
