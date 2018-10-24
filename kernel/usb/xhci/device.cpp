@@ -101,13 +101,12 @@ namespace usb::xhci {
       const auto transfer_length =
         data_stage_trb->bits.trb_transfer_length - residual_length;
       if (data_stage_trb->bits.direction == 0) { // direction: out
-        this->OnControlOutCompleted(data_stage_trb->Pointer(), transfer_length);
+        return this->OnControlOutCompleted(data_stage_trb->Pointer(), transfer_length);
       } else { // direction: in
-        this->OnControlInCompleted(data_stage_trb->Pointer(), transfer_length);
+        return this->OnControlInCompleted(data_stage_trb->Pointer(), transfer_length);
       }
     } else {
       return Error::kNotImplemented;
     }
-    return Error::kSuccess;
   }
 }

@@ -150,21 +150,6 @@ namespace {
 
     return Error::kSuccess;
   }
-
-  WithError<size_t> GetDescriptorWait(Controller& xhc, usb::xhci::Device& dev,
-                                      int desc_type, int desc_index,
-                                      uint8_t* buf, size_t n) {
-    if (auto err = GetDescriptor(dev, 0, desc_type, desc_index,
-                                 buf, n, true)) {
-      return {0, err};
-    }
-
-    auto event_trb = WaitEvent<TransferEventTRB>(xhc);
-    const auto transfer_length = event_trb->bits.trb_transfer_length;
-    xhc.PrimaryEventRing()->Pop();
-
-    return {n - transfer_length, Error::kSuccess};
-  }
 }
 
 namespace usb::xhci {
@@ -269,79 +254,15 @@ namespace usb::xhci {
       return err;
     }
 
-    auto event_trb = WaitEvent<TransferEventTRB>(xhc);
-    dev->OnTransferEventReceived(*event_trb);
-    xhc.PrimaryEventRing()->Pop();
-
-    auto device_desc = DescriptorDynamicCast<DeviceDescriptor>(dev->Buffer());
-    if (device_desc == nullptr) {
-      return Error::kInvalidDescriptor;
+    while (!dev->IsInitialized()) {
+      auto event_trb = WaitEvent<TransferEventTRB>(xhc);
+      if (auto err = dev->OnTransferEventReceived(*event_trb)) {
+        return err;
+      }
+      xhc.PrimaryEventRing()->Pop();
     }
 
-    uint8_t buf[256];
-
-    printk("device descriptor (%lu bytes):", dev->Buffer()[0]);
-    for (int i = 0; i < dev->Buffer()[0]; ++i) {
-      printk(" %02x", dev->Buffer()[i]);
-    }
-    printk("\n");
-
-    const auto num_configurations = device_desc->num_configurations;
-    for (int config_index = 0; config_index < num_configurations; ++config_index) {
-      printk("Getting Configuration Descriptor: index=%d\n", config_index);
-      auto desc_length = GetDescriptorWait(xhc, *dev, descriptor_type::kConfiguration,
-                                           config_index, buf, sizeof(buf));
-      if (desc_length.error) {
-        return desc_length.error;
-      }
-      auto config_desc = DescriptorDynamicCast<ConfigurationDescriptor>(buf);
-      if (config_desc == nullptr) {
-        return Error::kInvalidDescriptor;
-      }
-      if (desc_length.value < config_desc->total_length) {
-        return Error::kBufferTooSmall;
-      }
-
-      uint8_t* p = buf + config_desc->length;
-      const auto num_interfaces = config_desc->num_interfaces;
-      for (int if_index = 0; if_index < num_interfaces; ++if_index) {
-        auto if_desc = DescriptorDynamicCast<InterfaceDescriptor>(p);
-        if (if_desc == nullptr) {
-          return Error::kInvalidDescriptor;
-        }
-        printk("Interface Descriptor: class=%d, sub=%d, protocol=%d\n",
-            if_desc->interface_class,
-            if_desc->interface_sub_class,
-            if_desc->interface_protocol);
-
-        p += if_desc->length;
-        const auto num_endpoints = if_desc->num_endpoints;
-        int num_endpoints_found = 0;
-
-        while (num_endpoints_found < num_endpoints) {
-          if (auto if_desc = DescriptorDynamicCast<InterfaceDescriptor>(p)) {
-            return Error::kInvalidDescriptor;
-          }
-          if (auto ep_desc = DescriptorDynamicCast<EndpointDescriptor>(p)) {
-            printk("Endpoint Descriptor: addr=0x%02x, attr=0x%02x\n",
-                ep_desc->endpoint_address,
-                ep_desc->attributes);
-            ++num_endpoints_found;
-          } else if (auto hid_desc = DescriptorDynamicCast<HIDDescriptor>(p)) {
-            printk("HID Descriptor: release=0x%02x, num_desc=%d",
-                hid_desc->hid_release,
-                hid_desc->num_descriptors);
-            for (int i = 0; i < hid_desc->num_descriptors; ++i) {
-              printk(", desc_type=%d, len=%d",
-                  hid_desc->GetClassDescriptor(i)->descriptor_type,
-                  hid_desc->GetClassDescriptor(i)->descriptor_length);
-            }
-            printk("\n");
-          }
-          p += p[0];
-        }
-      }
-    }
+    printk("device on slot %d has been initialized\n", slot_id);
 
     return Error::kSuccess;
   }
