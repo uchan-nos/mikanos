@@ -19,6 +19,7 @@ class Error {
     kNotImplemented,
     kInvalidDescriptor,
     kBufferTooSmall,
+    kUnknownDevice,
     kLastOfCode,  // この列挙子は常に最後に配置する
   };
 
@@ -48,6 +49,7 @@ class Error {
     "kNotImplemented",
     "kInvalidDescriptor",
     "kBufferTooSmall",
+    "kUnknownDevice",
   };
   static_assert(Error::Code::kLastOfCode == code_names_.size());
 

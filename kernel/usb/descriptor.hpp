@@ -61,8 +61,23 @@ namespace usb {
 
     uint8_t length;             // offset 0
     uint8_t descriptor_type;    // offset 1
-    uint8_t endpoint_address;   // offset 2
-    uint8_t attributes;         // offset 3
+    union {
+      uint8_t data;
+      struct {
+        uint8_t number : 4;
+        uint8_t : 3;
+        uint8_t dir_in : 1;
+      } __attribute__((packed)) bits;
+    } endpoint_address;         // offset 2
+    union {
+      uint8_t data;
+      struct {
+        uint8_t transfer_type : 2;
+        uint8_t sync_type : 2;
+        uint8_t usage_type : 2;
+        uint8_t : 2;
+      } __attribute__((packed)) bits;
+    } attributes;               // offset 3
     uint16_t max_packet_size;   // offset 4
     uint8_t interval;           // offset 6
   } __attribute__((packed));
