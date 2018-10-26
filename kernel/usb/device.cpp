@@ -2,6 +2,8 @@
 
 #include "usb/descriptor.hpp"
 #include "usb/setupdata.hpp"
+#include "usb/classdriver/base.hpp"
+#include "usb/classdriver/keyboard.hpp"
 
 int printk(const char* format, ...);
 
@@ -11,15 +13,24 @@ namespace usb {
 
   Error Device::StartInitialize() {
     is_initialized_ = false;
+    initialize_phase_ = 1;
     return GetDescriptor(*this, 0, DeviceDescriptor::kType, 0,
                          buf_.data(), buf_.size(), true);
   }
 
-  Error Device::OnControlOutCompleted(const void* buf, size_t len) {
+  Error Device::OnControlOutCompleted(SetupData setup_data,
+                                      const void* buf, size_t len) {
+    if (setup_data.request_type.data == 0 &&
+        setup_data.request == request::kSetConfiguration) {
+      return OnSetConfigurationCompleted(setup_data.value & 0xffu);
+    }
     return Error::kNotImplemented;
   }
 
-  Error Device::OnControlInCompleted(const void* buf, size_t len) {
+  Error Device::OnControlInCompleted(SetupData setup_data,
+                                     const void* buf, size_t len) {
+    // we should check setup_data to distinguish
+    // the issuer is GET_DESCRIPTOR from other.
     const uint8_t* buf8 = reinterpret_cast<const uint8_t*>(buf);
     if (auto device_desc = DescriptorDynamicCast<DeviceDescriptor>(buf8)) {
       return OnDeviceDescriptorReceived(buf8, len);
@@ -30,25 +41,50 @@ namespace usb {
     }
   }
 
-  Error Device::OnDeviceDescriptorReceived(const uint8_t* buf, size_t len) {
+  Error Device::OnDeviceDescriptorReceived(const uint8_t* buf, int len) {
     if (is_initialized_) {
       return Error::kSuccess;
+    } else if (initialize_phase_ == 1) {
+      return InitializePhase1(buf, len);
     }
-
-    const auto device_desc = DescriptorDynamicCast<DeviceDescriptor>(buf);
-    num_configurations_ = device_desc->num_configurations;
-    config_index_ = 0;
-    return GetDescriptor(*this, 0, ConfigurationDescriptor::kType, config_index_,
-                         buf_.data(), buf_.size(), true);
+    return Error::kNotImplemented;
   }
 
-  Error Device::OnConfigurationDescriptorReceived(const uint8_t* buf, size_t len) {
+  Error Device::OnConfigurationDescriptorReceived(const uint8_t* buf, int len) {
     printk("OnConfigurationDescriptorReceived: %p, %d, config_index_=%d\n",
         buf, len, config_index_);
     if (is_initialized_) {
       return Error::kSuccess;
+    } else if (initialize_phase_ == 2) {
+      return InitializePhase2(buf, len);
     }
+    return Error::kNotImplemented;
+  }
 
+  Error Device::OnSetConfigurationCompleted(uint8_t config_value) {
+    if (initialize_phase == 3) {
+      return InitializePhase3(config_value);
+    }
+    return Error::kNotImplemented;
+  }
+
+  Error Device::OnConfigureEndpointsCompleted() {
+    if (initialize_phase_ == 4) {
+      return InitializePhase4();
+    }
+    return Error::kNotImplemented;
+  }
+
+  Error Device::InitializePhase1(const uint8_t* buf, int len) {
+    const auto device_desc = DescriptorDynamicCast<DeviceDescriptor>(buf);
+    num_configurations_ = device_desc->num_configurations;
+    config_index_ = 0;
+    initialize_phase_ = 2;
+    return GetDescriptor(*this, 0, ConfigurationDescriptor::kType, config_index_,
+                         buf_.data(), buf_.size(), true);
+  }
+
+  Error Device::InitializePhase2(const uint8_t* buf, int len) {
     const auto config_desc = DescriptorDynamicCast<ConfigurationDescriptor>(buf);
 
     const uint8_t* p = buf + config_desc->length;
@@ -63,19 +99,38 @@ namespace usb {
           if_desc->interface_sub_class,
           if_desc->interface_protocol);
 
+      ClassDriver* class_driver = nullptr;
+      if (if_desc->interface_class == 3 &&
+          if_desc->interface_sub_class == 1) {  // HID boot interface
+        if (if_desc->interface_protocol == 1) {  // keyboard
+          class_driver = new HIDKeyboardDriver{};
+        }
+      }
+      if (class_driver == nullptr) {
+        return Error::kUnknownDevice;
+      }
+
       p += if_desc->length;
       const auto num_endpoints = if_desc->num_endpoints;
-      int num_endpoints_found = 0;
+      num_ep_configs_ = 0;
 
-      while (num_endpoints_found < num_endpoints) {
+      while (num_ep_confgs_ < num_endpoints) {
         if (auto if_desc = DescriptorDynamicCast<InterfaceDescriptor>(p)) {
           return Error::kInvalidDescriptor;
         }
         if (auto ep_desc = DescriptorDynamicCast<EndpointDescriptor>(p)) {
-          printk("Endpoint Descriptor: addr=0x%02x, attr=0x%02x\n",
-              ep_desc->endpoint_address,
-              ep_desc->attributes);
-          ++num_endpoints_found;
+          auto& conf = ep_configs_[num_ep_confgs_];
+          conf.ep_num = ep_desc->endpoint_address.bits.number;
+          conf.dir_in = ep_desc->endpoint_address.bits.dir_in;
+          conf.ep_type = static_cast<EndpointType>(ep_desc->attributes.bits.transfer_type);
+          conf.max_packet_size = ep_desc->max_packet_size;
+          conf.interval = ep_desc->interval;
+          printk("EndpointConf: ep_num=%d, dir_in=%d, ep_type=%d"
+                 ", max_packet_size=%d, interval=%d\n",
+                 conf.ep_num, conf.dir_in, conf.ep_type,
+                 conf.max_packet_size, conf.interval);
+          class_drivers_[conf.ep_num] = class_driver;
+          ++num_ep_confgs_;
         } else if (auto hid_desc = DescriptorDynamicCast<HIDDescriptor>(p)) {
           printk("HID Descriptor: release=0x%02x, num_desc=%d",
               hid_desc->hid_release,
@@ -89,16 +144,26 @@ namespace usb {
         }
         p += p[0];
       }
+
+      //class_driver->ConfigureEndpoints(epconfigs.data(), num_endpoints_found);
     }
 
-    ++config_index_;
-    if (config_index_ == num_configurations_) {
-      is_initialized_ = true;
-      return Error::kSuccess;
-    }
+    initialize_phase_ = 3;
+    return SetConfiguration(*this, 0, config_desc->configuration_value, true);
+  }
 
-    return GetDescriptor(*this, 0, ConfigurationDescriptor::kType, config_index_,
-                         buf_.data(), buf_.size(), true);
+  Error Device::InitializePhase3(uint8_t config_value) {
+    for (int i = 0; i < num_ep_configs_; ++i) {
+      int ep_num = ep_configs_[i].ep_num;
+      class_drivers_[ep_num]->SetEndpoint(ep_configs_[i]);
+    }
+    initialize_phase_ = 4;
+    return ConfigureEndpoints(ep_configs_, num_ep_configs_);
+  }
+
+  Error Device::InitializePhase4() {
+    initialize_phase_ = -1;
+    return Error::kSuccess;
   }
 
   Error GetDescriptor(Device& dev, int ep_num,
