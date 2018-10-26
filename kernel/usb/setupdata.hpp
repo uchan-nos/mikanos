@@ -65,11 +65,14 @@ namespace usb {
   union SetupData {
     uint64_t data;
     struct {
-      // bmRequestType
-      uint8_t recipient : 5;
-      uint8_t type : 2;
-      uint8_t direction : 1;
-
+      union {
+        uint8_t data;
+        struct {
+          uint8_t recipient : 5;
+          uint8_t type : 2;
+          uint8_t direction : 1;
+        } bits;
+      } request_type;
       uint8_t request;
       uint16_t value;
       uint16_t index;

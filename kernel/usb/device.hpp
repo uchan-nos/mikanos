@@ -9,24 +9,41 @@
 #include <array>
 
 #include "error.hpp"
+#include "usb/setupdata.hpp"
+#include "usb/endpoint.hpp"
 
 namespace usb {
+  class ClassDriver;
+
   class Device {
    public:
     virtual ~Device();
-    virtual Error ControlIn(int ep_num, uint64_t setup_data,
+    virtual Error ControlIn(int ep_num, SetupData setup_data,
                             void* buf, int len) = 0;
-    virtual Error ControlOut(int ep_num, uint64_t setup_data,
+    virtual Error ControlOut(int ep_num, SetupData setup_data,
                              const void* buf, int len) = 0;
+    virtual Error ConfigureEndpoints(const EndpointConfig* configs,
+                                     int len) = 0;
 
     Error StartInitialize();
-    Error OnControlOutCompleted(const void* buf, size_t len);
-    Error OnControlInCompleted(const void* buf, size_t len);
+    // these 3 functions shall be protected?
+    Error OnControlOutCompleted(SetupData setup_data,
+                                const void* buf, size_t len);
+    Error OnControlInCompleted(SetupData setup_data,
+                               const void* buf, size_t len);
+    Error OnConfigureEndpointsCompleted();
     bool IsInitialized() { return is_initialized_; }
 
     uint8_t* Buffer() { return buf_.data(); }
 
    private:
+    /** @brief エンドポイントに割り当て済みのクラスドライバ．
+     *
+     * 添字はエンドポイント番号（0 - 15）．
+     * 添字 0 はどのクラスドライバからも使われないため，常に未使用．
+     */
+    std::array<ClassDriver*, 16> class_drivers_{};
+
     std::array<uint8_t, 256> buf_{};
     bool is_initialized_ = false;
 
@@ -34,12 +51,23 @@ namespace usb {
     uint8_t num_configurations_;
     uint8_t config_index_;
 
-    Error OnDeviceDescriptorReceived(const uint8_t* buf, size_t len);
-    Error OnConfigurationDescriptorReceived(const uint8_t* buf, size_t len);
+    Error OnDeviceDescriptorReceived(const uint8_t* buf, int len);
+    Error OnConfigurationDescriptorReceived(const uint8_t* buf, int len);
+    Error OnSetConfigurationCompleted(uint8_t config_value);
+
+    int initialize_phase_ = 0;
+    std::array<EndpointConfig, 16> ep_configs_;
+    int num_ep_configs_;
+    Error InitializePhase1(const uint8_t* buf, int len);
+    Error InitializePhase2(const uint8_t* buf, int len);
+    Error InitializePhase3(uint8_t config_value);
+    Error InitializePhase4();
   };
 
   Error GetDescriptor(Device& dev, int ep_num,
                       uint8_t desc_type, uint8_t desc_index,
                       void* buf, int len, bool debug = false);
+  Error SetConfiguration(Device& dev, int ep_num,
+                         uint8_t config_value, bool debug = false);
   Error ConfigureEndpoints(Device& dev, bool debug = false);
 }
