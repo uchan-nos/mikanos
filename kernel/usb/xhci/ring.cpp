@@ -36,7 +36,8 @@ namespace usb::xhci {
       = (data[3] & 0xfffffffeu) | static_cast<uint32_t>(cycle_bit_);
   }
 
-  void Ring::Push(const std::array<uint32_t, 4>& data) {
+  TRB* Ring::Push(const std::array<uint32_t, 4>& data) {
+    auto trb_ptr = &buf_[write_index_];
     CopyToLast(data);
 
     ++write_index_;
@@ -48,6 +49,8 @@ namespace usb::xhci {
       write_index_ = 0;
       cycle_bit_ = !cycle_bit_;
     }
+
+    return trb_ptr;
   }
 
   Error EventRing::Initialize(size_t buf_size,

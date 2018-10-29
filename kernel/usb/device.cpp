@@ -62,15 +62,9 @@ namespace usb {
   }
 
   Error Device::OnSetConfigurationCompleted(uint8_t config_value) {
-    if (initialize_phase == 3) {
+    printk("OnSetConfigurationCompleted: config_value=%d\n", config_value);
+    if (initialize_phase_ == 3) {
       return InitializePhase3(config_value);
-    }
-    return Error::kNotImplemented;
-  }
-
-  Error Device::OnConfigureEndpointsCompleted() {
-    if (initialize_phase_ == 4) {
-      return InitializePhase4();
     }
     return Error::kNotImplemented;
   }
@@ -114,12 +108,12 @@ namespace usb {
       const auto num_endpoints = if_desc->num_endpoints;
       num_ep_configs_ = 0;
 
-      while (num_ep_confgs_ < num_endpoints) {
+      while (num_ep_configs_ < num_endpoints) {
         if (auto if_desc = DescriptorDynamicCast<InterfaceDescriptor>(p)) {
           return Error::kInvalidDescriptor;
         }
         if (auto ep_desc = DescriptorDynamicCast<EndpointDescriptor>(p)) {
-          auto& conf = ep_configs_[num_ep_confgs_];
+          auto& conf = ep_configs_[num_ep_configs_];
           conf.ep_num = ep_desc->endpoint_address.bits.number;
           conf.dir_in = ep_desc->endpoint_address.bits.dir_in;
           conf.ep_type = static_cast<EndpointType>(ep_desc->attributes.bits.transfer_type);
@@ -130,7 +124,7 @@ namespace usb {
                  conf.ep_num, conf.dir_in, conf.ep_type,
                  conf.max_packet_size, conf.interval);
           class_drivers_[conf.ep_num] = class_driver;
-          ++num_ep_confgs_;
+          ++num_ep_configs_;
         } else if (auto hid_desc = DescriptorDynamicCast<HIDDescriptor>(p)) {
           printk("HID Descriptor: release=0x%02x, num_desc=%d",
               hid_desc->hid_release,
@@ -149,6 +143,7 @@ namespace usb {
     }
 
     initialize_phase_ = 3;
+    printk("issuing SetConfiguration\n");
     return SetConfiguration(*this, 0, config_desc->configuration_value, true);
   }
 
@@ -158,11 +153,7 @@ namespace usb {
       class_drivers_[ep_num]->SetEndpoint(ep_configs_[i]);
     }
     initialize_phase_ = 4;
-    return ConfigureEndpoints(ep_configs_, num_ep_configs_);
-  }
-
-  Error Device::InitializePhase4() {
-    initialize_phase_ = -1;
+    is_initialized_ = true;
     return Error::kSuccess;
   }
 
@@ -170,14 +161,27 @@ namespace usb {
                       uint8_t desc_type, uint8_t desc_index,
                       void* buf, int len, bool debug) {
     SetupData setup_data{};
-    setup_data.bits.direction = request_type::kIn;
-    setup_data.bits.type = request_type::kStandard;
-    setup_data.bits.recipient = request_type::kDevice;
-    setup_data.bits.request = request::kGetDescriptor;
-    setup_data.bits.value = (static_cast<uint16_t>(desc_type) << 8) | desc_index;
-    setup_data.bits.index = 0;
-    setup_data.bits.length = len;
-    return dev.ControlIn(ep_num, setup_data.data, buf, len);
+    setup_data.request_type.bits.direction = request_type::kIn;
+    setup_data.request_type.bits.type = request_type::kStandard;
+    setup_data.request_type.bits.recipient = request_type::kDevice;
+    setup_data.request = request::kGetDescriptor;
+    setup_data.value = (static_cast<uint16_t>(desc_type) << 8) | desc_index;
+    setup_data.index = 0;
+    setup_data.length = len;
+    return dev.ControlIn(ep_num, setup_data, buf, len);
+  }
+
+  Error SetConfiguration(Device& dev, int ep_num,
+                         uint8_t config_value, bool debug) {
+    SetupData setup_data{};
+    setup_data.request_type.bits.direction = request_type::kOut;
+    setup_data.request_type.bits.type = request_type::kStandard;
+    setup_data.request_type.bits.recipient = request_type::kDevice;
+    setup_data.request = request::kSetConfiguration;
+    setup_data.value = config_value;
+    setup_data.index = 0;
+    setup_data.length = 0;
+    return dev.ControlOut(ep_num, setup_data, nullptr, 0);
   }
 
   /*

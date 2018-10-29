@@ -16,6 +16,41 @@
 #include "usb/xhci/registers.hpp"
 
 namespace usb::xhci {
+  class SetupStageMap {
+   public:
+    const SetupStageTRB* Get(const void* key) const {
+      for (int i = 0; i < table_.size(); ++i) {
+        if (table_[i].first == key) {
+          return table_[i].second;
+        }
+      }
+      return nullptr;
+    }
+
+    void Put(const void* key, const SetupStageTRB* value) {
+      for (int i = 0; i < table_.size(); ++i) {
+        if (table_[i].first == nullptr) {
+          table_[i].first = key;
+          table_[i].second = value;
+          break;
+        }
+      }
+    }
+
+    void Delete(const void* key) {
+      for (int i = 0; i < table_.size(); ++i) {
+        if (table_[i].first == key) {
+          table_[i].first = nullptr;
+          table_[i].second = nullptr;
+          break;
+        }
+      }
+    }
+
+   private:
+    std::array<std::pair<const void*, const SetupStageTRB*>, 16> table_{};
+  };
+
   class Device : public usb::Device {
    public:
     enum class State {
@@ -47,8 +82,8 @@ namespace usb::xhci {
     void SelectForSlotAssignment();
     Ring* AllocTransferRing(DeviceContextIndex index, size_t buf_size);
 
-    Error ControlIn(int ep_num, uint64_t setup_data, void* buf, int len);
-    Error ControlOut(int ep_num, uint64_t setup_data, const void* buf, int len);
+    Error ControlIn(int ep_num, SetupData setup_data, void* buf, int len) override;
+    Error ControlOut(int ep_num, SetupData setup_data, const void* buf, int len) override;
 
     Error OnTransferEventReceived(const TransferEventTRB& trb);
 
@@ -61,6 +96,8 @@ namespace usb::xhci {
 
     enum State state_;
     std::array<Ring*, 31> transfer_rings_; // index = dci - 1
+
+    SetupStageMap setup_stage_map_{};
 
     //usb::Device* usb_device_;
   };
