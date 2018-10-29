@@ -62,22 +62,19 @@ namespace usb {
     const int kSuperspeedPlusIsochronousEndpointCompanion = 49;
   }
 
-  union SetupData {
-    uint64_t data;
-    struct {
-      union {
-        uint8_t data;
-        struct {
-          uint8_t recipient : 5;
-          uint8_t type : 2;
-          uint8_t direction : 1;
-        } bits;
-      } request_type;
-      uint8_t request;
-      uint16_t value;
-      uint16_t index;
-      uint16_t length;
-    } __attribute__((packed)) bits;
-  };
+  struct SetupData {
+    union {
+      uint8_t data;
+      struct {
+        uint8_t recipient : 5;
+        uint8_t type : 2;
+        uint8_t direction : 1;
+      } bits;
+    } request_type;
+    uint8_t request;
+    uint16_t value;
+    uint16_t index;
+    uint16_t length;
+  } __attribute__((packed));
 }
 

@@ -22,19 +22,19 @@ namespace usb {
                             void* buf, int len) = 0;
     virtual Error ControlOut(int ep_num, SetupData setup_data,
                              const void* buf, int len) = 0;
-    virtual Error ConfigureEndpoints(const EndpointConfig* configs,
-                                     int len) = 0;
 
     Error StartInitialize();
-    // these 3 functions shall be protected?
+    bool IsInitialized() { return is_initialized_; }
+    EndpointConfig* EndpointConfigs() { return ep_configs_.data(); }
+    int NumEndpointConfigs() { return num_ep_configs_; }
+
+    uint8_t* Buffer() { return buf_.data(); }
+
+   protected:
     Error OnControlOutCompleted(SetupData setup_data,
                                 const void* buf, size_t len);
     Error OnControlInCompleted(SetupData setup_data,
                                const void* buf, size_t len);
-    Error OnConfigureEndpointsCompleted();
-    bool IsInitialized() { return is_initialized_; }
-
-    uint8_t* Buffer() { return buf_.data(); }
 
    private:
     /** @brief エンドポイントに割り当て済みのクラスドライバ．
@@ -69,5 +69,4 @@ namespace usb {
                       void* buf, int len, bool debug = false);
   Error SetConfiguration(Device& dev, int ep_num,
                          uint8_t config_value, bool debug = false);
-  Error ConfigureEndpoints(Device& dev, bool debug = false);
 }
