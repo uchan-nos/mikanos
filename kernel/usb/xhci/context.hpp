@@ -68,11 +68,11 @@ namespace usb::xhci {
   } __attribute__((packed));
 
   struct DeviceContextIndex {
-    unsigned int value;
+    int value;
 
-    explicit DeviceContextIndex(unsigned int dci) : value{dci} {}
+    explicit DeviceContextIndex(int dci) : value{dci} {}
 
-    DeviceContextIndex(unsigned int ep_num, bool dir_in)
+    DeviceContextIndex(int ep_num, bool dir_in)
         : value{2 * ep_num + (ep_num == 0 ? 1 : dir_in)} {}
 
     DeviceContextIndex(const DeviceContextIndex& rhs) = default;

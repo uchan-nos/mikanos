@@ -26,10 +26,13 @@ namespace usb::xhci {
     /** @brief リングのメモリ領域を割り当て，メンバを初期化する． */
     Error Initialize(size_t buf_size);
 
-    /** @brief TRB に cycle bit を設定した上でリング末尾に追加する． */
+    /** @brief TRB に cycle bit を設定した上でリング末尾に追加する．
+     *
+     * @return 追加された（リング上の）TRB を指すポインタ．
+     */
     template <typename TRBType>
-    void Push(const TRBType& trb) {
-      Push(trb.data);
+    TRB* Push(const TRBType& trb) {
+      return Push(trb.data);
     }
 
     TRB* Buffer() const { return buf_; }
@@ -54,8 +57,10 @@ namespace usb::xhci {
      * write_index_ をインクリメントする．その結果 write_index_ がリング末尾
      * に達したら LinkTRB を適切に配置して write_index_ を 0 に戻し，
      * cycle bit を反転させる．
+     *
+     * @return 追加された（リング上の）TRB を指すポインタ．
      */
-    void Push(const std::array<uint32_t, 4>& data);
+    TRB* Push(const std::array<uint32_t, 4>& data);
   };
 
   union EventRingSegmentTableEntry {
