@@ -54,4 +54,6 @@ namespace usb::xhci {
   };
 
   Error ConfigurePort(Controller& xhc, Port& port);
+  Error ConfigureEndpoints(Controller& xhc, Device& dev,
+                           const EndpointConfig* configs, int len);
 }

@@ -264,6 +264,60 @@ namespace usb::xhci {
 
     printk("device on slot %d has been initialized\n", slot_id);
 
+    ConfigureEndpoints(xhc, *dev, dev->EndpointConfigs(), dev->NumEndpointConfigs());
+
+    auto event = WaitEvent<CommandCompletionEventTRB, ConfigureEndpointCommandTRB>(xhc);
+    printk("ConfigureEndpointCommandTRB completed. completion code %d (%s)\n",
+        event.event_trb->bits.completion_code,
+        kTRBCompletionCodeToName[event.event_trb->bits.completion_code]);
+    xhc.PrimaryEventRing()->Pop();
+
+    return Error::kSuccess;
+  }
+
+  Error ConfigureEndpoints(Controller& xhc, Device& dev,
+                           const EndpointConfig* configs, int len) {
+    memset(&dev.InputContext()->input_control_context, 0, sizeof(InputControlContext));
+    memcpy(&dev.InputContext()->slot_context,
+           &dev.DeviceContext()->slot_context, sizeof(SlotContext));
+
+    auto slot_ctx = dev.InputContext()->EnableSlotContext();
+    slot_ctx->bits.context_entries = 31;
+
+    for (int i = 0; i < len; ++i) {
+      const DeviceContextIndex ep_dci{configs[i].ep_num, configs[i].dir_in};
+      auto ep_ctx = dev.InputContext()->EnableEndpoint(ep_dci);
+      switch (configs[i].ep_type) {
+      case EndpointType::kControl:
+        ep_ctx->bits.ep_type = 4;
+        break;
+      case EndpointType::kIsochronous:
+        ep_ctx->bits.ep_type = configs[i].dir_in ? 5 : 1;
+        break;
+      case EndpointType::kBulk:
+        ep_ctx->bits.ep_type = configs[i].dir_in ? 6 : 2;
+        break;
+      case EndpointType::kInterrupt:
+        ep_ctx->bits.ep_type = configs[i].dir_in ? 7 : 3;
+        break;
+      }
+      ep_ctx->bits.max_packet_size = configs[i].max_packet_size;
+      ep_ctx->bits.interval = configs[i].interval;
+      ep_ctx->bits.average_trb_length = 1;
+
+      auto tr = dev.AllocTransferRing(ep_dci, 32);
+      ep_ctx->SetTransferRingBuffer(tr->Buffer());
+
+      ep_ctx->bits.dequeue_cycle_state = 1;
+      ep_ctx->bits.max_primary_streams = 0;
+      ep_ctx->bits.mult = 0;
+      ep_ctx->bits.error_count = 3;
+    }
+
+    ConfigureEndpointCommandTRB cmd{dev.InputContext(), dev.SlotID()};
+    xhc.CommandRing()->Push(cmd);
+    xhc.DoorbellRegisterAt(0)->Ring(0);
+
     return Error::kSuccess;
   }
 }
