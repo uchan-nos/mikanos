@@ -272,6 +272,11 @@ namespace usb::xhci {
         kTRBCompletionCodeToName[event.event_trb->bits.completion_code]);
     xhc.PrimaryEventRing()->Pop();
 
+    if (auto err = dev->OnEndpointsConfigured()) {
+      printk("failed to handle EndpointsConfigured event: %s\n", err.Name());
+      return err;
+    }
+
     return Error::kSuccess;
   }
 
