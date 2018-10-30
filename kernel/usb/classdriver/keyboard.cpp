@@ -6,7 +6,7 @@ int printk(const char* format, ...);
 
 namespace usb {
   Error HIDKeyboardDriver::Initialize() {
-    return Error::kNotImplemented;
+    return MAKE_ERROR(Error::kNotImplemented);
   }
 
   Error HIDKeyboardDriver::SetEndpoint(const EndpointConfig& config) {
@@ -14,7 +14,7 @@ namespace usb {
     if (config.ep_type == EndpointType::kInterrupt && config.dir_in) {
       ep_interrupt_in_ = config.ep_num;
     }
-    return Error::kSuccess;
+    return MAKE_ERROR(Error::kSuccess);
   }
 
   void* HIDKeyboardDriver::operator new(size_t size) {
