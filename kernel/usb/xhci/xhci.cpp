@@ -14,7 +14,7 @@ namespace {
     value.bits.ring_cycle_state = true;
     value.SetPointer(reinterpret_cast<uint64_t>(ring->Buffer()));
     crcr->Write(value);
-    return Error::kSuccess;
+    return MAKE_ERROR(Error::kSuccess);
   }
 
   template <class EventTRBType>
@@ -115,7 +115,7 @@ namespace {
     Device* dev = xhc.DeviceManager()->FindBySlot(slot_id);
     if (dev == nullptr) {
       if (debug) printk("failed to get a device: slot = %d\n", slot_id);
-      return Error::kInvalidSlotID;
+      return MAKE_ERROR(Error::kInvalidSlotID);
     }
 
     const auto ep0_dci = DeviceContextIndex(0, false);
@@ -139,7 +139,7 @@ namespace {
 
     if (auto sid = addr_dev_cmd_event.event_trb->bits.slot_id; sid != slot_id) {
       if (debug) printk("Unexpected slot id: %u\n", sid);
-      return Error::kInvalidSlotID;
+      return MAKE_ERROR(Error::kInvalidSlotID);
     }
     xhc.PrimaryEventRing()->Pop();
 
@@ -148,7 +148,7 @@ namespace {
              slot_id, port.Number(), slot_ctx->bits.speed);
     }
 
-    return Error::kSuccess;
+    return MAKE_ERROR(Error::kSuccess);
   }
 }
 
@@ -214,7 +214,7 @@ namespace usb::xhci {
     usbcmd.bits.interrupter_enable = true;
     op_->USBCMD.Write(usbcmd);
 
-    return Error::kSuccess;
+    return MAKE_ERROR(Error::kSuccess);
   }
 
   Error Controller::Run() {
@@ -226,7 +226,7 @@ namespace usb::xhci {
 
     while (op_->USBSTS.Read().bits.host_controller_halted);
 
-    return Error::kSuccess;
+    return MAKE_ERROR(Error::kSuccess);
   }
 
   DoorbellRegister* Controller::DoorbellRegisterAt(uint8_t index) {
@@ -235,7 +235,7 @@ namespace usb::xhci {
 
   Error ConfigurePort(Controller& xhc, Port& port) {
     if (!port.IsConnected()) {
-      return Error::kPortNotConnected;
+      return MAKE_ERROR(Error::kPortNotConnected);
     }
 
     ResetPort(port);
@@ -247,7 +247,7 @@ namespace usb::xhci {
 
     auto dev = xhc.DeviceManager()->FindBySlot(slot_id);
     if (dev == nullptr) {
-      return Error::kInvalidSlotID;
+      return MAKE_ERROR(Error::kInvalidSlotID);
     }
 
     if (auto err = dev->StartInitialize()) {
@@ -277,7 +277,7 @@ namespace usb::xhci {
       return err;
     }
 
-    return Error::kSuccess;
+    return MAKE_ERROR(Error::kSuccess);
   }
 
   Error ConfigureEndpoints(Controller& xhc, Device& dev,
@@ -323,6 +323,6 @@ namespace usb::xhci {
     xhc.CommandRing()->Push(cmd);
     xhc.DoorbellRegisterAt(0)->Ring(0);
 
-    return Error::kSuccess;
+    return MAKE_ERROR(Error::kSuccess);
   }
 }
