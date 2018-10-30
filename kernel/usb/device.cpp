@@ -19,11 +19,18 @@ namespace usb {
   }
 
   Error Device::OnEndpointsConfigured() {
-    return MAKE_ERROR(Error::kNotImplemented);
+    for (auto class_driver : class_drivers_) {
+      if (class_driver != nullptr) {
+        if (auto err = class_driver->OnEndpointsConfigured()) {
+          return err;
+        }
+      }
+    }
+    return MAKE_ERROR(Error::kSuccess);
   }
 
   Error Device::OnControlOutCompleted(SetupData setup_data,
-                                      const void* buf, size_t len) {
+                                      const void* buf, int len) {
     if (setup_data.request_type.data == 0 &&
         setup_data.request == request::kSetConfiguration) {
       return OnSetConfigurationCompleted(setup_data.value & 0xffu);
@@ -32,7 +39,19 @@ namespace usb {
   }
 
   Error Device::OnControlInCompleted(SetupData setup_data,
-                                     const void* buf, size_t len) {
+                                     const void* buf, int len) {
+    if (buf != buf_.data()) {
+      // このイベントの発生源は Device クラスではなく，クラスドライバである
+      for (auto class_driver : class_drivers_) {
+        if (class_driver != nullptr) {
+          if (auto err = class_driver->OnControlInCompleted(setup_data, buf, len)) {
+            return err;
+          }
+        }
+      }
+      return MAKE_ERROR(Error::kSuccess);
+    }
+
     // we should check setup_data to distinguish
     // the issuer is GET_DESCRIPTOR from other.
     const uint8_t* buf8 = reinterpret_cast<const uint8_t*>(buf);
@@ -101,7 +120,7 @@ namespace usb {
       if (if_desc->interface_class == 3 &&
           if_desc->interface_sub_class == 1) {  // HID boot interface
         if (if_desc->interface_protocol == 1) {  // keyboard
-          class_driver = new HIDKeyboardDriver{};
+          class_driver = new HIDKeyboardDriver{this, if_index};
         }
       }
       if (class_driver == nullptr) {

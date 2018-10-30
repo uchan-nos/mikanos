@@ -56,4 +56,13 @@ namespace usb::xhci {
   Error ConfigurePort(Controller& xhc, Port& port);
   Error ConfigureEndpoints(Controller& xhc, Device& dev,
                            const EndpointConfig* configs, int len);
+
+  /** @brief イベントリングに登録されたイベントを全て処理する．
+   *
+   * xhc のプライマリイベントリングに登録されたイベントを，
+   * イベントリングが空になるまで順次処理する．
+   *
+   * @return 全てのイベントを正常に処理できたら Error::kSuccess
+   */
+  Error ProcessEvent(Controller& xhc);
 }

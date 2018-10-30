@@ -33,9 +33,9 @@ namespace usb {
 
    protected:
     Error OnControlOutCompleted(SetupData setup_data,
-                                const void* buf, size_t len);
+                                const void* buf, int len);
     Error OnControlInCompleted(SetupData setup_data,
-                               const void* buf, size_t len);
+                               const void* buf, int len);
 
    private:
     /** @brief エンドポイントに割り当て済みのクラスドライバ．
