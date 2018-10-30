@@ -27,6 +27,7 @@ namespace usb {
     bool IsInitialized() { return is_initialized_; }
     EndpointConfig* EndpointConfigs() { return ep_configs_.data(); }
     int NumEndpointConfigs() { return num_ep_configs_; }
+    Error OnEndpointsConfigured();
 
     uint8_t* Buffer() { return buf_.data(); }
 
