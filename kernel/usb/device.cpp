@@ -18,6 +18,10 @@ namespace usb {
                          buf_.data(), buf_.size(), true);
   }
 
+  Error Device::OnEndpointsConfigured() {
+    return Error::kNotImplemented;
+  }
+
   Error Device::OnControlOutCompleted(SetupData setup_data,
                                       const void* buf, size_t len) {
     if (setup_data.request_type.data == 0 &&
