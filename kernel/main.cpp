@@ -192,6 +192,8 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   printk("xHC has least one event: %s\n", usb::xhci::kTRBTypeToName[
       xhc.PrimaryEventRing()->Front()->bits.trb_type]);
 
+  ProcessEvent(xhc);
+
   while (1) __asm__("hlt");
 }
 

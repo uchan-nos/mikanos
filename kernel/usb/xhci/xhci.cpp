@@ -325,4 +325,24 @@ namespace usb::xhci {
 
     return MAKE_ERROR(Error::kSuccess);
   }
+
+  Error ProcessEvent(Controller& xhc) {
+    while (xhc.PrimaryEventRing()->HasFront()) {
+      auto event_trb = xhc.PrimaryEventRing()->Front();
+      if (auto trb = TRBDynamicCast<TransferEventTRB>(event_trb)) {
+        const uint8_t slot_id = trb->bits.slot_id;
+        auto dev = xhc.DeviceManager()->FindBySlot(slot_id);
+        if (dev == nullptr) {
+          return MAKE_ERROR(Error::kInvalidSlotID);
+        }
+        if (auto err = dev->OnTransferEventReceived(*trb)) {
+          return err;
+        }
+      } else {
+        return MAKE_ERROR(Error::kNotImplemented);
+      }
+      xhc.PrimaryEventRing()->Pop();
+    }
+    return MAKE_ERROR(Error::kSuccess);
+  }
 }

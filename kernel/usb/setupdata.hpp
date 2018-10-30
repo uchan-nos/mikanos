@@ -43,6 +43,9 @@ namespace usb {
     const int kSetInterfaceDS = 23;
     const int kSetSel = 48;
     const int kSetIsochDelay = 49;
+
+    // HID class specific report values
+    const int kGetReport = 1;
   }
 
   namespace descriptor_type {
