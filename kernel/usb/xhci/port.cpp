@@ -30,7 +30,7 @@ namespace usb::xhci {
     portsc.data[0] |= 0x00020010u; // Write 1 to PR and CSC
     port_reg_set_.PORTSC.Write(portsc);
     while (port_reg_set_.PORTSC.Read().bits.port_reset);
-    return Error::kSuccess;
+    return MAKE_ERROR(Error::kSuccess);
   }
 
   Device* Port::Initialize() {

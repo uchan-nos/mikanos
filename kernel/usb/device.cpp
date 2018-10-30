@@ -19,7 +19,7 @@ namespace usb {
   }
 
   Error Device::OnEndpointsConfigured() {
-    return Error::kNotImplemented;
+    return MAKE_ERROR(Error::kNotImplemented);
   }
 
   Error Device::OnControlOutCompleted(SetupData setup_data,
@@ -28,7 +28,7 @@ namespace usb {
         setup_data.request == request::kSetConfiguration) {
       return OnSetConfigurationCompleted(setup_data.value & 0xffu);
     }
-    return Error::kNotImplemented;
+    return MAKE_ERROR(Error::kNotImplemented);
   }
 
   Error Device::OnControlInCompleted(SetupData setup_data,
@@ -41,28 +41,28 @@ namespace usb {
     } else if (auto config_desc = DescriptorDynamicCast<ConfigurationDescriptor>(buf8)) {
       return OnConfigurationDescriptorReceived(buf8, len);
     } else {
-      return Error::kNotImplemented;
+      return MAKE_ERROR(Error::kNotImplemented);
     }
   }
 
   Error Device::OnDeviceDescriptorReceived(const uint8_t* buf, int len) {
     if (is_initialized_) {
-      return Error::kSuccess;
+      return MAKE_ERROR(Error::kSuccess);
     } else if (initialize_phase_ == 1) {
       return InitializePhase1(buf, len);
     }
-    return Error::kNotImplemented;
+    return MAKE_ERROR(Error::kNotImplemented);
   }
 
   Error Device::OnConfigurationDescriptorReceived(const uint8_t* buf, int len) {
     printk("OnConfigurationDescriptorReceived: %p, %d, config_index_=%d\n",
         buf, len, config_index_);
     if (is_initialized_) {
-      return Error::kSuccess;
+      return MAKE_ERROR(Error::kSuccess);
     } else if (initialize_phase_ == 2) {
       return InitializePhase2(buf, len);
     }
-    return Error::kNotImplemented;
+    return MAKE_ERROR(Error::kNotImplemented);
   }
 
   Error Device::OnSetConfigurationCompleted(uint8_t config_value) {
@@ -70,7 +70,7 @@ namespace usb {
     if (initialize_phase_ == 3) {
       return InitializePhase3(config_value);
     }
-    return Error::kNotImplemented;
+    return MAKE_ERROR(Error::kNotImplemented);
   }
 
   Error Device::InitializePhase1(const uint8_t* buf, int len) {
@@ -90,7 +90,7 @@ namespace usb {
     for (int if_index = 0; if_index < num_interfaces; ++if_index) {
       auto if_desc = DescriptorDynamicCast<InterfaceDescriptor>(p);
       if (if_desc == nullptr) {
-        return Error::kInvalidDescriptor;
+        return MAKE_ERROR(Error::kInvalidDescriptor);
       }
       printk("Interface Descriptor: class=%d, sub=%d, protocol=%d\n",
           if_desc->interface_class,
@@ -107,7 +107,7 @@ namespace usb {
       if (class_driver == nullptr) {
         // 非対応デバイス．次の Configuration を探す．
         if (++config_index_ >= num_configurations_) {
-          return Error::kUnknownDevice;
+          return MAKE_ERROR(Error::kUnknownDevice);
         }
         return GetDescriptor(*this, 0, ConfigurationDescriptor::kType, config_index_,
                              buf_.data(), buf_.size(), true);
@@ -119,7 +119,7 @@ namespace usb {
 
       while (num_ep_configs_ < num_endpoints) {
         if (auto if_desc = DescriptorDynamicCast<InterfaceDescriptor>(p)) {
-          return Error::kInvalidDescriptor;
+          return MAKE_ERROR(Error::kInvalidDescriptor);
         }
         if (auto ep_desc = DescriptorDynamicCast<EndpointDescriptor>(p)) {
           auto& conf = ep_configs_[num_ep_configs_];
@@ -161,7 +161,7 @@ namespace usb {
     }
     initialize_phase_ = 4;
     is_initialized_ = true;
-    return Error::kSuccess;
+    return MAKE_ERROR(Error::kSuccess);
   }
 
   Error GetDescriptor(Device& dev, int ep_num,
