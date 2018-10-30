@@ -144,6 +144,8 @@ namespace usb::xhci {
     if (setup_stage_trb == nullptr) {
       return Error::kNoCorrespondingSetupStage;
     }
+    setup_stage_map_.Delete(issuer_trb);
+
     SetupData setup_data{};
     setup_data.request_type.data = setup_stage_trb->bits.request_type;
     setup_data.request = setup_stage_trb->bits.request;

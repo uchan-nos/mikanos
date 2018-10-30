@@ -101,7 +101,12 @@ namespace usb {
         }
       }
       if (class_driver == nullptr) {
-        return Error::kUnknownDevice;
+        // 非対応デバイス．次の Configuration を探す．
+        if (++config_index_ >= num_configurations_) {
+          return Error::kUnknownDevice;
+        }
+        return GetDescriptor(*this, 0, ConfigurationDescriptor::kType, config_index_,
+                             buf_.data(), buf_.size(), true);
       }
 
       p += if_desc->length;
@@ -138,8 +143,6 @@ namespace usb {
         }
         p += p[0];
       }
-
-      //class_driver->ConfigureEndpoints(epconfigs.data(), num_endpoints_found);
     }
 
     initialize_phase_ = 3;
