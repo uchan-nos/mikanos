@@ -20,11 +20,11 @@ namespace usb::xhci {
 
     buf_ = AllocArray<TRB>(buf_size_, 64, 64 * 1024);
     if (buf_ == nullptr) {
-      return Error::kNoEnoughMemory;
+      return MAKE_ERROR(Error::kNoEnoughMemory);
     }
     memset(buf_, 0, buf_size_ * sizeof(TRB));
 
-    return Error::kSuccess;
+    return MAKE_ERROR(Error::kSuccess);
   }
 
   void Ring::CopyToLast(const std::array<uint32_t, 4>& data) {
@@ -65,14 +65,14 @@ namespace usb::xhci {
 
     buf_ = AllocArray<TRB>(buf_size_, 64, 64 * 1024);
     if (buf_ == nullptr) {
-      return Error::kNoEnoughMemory;
+      return MAKE_ERROR(Error::kNoEnoughMemory);
     }
     memset(buf_, 0, buf_size_ * sizeof(TRB));
 
     erst_ = AllocArray<EventRingSegmentTableEntry>(1, 64, 64 * 1024);
     if (erst_ == nullptr) {
       FreeMem(buf_);
-      return Error::kNoEnoughMemory;
+      return MAKE_ERROR(Error::kNoEnoughMemory);
     }
 
     erst_[0].bits.ring_segment_base_address = reinterpret_cast<uint64_t>(buf_);
@@ -88,7 +88,7 @@ namespace usb::xhci {
     erstba.SetPointer(reinterpret_cast<uint64_t>(erst_));
     interrupter_->ERSTBA.Write(erstba);
 
-    return Error::kSuccess;
+    return MAKE_ERROR(Error::kSuccess);
   }
 
   void EventRing::WriteDequeuePointer(TRB* p) {

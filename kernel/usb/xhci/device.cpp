@@ -38,7 +38,7 @@ namespace usb::xhci {
       const DeviceContextIndex dci(i + 1);
       //on_transferred_callbacks_[i] = nullptr;
     }
-    return Error::kSuccess;
+    return MAKE_ERROR(Error::kSuccess);
   }
 
   void Device::SelectForSlotAssignment() {
@@ -57,7 +57,7 @@ namespace usb::xhci {
 
   Error Device::ControlIn(int ep_num, SetupData setup_data, void* buf, int len) {
     if (ep_num < 0 || 15 < ep_num) {
-      return Error::kInvalidEndpointNumber;
+      return MAKE_ERROR(Error::kInvalidEndpointNumber);
     }
 
     // control endpoint must be dir_in=true
@@ -66,7 +66,7 @@ namespace usb::xhci {
     Ring* tr = transfer_rings_[dci.value - 1];
 
     if (tr == nullptr) {
-      return Error::kTransferRingNotSet;
+      return MAKE_ERROR(Error::kTransferRingNotSet);
     }
 
     auto status = StatusStageTRB{};
@@ -92,13 +92,13 @@ namespace usb::xhci {
 
     dbreg_->Ring(dci.value);
 
-    return Error::kSuccess;
+    return MAKE_ERROR(Error::kSuccess);
   }
 
   Error Device::ControlOut(int ep_num, SetupData setup_data,
                            const void* buf, int len) {
     if (ep_num < 0 || 15 < ep_num) {
-      return Error::kInvalidEndpointNumber;
+      return MAKE_ERROR(Error::kInvalidEndpointNumber);
     }
 
     // control endpoint must be dir_in=true
@@ -107,7 +107,7 @@ namespace usb::xhci {
     Ring* tr = transfer_rings_[dci.value - 1];
 
     if (tr == nullptr) {
-      return Error::kTransferRingNotSet;
+      return MAKE_ERROR(Error::kTransferRingNotSet);
     }
 
     auto status = StatusStageTRB{};
@@ -133,7 +133,7 @@ namespace usb::xhci {
 
     dbreg_->Ring(dci.value);
 
-    return Error::kSuccess;
+    return MAKE_ERROR(Error::kSuccess);
   }
 
   Error Device::OnTransferEventReceived(const TransferEventTRB& trb) {
@@ -142,7 +142,7 @@ namespace usb::xhci {
     TRB* issuer_trb = trb.Pointer();
     auto setup_stage_trb = setup_stage_map_.Get(issuer_trb);
     if (setup_stage_trb == nullptr) {
-      return Error::kNoCorrespondingSetupStage;
+      return MAKE_ERROR(Error::kNoCorrespondingSetupStage);
     }
     setup_stage_map_.Delete(issuer_trb);
 
@@ -170,7 +170,7 @@ namespace usb::xhci {
         return this->OnControlInCompleted(setup_data, nullptr, 0);
       }
     } else {
-      return Error::kNotImplemented;
+      return MAKE_ERROR(Error::kNotImplemented);
     }
   }
 }
