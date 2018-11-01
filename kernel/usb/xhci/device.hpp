@@ -84,6 +84,8 @@ namespace usb::xhci {
 
     Error ControlIn(int ep_num, SetupData setup_data, void* buf, int len) override;
     Error ControlOut(int ep_num, SetupData setup_data, const void* buf, int len) override;
+    Error InterruptIn(int ep_num, void* buf, int len) override;
+    Error InterruptOut(int ep_num, void* buf, int len) override;
 
     Error OnTransferEventReceived(const TransferEventTRB& trb);
 
