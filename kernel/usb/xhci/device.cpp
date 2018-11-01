@@ -136,10 +136,46 @@ namespace usb::xhci {
     return MAKE_ERROR(Error::kSuccess);
   }
 
+  Error Device::InterruptIn(int ep_num, void* buf, int len) {
+    const DeviceContextIndex dci(ep_num, true);
+
+    Ring* tr = transfer_rings_[dci.value - 1];
+
+    if (tr == nullptr) {
+      return MAKE_ERROR(Error::kTransferRingNotSet);
+    }
+
+    NormalTRB normal{};
+    normal.SetPointer(buf);
+    normal.bits.trb_transfer_length = len;
+    normal.bits.interrupt_on_completion = true;
+
+    tr->Push(normal);
+    dbreg_->Ring(dci.value);
+    return MAKE_ERROR(Error::kSuccess);
+  }
+
+  Error Device::InterruptOut(int ep_num, void* buf, int len) {
+    return MAKE_ERROR(Error::kNotImplemented);
+  }
+
   Error Device::OnTransferEventReceived(const TransferEventTRB& trb) {
     const auto residual_length = trb.bits.trb_transfer_length;
 
     TRB* issuer_trb = trb.Pointer();
+    if (auto normal_trb = TRBDynamicCast<NormalTRB>(issuer_trb)) {
+      const auto transfer_length =
+        normal_trb->bits.trb_transfer_length - residual_length;
+      bool dir_in = trb.bits.endpoint_id & 1;
+      if (dir_in) {
+        return this->OnInterruptInCompleted(normal_trb->Pointer(),
+                                            transfer_length);
+      } else {
+        return this->OnInterruptOutCompleted(normal_trb->Pointer(),
+                                             transfer_length);
+      }
+    }
+
     auto setup_stage_trb = setup_stage_map_.Get(issuer_trb);
     if (setup_stage_trb == nullptr) {
       return MAKE_ERROR(Error::kNoCorrespondingSetupStage);

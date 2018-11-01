@@ -64,6 +64,29 @@ namespace usb {
     }
   }
 
+  Error Device::OnInterruptOutCompleted(const void* buf, int len) {
+    for (auto class_driver : class_drivers_) {
+      if (class_driver != nullptr) {
+        if (auto err = class_driver->OnInterruptOutCompleted(buf, len)) {
+          return err;
+        }
+      }
+    }
+    return MAKE_ERROR(Error::kSuccess);
+  }
+
+  Error Device::OnInterruptInCompleted(const void* buf, int len) {
+    printk("Device::OnInterruptInCompleted\n");
+    for (auto class_driver : class_drivers_) {
+      if (class_driver != nullptr) {
+        if (auto err = class_driver->OnInterruptInCompleted(buf, len)) {
+          return err;
+        }
+      }
+    }
+    return MAKE_ERROR(Error::kSuccess);
+  }
+
   Error Device::OnDeviceDescriptorReceived(const uint8_t* buf, int len) {
     if (is_initialized_) {
       return MAKE_ERROR(Error::kSuccess);
@@ -120,7 +143,11 @@ namespace usb {
       if (if_desc->interface_class == 3 &&
           if_desc->interface_sub_class == 1) {  // HID boot interface
         if (if_desc->interface_protocol == 1) {  // keyboard
-          class_driver = new HIDKeyboardDriver{this, if_index};
+          auto keyboard_driver = new HIDKeyboardDriver{this, if_index};
+          keyboard_driver->SubscribeKeyPush([](uint8_t keycode) {
+            printk("key pushed %d\n", keycode);
+          });
+          class_driver = keyboard_driver;
         }
       }
       if (class_driver == nullptr) {
