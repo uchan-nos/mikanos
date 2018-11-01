@@ -25,6 +25,8 @@ namespace usb {
                                         const void* buf, int len) = 0;
     virtual Error OnControlInCompleted(SetupData setup_data,
                                        const void* buf, int len) = 0;
+    virtual Error OnInterruptOutCompleted(const void* buf, int len) = 0;
+    virtual Error OnInterruptInCompleted(const void* buf, int len) = 0;
 
     /** このクラスドライバを保持する USB デバイスを返す． */
     Device* ParentDevice() const { return dev_; }

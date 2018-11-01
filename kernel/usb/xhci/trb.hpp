@@ -54,11 +54,11 @@ namespace usb::xhci {
       bits.trb_type = Type;
     }
 
-    TRB* Pointer() const {
+    void* Pointer() const {
       return reinterpret_cast<TRB*>(bits.data_buffer_pointer);
     }
 
-    void SetPointer(const TRB* p) {
+    void SetPointer(const void* p) {
       bits.data_buffer_pointer = reinterpret_cast<uint64_t>(p);
     }
   };

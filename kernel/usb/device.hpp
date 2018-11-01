@@ -22,6 +22,8 @@ namespace usb {
                             void* buf, int len) = 0;
     virtual Error ControlOut(int ep_num, SetupData setup_data,
                              const void* buf, int len) = 0;
+    virtual Error InterruptIn(int ep_num, void* buf, int len) = 0;
+    virtual Error InterruptOut(int ep_num, void* buf, int len) = 0;
 
     Error StartInitialize();
     bool IsInitialized() { return is_initialized_; }
@@ -36,6 +38,8 @@ namespace usb {
                                 const void* buf, int len);
     Error OnControlInCompleted(SetupData setup_data,
                                const void* buf, int len);
+    Error OnInterruptOutCompleted(const void* buf, int len);
+    Error OnInterruptInCompleted(const void* buf, int len);
 
    private:
     /** @brief エンドポイントに割り当て済みのクラスドライバ．
