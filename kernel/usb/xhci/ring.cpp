@@ -106,6 +106,7 @@ namespace usb::xhci {
 
     if (p == segment_end) {
       p = segment_begin;
+      cycle_bit_ = !cycle_bit_;
     }
 
     WriteDequeuePointer(p);
