@@ -118,6 +118,9 @@ namespace {
       return MAKE_ERROR(Error::kInvalidSlotID);
     }
 
+    memset(&dev->InputContext()->input_control_context, 0,
+           sizeof(InputControlContext));
+
     const auto ep0_dci = DeviceContextIndex(0, false);
     auto slot_ctx = dev->InputContext()->EnableSlotContext();
     auto ep0_ctx = dev->InputContext()->EnableEndpoint(ep0_dci);

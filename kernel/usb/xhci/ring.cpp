@@ -74,6 +74,7 @@ namespace usb::xhci {
       FreeMem(buf_);
       return MAKE_ERROR(Error::kNoEnoughMemory);
     }
+    memset(erst_, 0, 1 * sizeof(EventRingSegmentTableEntry));
 
     erst_[0].bits.ring_segment_base_address = reinterpret_cast<uint64_t>(buf_);
     erst_[0].bits.ring_segment_size = buf_size_;
