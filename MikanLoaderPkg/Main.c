@@ -261,7 +261,6 @@ EFI_STATUS EFIAPI UefiMain(
   EFI_FILE_INFO* file_info = (EFI_FILE_INFO*)file_info_buffer;
   UINTN kernel_file_size = file_info->FileSize;
 
-  // #@@range_begin(alloc_error)
   EFI_PHYSICAL_ADDRESS kernel_base_addr = 0x100000;
   status = gBS->AllocatePages(
       AllocateAddress, EfiLoaderData,
@@ -270,7 +269,6 @@ EFI_STATUS EFIAPI UefiMain(
     Print(L"failed to allocate pages: %r", status);
     Halt();
   }
-  // #@@range_end(alloc_error)
   status = kernel_file->Read(kernel_file, &kernel_file_size, (VOID*)kernel_base_addr);
   if (EFI_ERROR(status)) {
     Print(L"error: %r", status);
@@ -278,7 +276,6 @@ EFI_STATUS EFIAPI UefiMain(
   }
   Print(L"Kernel: 0x%0lx (%lu bytes)\n", kernel_base_addr, kernel_file_size);
 
-  // #@@range_begin(exit_bs)
   status = gBS->ExitBootServices(image_handle, memmap.map_key);
   if (EFI_ERROR(status)) {
     status = GetMemoryMap(&memmap);
@@ -292,7 +289,6 @@ EFI_STATUS EFIAPI UefiMain(
       Halt();
     }
   }
-  // #@@range_end(exit_bs)
 
   UINT64 entry_addr = *(UINT64*)(kernel_base_addr + 24);
 
