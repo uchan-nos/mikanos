@@ -177,7 +177,6 @@ void Halt(void) {
   while (1) __asm__("hlt");
 }
 
-// #@@range_begin(calc_addr_func)
 void CalcLoadAddressRange(Elf64_Ehdr* ehdr, UINT64* first, UINT64* last) {
   Elf64_Phdr* phdr = (Elf64_Phdr*)((UINT64)ehdr + ehdr->e_phoff);
   *first = MAX_UINT64;
@@ -188,9 +187,7 @@ void CalcLoadAddressRange(Elf64_Ehdr* ehdr, UINT64* first, UINT64* last) {
     *last = MAX(*last, phdr[i].p_vaddr + phdr[i].p_memsz);
   }
 }
-// #@@range_end(calc_addr_func)
 
-// #@@range_begin(copy_segm_func)
 void CopyLoadSegments(Elf64_Ehdr* ehdr) {
   Elf64_Phdr* phdr = (Elf64_Phdr*)((UINT64)ehdr + ehdr->e_phoff);
   for (Elf64_Half i = 0; i < ehdr->e_phnum; ++i) {
@@ -203,7 +200,6 @@ void CopyLoadSegments(Elf64_Ehdr* ehdr) {
     SetMem((VOID*)(phdr[i].p_vaddr + phdr[i].p_filesz), remain_bytes, 0);
   }
 }
-// #@@range_end(copy_segm_func)
 
 EFI_STATUS EFIAPI UefiMain(
     EFI_HANDLE image_handle,
@@ -288,7 +284,6 @@ EFI_STATUS EFIAPI UefiMain(
     Halt();
   }
 
-  // #@@range_begin(read_kernel)
   EFI_FILE_INFO* file_info = (EFI_FILE_INFO*)file_info_buffer;
   UINTN kernel_file_size = file_info->FileSize;
 
@@ -303,9 +298,7 @@ EFI_STATUS EFIAPI UefiMain(
     Print(L"error: %r", status);
     Halt();
   }
-  // #@@range_end(read_kernel)
 
-  // #@@range_begin(alloc_pages)
   Elf64_Ehdr* kernel_ehdr = (Elf64_Ehdr*)kernel_buffer;
   UINT64 kernel_first_addr, kernel_last_addr;
   CalcLoadAddressRange(kernel_ehdr, &kernel_first_addr, &kernel_last_addr);
@@ -317,9 +310,7 @@ EFI_STATUS EFIAPI UefiMain(
     Print(L"failed to allocate pages: %r\n", status);
     Halt();
   }
-  // #@@range_end(alloc_pages)
 
-  // #@@range_begin(copy_segments)
   CopyLoadSegments(kernel_ehdr);
   Print(L"Kernel: 0x%0lx - 0x%0lx\n", kernel_first_addr, kernel_last_addr);
 
@@ -328,7 +319,6 @@ EFI_STATUS EFIAPI UefiMain(
     Print(L"failed to free pool: %r\n", status);
     Halt();
   }
-  // #@@range_end(copy_segments)
 
   status = gBS->ExitBootServices(image_handle, memmap.map_key);
   if (EFI_ERROR(status)) {
@@ -344,9 +334,7 @@ EFI_STATUS EFIAPI UefiMain(
     }
   }
 
-  // #@@range_begin(get_entry_point)
   UINT64 entry_addr = *(UINT64*)(kernel_first_addr + 24);
-  // #@@range_end(get_entry_point)
 
   struct FrameBufferConfig config = {
     (UINT8*)gop->Mode->FrameBufferBase,
