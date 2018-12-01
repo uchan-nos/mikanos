@@ -13,7 +13,6 @@ namespace usb {
   }
 
   Error HIDKeyboardDriver::OnDataReceived() {
-    printk("HIDKeyboardDriver::OnDataReceived\n");
     for (int i = 2; i < 8; ++i) {
       const uint8_t key = Buffer()[i];
       if (key == 0) {

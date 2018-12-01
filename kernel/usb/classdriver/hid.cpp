@@ -47,7 +47,7 @@ namespace usb {
     if (buf != buf_.data()) {
       return MAKE_ERROR(Error::kSuccess);
     }
-    printk("HIDBaseDriver::OnControlInCompleted: len = %d\n", len);
+    //printk("HIDBaseDriver::OnControlInCompleted: len = %d\n", len);
     OnDataReceived();
     std::copy_n(buf_.begin(), len, previous_buf_.begin());
     return ParentDevice()->InterruptIn(ep_interrupt_in_, buf_.data(), buf_.size());
@@ -61,7 +61,7 @@ namespace usb {
     if (buf != buf_.data()) {
       return MAKE_ERROR(Error::kSuccess);
     }
-    printk("HIDBaseDriver::OnInterruptInCompleted: len = %d\n", len);
+    //printk("HIDBaseDriver::OnInterruptInCompleted: len = %d\n", len);
     OnDataReceived();
     std::copy_n(buf_.begin(), len, previous_buf_.begin());
     return ParentDevice()->InterruptIn(ep_interrupt_in_, buf_.data(), buf_.size());
