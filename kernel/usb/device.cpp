@@ -4,6 +4,7 @@
 #include "usb/setupdata.hpp"
 #include "usb/classdriver/base.hpp"
 #include "usb/classdriver/keyboard.hpp"
+#include "usb/classdriver/mouse.hpp"
 
 int printk(const char* format, ...);
 
@@ -183,6 +184,13 @@ namespace usb {
             }
           });
           class_driver = keyboard_driver;
+        } else if (if_desc->interface_protocol == 2) {  // mouse
+          auto mouse_driver = new HIDMouseDriver{this, if_index};
+          printk("HID Mouse Detected\n");
+          mouse_driver->SubscribeMouseMove([](int8_t displacement_x, int8_t displacement_y) {
+            printk("(%d, %d)\n", displacement_x, displacement_y);
+          });
+          class_driver = mouse_driver;
         }
       }
       if (class_driver == nullptr) {
