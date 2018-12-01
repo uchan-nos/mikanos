@@ -149,18 +149,6 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   }
   // #@@range_end(find_xhc)
 
-  std::vector<int, usb::Allocator<int>> v;
-  for (int i = 0; i <= 100; ++i) {
-    v.push_back(i);
-  }
-  /*
-  int sum = 0;
-  for (auto x : v) {
-    sum += x;
-  }
-  */
-  printk("sum: %d\n", std::accumulate(v.begin(), v.end(), 0));
-
   const auto bar = pci::ReadBar(*xhc_dev, 0);
   //const auto mmio_base = bitutil::ClearBits(bar.value, 0xf);
   const auto mmio_base = bar.value & ~static_cast<uint64_t>(0xf);
@@ -185,12 +173,6 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
       }
     }
   }
-
-  while (!xhc.PrimaryEventRing()->HasFront()) {
-  }
-
-  printk("xHC has least one event: %s\n", usb::xhci::kTRBTypeToName[
-      xhc.PrimaryEventRing()->Front()->bits.trb_type]);
 
   while (1) {
     if (auto err = ProcessEvent(xhc)) {
