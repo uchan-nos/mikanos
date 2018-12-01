@@ -18,10 +18,9 @@ namespace usb {
       if (key == 0) {
         continue;
       }
-      for (int j = 2; j < 8; ++j) {
-        if (key == PreviousBuffer()[j]) {
-          continue;
-        }
+      const auto& prev_buf = PreviousBuffer();
+      if (std::find(prev_buf.begin(), prev_buf.end(), key) != prev_buf.end()) {
+        continue;
       }
       NotifyKeyPush(key);
     }
