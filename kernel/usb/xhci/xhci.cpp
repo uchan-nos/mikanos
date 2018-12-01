@@ -17,13 +17,33 @@ namespace {
     return MAKE_ERROR(Error::kSuccess);
   }
 
+  Error ProcessOneEvent(Controller& xhc, TRB* event_trb) {
+    if (auto trb = TRBDynamicCast<TransferEventTRB>(event_trb)) {
+      const uint8_t slot_id = trb->bits.slot_id;
+      auto dev = xhc.DeviceManager()->FindBySlot(slot_id);
+      if (dev == nullptr) {
+        return MAKE_ERROR(Error::kInvalidSlotID);
+      }
+      if (auto err = dev->OnTransferEventReceived(*trb)) {
+        return err;
+      }
+    } else if (auto trb = TRBDynamicCast<PortStatusChangeEventTRB>(event_trb)) {
+      return MAKE_ERROR(Error::kSuccess);  // ignore
+    } else {
+      return MAKE_ERROR(Error::kNotImplemented);
+    }
+    return MAKE_ERROR(Error::kSuccess);
+  }
+
   template <class EventTRBType>
-  EventTRBType* WaitEvent(Controller& xhc) {
+  WithError<EventTRBType*> WaitEvent(Controller& xhc) {
     while (true) {
       while (!xhc.PrimaryEventRing()->HasFront());
-      if (auto trb = TRBDynamicCast<EventTRBType>(
-            xhc.PrimaryEventRing()->Front())) {
-        return trb;
+      auto event_trb = xhc.PrimaryEventRing()->Front();
+      if (auto trb = TRBDynamicCast<EventTRBType>(event_trb)) {
+        return {trb, MAKE_ERROR(Error::kSuccess)};
+      } else if (auto err = ProcessOneEvent(xhc, event_trb)) {
+        return {nullptr, err};
       }
       xhc.PrimaryEventRing()->Pop();
     }
@@ -36,11 +56,14 @@ namespace {
   };
 
   template <class EventTRBType, class IssuerTRBType>
-  EventIssuer<EventTRBType, IssuerTRBType> WaitEvent(Controller& xhc) {
+  WithError<EventIssuer<EventTRBType, IssuerTRBType>> WaitEvent(Controller& xhc) {
     while (true) {
       auto event_trb = WaitEvent<EventTRBType>(xhc);
-      if (auto issuer = TRBDynamicCast<IssuerTRBType>(event_trb->Pointer())) {
-        return {event_trb, issuer};
+      if (event_trb.error) {
+        return {{nullptr, nullptr}, event_trb.error};
+      }
+      if (auto issuer = TRBDynamicCast<IssuerTRBType>(event_trb.value->Pointer())) {
+        return {{event_trb.value, issuer}, MAKE_ERROR(Error::kSuccess)};
       }
       xhc.PrimaryEventRing()->Pop();
     }
@@ -58,7 +81,7 @@ namespace {
     while (!port.IsEnabled());
   }
 
-  uint8_t EnableSlot(Controller& xhc, bool debug = false) {
+  WithError<uint8_t> EnableSlot(Controller& xhc, bool debug = false) {
     EnableSlotCommandTRB cmd{};
     xhc.CommandRing()->Push(cmd);
     xhc.DoorbellRegisterAt(0)->Ring(0);
@@ -68,7 +91,10 @@ namespace {
     }
     auto event =
       WaitEvent<CommandCompletionEventTRB, EnableSlotCommandTRB>(xhc);
-    uint8_t slot_id = event.event_trb->bits.slot_id;
+    if (event.error) {
+      return {0, event.error};
+    }
+    uint8_t slot_id = event.value.event_trb->bits.slot_id;
 
     if (debug) {
       printk("received a response of EnableSlotCommand\n");
@@ -76,7 +102,7 @@ namespace {
     xhc.PrimaryEventRing()->Pop();
     xhc.DeviceManager()->AllocDevice(slot_id, xhc.DoorbellRegisterAt(slot_id));
 
-    return slot_id;
+    return {slot_id, MAKE_ERROR(Error::kSuccess)};
   }
 
   void InitializeSlotContext(SlotContext& ctx, Port& port) {
@@ -140,7 +166,11 @@ namespace {
     auto addr_dev_cmd_event =
       WaitEvent<CommandCompletionEventTRB, AddressDeviceCommandTRB>(xhc);
 
-    if (auto sid = addr_dev_cmd_event.event_trb->bits.slot_id; sid != slot_id) {
+    if (addr_dev_cmd_event.error) {
+      return addr_dev_cmd_event.error;
+    }
+
+    if (auto sid = addr_dev_cmd_event.value.event_trb->bits.slot_id; sid != slot_id) {
       if (debug) printk("Unexpected slot id: %u\n", sid);
       return MAKE_ERROR(Error::kInvalidSlotID);
     }
@@ -243,12 +273,15 @@ namespace usb::xhci {
 
     ResetPort(port);
     auto slot_id = EnableSlot(xhc);
+    if (slot_id.error) {
+      return slot_id.error;
+    }
 
-    if (auto err = AddressDevice(xhc, port, slot_id, true)) {
+    if (auto err = AddressDevice(xhc, port, slot_id.value, true)) {
       return err;
     }
 
-    auto dev = xhc.DeviceManager()->FindBySlot(slot_id);
+    auto dev = xhc.DeviceManager()->FindBySlot(slot_id.value);
     if (dev == nullptr) {
       return MAKE_ERROR(Error::kInvalidSlotID);
     }
@@ -259,20 +292,26 @@ namespace usb::xhci {
 
     while (!dev->IsInitialized()) {
       auto event_trb = WaitEvent<TransferEventTRB>(xhc);
-      if (auto err = dev->OnTransferEventReceived(*event_trb)) {
+      if (event_trb.error) {
+        return event_trb.error;
+      }
+      if (auto err = dev->OnTransferEventReceived(*event_trb.value)) {
         return err;
       }
       xhc.PrimaryEventRing()->Pop();
     }
 
-    printk("device on slot %d has been initialized\n", slot_id);
+    printk("device on slot %d has been initialized\n", slot_id.value);
 
     ConfigureEndpoints(xhc, *dev, dev->EndpointConfigs(), dev->NumEndpointConfigs());
 
     auto event = WaitEvent<CommandCompletionEventTRB, ConfigureEndpointCommandTRB>(xhc);
+    if (event.error) {
+      return event.error;
+    }
     printk("ConfigureEndpointCommandTRB completed. completion code %d (%s)\n",
-        event.event_trb->bits.completion_code,
-        kTRBCompletionCodeToName[event.event_trb->bits.completion_code]);
+        event.value.event_trb->bits.completion_code,
+        kTRBCompletionCodeToName[event.value.event_trb->bits.completion_code]);
     xhc.PrimaryEventRing()->Pop();
 
     if (auto err = dev->OnEndpointsConfigured()) {
@@ -332,17 +371,8 @@ namespace usb::xhci {
   Error ProcessEvent(Controller& xhc) {
     while (xhc.PrimaryEventRing()->HasFront()) {
       auto event_trb = xhc.PrimaryEventRing()->Front();
-      if (auto trb = TRBDynamicCast<TransferEventTRB>(event_trb)) {
-        const uint8_t slot_id = trb->bits.slot_id;
-        auto dev = xhc.DeviceManager()->FindBySlot(slot_id);
-        if (dev == nullptr) {
-          return MAKE_ERROR(Error::kInvalidSlotID);
-        }
-        if (auto err = dev->OnTransferEventReceived(*trb)) {
-          return err;
-        }
-      } else {
-        return MAKE_ERROR(Error::kNotImplemented);
+      if (auto err = ProcessOneEvent(xhc, event_trb)) {
+        return err;
       }
       xhc.PrimaryEventRing()->Pop();
     }
