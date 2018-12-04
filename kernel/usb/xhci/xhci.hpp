@@ -57,12 +57,12 @@ namespace usb::xhci {
   Error ConfigureEndpoints(Controller& xhc, Device& dev,
                            const EndpointConfig* configs, int len);
 
-  /** @brief イベントリングに登録されたイベントを全て処理する．
+  /** @brief イベントリングに登録されたイベントを高々1つ処理する．
    *
-   * xhc のプライマリイベントリングに登録されたイベントを，
-   * イベントリングが空になるまで順次処理する．
+   * xhc のプライマリイベントリングの先頭のイベントを処理する．
+   * イベントが無ければ即座に Error::kSuccess を返す．
    *
-   * @return 全てのイベントを正常に処理できたら Error::kSuccess
+   * @return イベントを正常に処理できたら Error::kSuccess
    */
   Error ProcessEvent(Controller& xhc);
 }
