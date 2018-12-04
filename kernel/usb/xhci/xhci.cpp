@@ -369,7 +369,7 @@ namespace usb::xhci {
   }
 
   Error ProcessEvent(Controller& xhc) {
-    while (xhc.PrimaryEventRing()->HasFront()) {
+    if (xhc.PrimaryEventRing()->HasFront()) {
       auto event_trb = xhc.PrimaryEventRing()->Front();
       if (auto err = ProcessOneEvent(xhc, event_trb)) {
         return err;
