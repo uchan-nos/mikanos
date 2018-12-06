@@ -17,6 +17,8 @@ namespace {
     return MAKE_ERROR(Error::kSuccess);
   }
 
+  std::array<uint8_t, 256> port_status{};  // 0: none, 1: being configured
+
   Error ProcessOneEvent(Controller& xhc, TRB* event_trb) {
     if (auto trb = TRBDynamicCast<TransferEventTRB>(event_trb)) {
       const uint8_t slot_id = trb->bits.slot_id;
@@ -28,6 +30,12 @@ namespace {
         return err;
       }
     } else if (auto trb = TRBDynamicCast<PortStatusChangeEventTRB>(event_trb)) {
+      printk("PortStatusChangeEvent: port_id = %d\n", trb->bits.port_id);
+      auto port_id = trb->bits.port_id;
+      auto port = xhc.PortAt(port_id);
+      if (port.IsConnected() && port_status[port_id] == 0) {
+        return ConfigurePort(xhc, port);
+      }
       return MAKE_ERROR(Error::kSuccess);  // ignore
     } else {
       return MAKE_ERROR(Error::kNotImplemented);
@@ -270,6 +278,8 @@ namespace usb::xhci {
     if (!port.IsConnected()) {
       return MAKE_ERROR(Error::kPortNotConnected);
     }
+
+    port_status[port.Number()] = 1;
 
     ResetPort(port);
     auto slot_id = EnableSlot(xhc);
