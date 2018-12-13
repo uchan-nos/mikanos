@@ -65,6 +65,7 @@ namespace usb {
 
   Error Device::OnControlOutCompleted(SetupData setup_data,
                                       const void* buf, int len) {
+    printk("Device::OnControlOutCompleted: buf 0x%08x, len %d\n", buf, len);
     if (setup_data.request_type.data == 0 &&
         setup_data.request == request::kSetConfiguration) {
       return OnSetConfigurationCompleted(setup_data.value & 0xffu);
@@ -74,6 +75,7 @@ namespace usb {
 
   Error Device::OnControlInCompleted(SetupData setup_data,
                                      const void* buf, int len) {
+    printk("Device::OnControlInCompleted: buf 0x%08x, len %d\n", buf, len);
     if (buf != buf_.data()) {
       // このイベントの発生源は Device クラスではなく，クラスドライバである
       for (auto class_driver : class_drivers_) {
