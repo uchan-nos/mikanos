@@ -278,11 +278,12 @@ namespace usb::xhci {
     if (!port.IsConnected()) {
       return MAKE_ERROR(Error::kPortNotConnected);
     }
+    printk("Configuring Port %d\n", port.Number());
 
     port_status[port.Number()] = 1;
 
-    ResetPort(port);
-    auto slot_id = EnableSlot(xhc);
+    ResetPort(port, true);
+    auto slot_id = EnableSlot(xhc, true);
     if (slot_id.error) {
       return slot_id.error;
     }
@@ -381,10 +382,11 @@ namespace usb::xhci {
   Error ProcessEvent(Controller& xhc) {
     if (xhc.PrimaryEventRing()->HasFront()) {
       auto event_trb = xhc.PrimaryEventRing()->Front();
-      if (auto err = ProcessOneEvent(xhc, event_trb)) {
+      auto err = ProcessOneEvent(xhc, event_trb);
+      xhc.PrimaryEventRing()->Pop();
+      if (err) {
         return err;
       }
-      xhc.PrimaryEventRing()->Pop();
     }
     return MAKE_ERROR(Error::kSuccess);
   }
