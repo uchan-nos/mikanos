@@ -11,7 +11,7 @@ namespace usb::xhci {
       return MAKE_ERROR(Error::kNoEnoughMemory);
     }
 
-    device_context_pointers_ = AllocArray<DeviceContext*>(max_slots_ + 1, 0, 0);
+    device_context_pointers_ = AllocArray<DeviceContext*>(max_slots_ + 1, 64, 4096);
     if (device_context_pointers_ == nullptr) {
       FreeMem(devices_);
       return MAKE_ERROR(Error::kNoEnoughMemory);
