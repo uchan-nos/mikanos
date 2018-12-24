@@ -23,6 +23,7 @@ class Error {
     kUnknownDevice,
     kNoCorrespondingSetupStage,
     kTransferFailed,
+    kInvalidPhase,
     kLastOfCode,  // この列挙子は常に最後に配置する
   };
 
@@ -45,6 +46,7 @@ class Error {
     "kUnknownDevice",
     "kNoCorrespondingSetupStage",
     "kTransferFailed",
+    "kInvalidPhase",
   };
   static_assert(Error::Code::kLastOfCode == code_names_.size());
 

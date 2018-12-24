@@ -17,65 +17,9 @@ namespace {
     return MAKE_ERROR(Error::kSuccess);
   }
 
-  std::array<uint8_t, 256> port_status{};  // 0: none, 1: being configured
-
-  Error ProcessOneEvent(Controller& xhc, TRB* event_trb) {
-    if (auto trb = TRBDynamicCast<TransferEventTRB>(event_trb)) {
-      const uint8_t slot_id = trb->bits.slot_id;
-      auto dev = xhc.DeviceManager()->FindBySlot(slot_id);
-      if (dev == nullptr) {
-        return MAKE_ERROR(Error::kInvalidSlotID);
-      }
-      if (auto err = dev->OnTransferEventReceived(*trb)) {
-        return err;
-      }
-    } else if (auto trb = TRBDynamicCast<PortStatusChangeEventTRB>(event_trb)) {
-      printk("PortStatusChangeEvent: port_id = %d\n", trb->bits.port_id);
-      auto port_id = trb->bits.port_id;
-      auto port = xhc.PortAt(port_id);
-      if (port.IsConnected() && port_status[port_id] == 0) {
-        return ConfigurePort(xhc, port);
-      }
-      return MAKE_ERROR(Error::kSuccess);  // ignore
-    } else {
-      return MAKE_ERROR(Error::kNotImplemented);
-    }
-    return MAKE_ERROR(Error::kSuccess);
-  }
-
-  template <class EventTRBType>
-  WithError<EventTRBType*> WaitEvent(Controller& xhc) {
-    while (true) {
-      while (!xhc.PrimaryEventRing()->HasFront());
-      auto event_trb = xhc.PrimaryEventRing()->Front();
-      if (auto trb = TRBDynamicCast<EventTRBType>(event_trb)) {
-        return {trb, MAKE_ERROR(Error::kSuccess)};
-      } else if (auto err = ProcessOneEvent(xhc, event_trb)) {
-        return {nullptr, err};
-      }
-      xhc.PrimaryEventRing()->Pop();
-    }
-  }
-
-  template <class EventTRBType, class IssuerTRBType>
-  struct EventIssuer {
-    EventTRBType* event_trb;
-    IssuerTRBType* issuer_trb;
-  };
-
-  template <class EventTRBType, class IssuerTRBType>
-  WithError<EventIssuer<EventTRBType, IssuerTRBType>> WaitEvent(Controller& xhc) {
-    while (true) {
-      auto event_trb = WaitEvent<EventTRBType>(xhc);
-      if (event_trb.error) {
-        return {{nullptr, nullptr}, event_trb.error};
-      }
-      if (auto issuer = TRBDynamicCast<IssuerTRBType>(event_trb.value->Pointer())) {
-        return {{event_trb.value, issuer}, MAKE_ERROR(Error::kSuccess)};
-      }
-      xhc.PrimaryEventRing()->Pop();
-    }
-  }
+  std::array<int, 256> port_config_phase{};  // index: port number, value: phase
+  std::array<uint8_t, 4> port_waiting_slot{};  // value: port number
+  int num_port_waiting_slot = 0;
 
   void ResetPort(Port& port, bool debug = false) {
     if (debug) {
@@ -87,30 +31,6 @@ namespace {
       printk("Waiting port %d to be enabled\n", port.Number());
     }
     while (!port.IsEnabled());
-  }
-
-  WithError<uint8_t> EnableSlot(Controller& xhc, bool debug = false) {
-    EnableSlotCommandTRB cmd{};
-    xhc.CommandRing()->Push(cmd);
-    xhc.DoorbellRegisterAt(0)->Ring(0);
-
-    if (debug) {
-      printk("Waiting reply for the enable slot command\n");
-    }
-    auto event =
-      WaitEvent<CommandCompletionEventTRB, EnableSlotCommandTRB>(xhc);
-    if (event.error) {
-      return {0, event.error};
-    }
-    uint8_t slot_id = event.value.event_trb->bits.slot_id;
-
-    if (debug) {
-      printk("received a response of EnableSlotCommand\n");
-    }
-    xhc.PrimaryEventRing()->Pop();
-    xhc.DeviceManager()->AllocDevice(slot_id, xhc.DoorbellRegisterAt(slot_id));
-
-    return {slot_id, MAKE_ERROR(Error::kSuccess)};
   }
 
   void InitializeSlotContext(SlotContext& ctx, Port& port) {
@@ -145,7 +65,54 @@ namespace {
     ctx.bits.error_count = 3;
   }
 
-  Error AddressDevice(Controller& xhc, Port& port, uint8_t slot_id, bool debug = false) {
+  Error ConfigurePortPhase0(Controller& xhc, Port& port, bool debug = true) {
+    const bool is_connected = port.IsConnected();
+    if (debug) {
+      printk("ConfigurePortPhase0: port.IsConnected() = %s\n",
+          is_connected ? "true" : "false");
+    }
+
+    if (is_connected) {
+      port.Reset();
+      port_config_phase[port.Number()] = 1;
+    }
+    return MAKE_ERROR(Error::kSuccess);
+  }
+
+  Error ConfigurePortPhase1(Controller& xhc, Port& port, bool debug = true) {
+    const bool is_enabled = port.IsEnabled();
+    const bool reset_completed = port.IsPortResetChanged();
+    if (debug) {
+      printk("ConfigurePortPhase1: port.IsEnabled() = %s, port.IsPortResetChanged() = %s\n",
+          is_enabled ? "true" : "false",
+          reset_completed ? "true" : "false");
+    }
+
+    if (is_enabled && reset_completed) {
+      port.ClearPortResetChange();
+
+      if (num_port_waiting_slot >= port_waiting_slot.size()) {
+        return MAKE_ERROR(Error::kFull);
+      }
+      port_waiting_slot[num_port_waiting_slot] = port.Number();
+      ++num_port_waiting_slot;
+
+      EnableSlotCommandTRB cmd{};
+      xhc.CommandRing()->Push(cmd);
+      xhc.DoorbellRegisterAt(0)->Ring(0);
+
+      port_config_phase[port.Number()] = 2;
+    }
+    return MAKE_ERROR(Error::kSuccess);
+  }
+
+  Error ConfigurePortPhase2(Controller& xhc, uint8_t port_id, uint8_t slot_id, bool debug = true) {
+    if (debug) {
+      printk("ConfigurePortPhase2: port_id = %d, slot_id = %d\n", port_id, slot_id);
+    }
+
+    xhc.DeviceManager()->AllocDevice(slot_id, xhc.DoorbellRegisterAt(slot_id));
+
     Device* dev = xhc.DeviceManager()->FindBySlot(slot_id);
     if (dev == nullptr) {
       if (debug) printk("failed to get a device: slot = %d\n", slot_id);
@@ -159,6 +126,7 @@ namespace {
     auto slot_ctx = dev->InputContext()->EnableSlotContext();
     auto ep0_ctx = dev->InputContext()->EnableEndpoint(ep0_dci);
 
+    auto port = xhc.PortAt(port_id);
     InitializeSlotContext(*slot_ctx, port);
 
     InitializeEP0Context(
@@ -171,24 +139,115 @@ namespace {
     xhc.CommandRing()->Push(addr_dev_cmd);
     xhc.DoorbellRegisterAt(0)->Ring(0);
 
-    auto addr_dev_cmd_event =
-      WaitEvent<CommandCompletionEventTRB, AddressDeviceCommandTRB>(xhc);
+    port_config_phase[port_id] = 3;
 
-    if (addr_dev_cmd_event.error) {
-      return addr_dev_cmd_event.error;
+    return MAKE_ERROR(Error::kSuccess);
+  }
+
+  Error ConfigurePortPhase3(Controller& xhc, uint8_t port_id, uint8_t slot_id, bool debug = true) {
+    if (debug) {
+      printk("ConfigurePortPhase3: port_id = %d, slot_id = %d\n", port_id, slot_id);
     }
 
-    if (auto sid = addr_dev_cmd_event.value.event_trb->bits.slot_id; sid != slot_id) {
-      if (debug) printk("Unexpected slot id: %u\n", sid);
+    auto dev = xhc.DeviceManager()->FindBySlot(slot_id);
+    if (dev == nullptr) {
       return MAKE_ERROR(Error::kInvalidSlotID);
     }
-    xhc.PrimaryEventRing()->Pop();
 
+    dev->StartInitialize();
+    port_config_phase[port_id] = 4;
+
+    return MAKE_ERROR(Error::kSuccess);
+  }
+
+  Error ConfigurePortPhase4(Controller& xhc, uint8_t port_id, uint8_t slot_id, bool debug = true) {
     if (debug) {
-      printk("Addressed a device: slot id %u, port %u, speed %u\n",
-             slot_id, port.Number(), slot_ctx->bits.speed);
+      printk("ConfigurePortPhase4: port_id = %d, slot_id = %d\n", port_id, slot_id);
     }
 
+    auto dev = xhc.DeviceManager()->FindBySlot(slot_id);
+    if (dev == nullptr) {
+      return MAKE_ERROR(Error::kInvalidSlotID);
+    }
+
+    dev->OnEndpointsConfigured();
+
+    port_config_phase[port_id] = 5;
+    return MAKE_ERROR(Error::kSuccess);
+  }
+
+  Error ProcessOneEvent(Controller& xhc, TRB* event_trb) {
+    // printk("ProcessOneEvent: %s\n", kTRBTypeToName[event_trb->bits.trb_type]);
+    if (auto trb = TRBDynamicCast<TransferEventTRB>(event_trb)) {
+      const uint8_t slot_id = trb->bits.slot_id;
+      auto dev = xhc.DeviceManager()->FindBySlot(slot_id);
+      if (dev == nullptr) {
+        return MAKE_ERROR(Error::kInvalidSlotID);
+      }
+      if (auto err = dev->OnTransferEventReceived(*trb)) {
+        return err;
+      }
+      if (dev->IsInitialized() && !dev->IsEndpointsConfigured()) {
+        return ConfigureEndpoints(
+            xhc, *dev, dev->EndpointConfigs(), dev->NumEndpointConfigs());
+      }
+    } else if (auto trb = TRBDynamicCast<PortStatusChangeEventTRB>(event_trb)) {
+      printk("PortStatusChangeEvent: port_id = %d\n", trb->bits.port_id);
+      auto port_id = trb->bits.port_id;
+      auto port = xhc.PortAt(port_id);
+
+      switch (port_config_phase[port_id]) {
+      case 0:
+        return ConfigurePortPhase0(xhc, port);
+      case 1:
+        return ConfigurePortPhase1(xhc, port);
+      default:
+        return MAKE_ERROR(Error::kInvalidPhase);
+      }
+    } else if (auto trb = TRBDynamicCast<CommandCompletionEventTRB>(event_trb)) {
+      printk("CommandCompletionEvent: slot_id = %d, issuer = %s\n",
+          trb->bits.slot_id,
+          kTRBTypeToName[trb->Pointer()->bits.trb_type]);
+
+      if (TRBDynamicCast<EnableSlotCommandTRB>(trb->Pointer())) {
+        if (num_port_waiting_slot <= 0) {
+          return MAKE_ERROR(Error::kEmpty);
+        }
+        auto port_id = port_waiting_slot[num_port_waiting_slot - 1];
+        --num_port_waiting_slot;
+
+        if (port_config_phase[port_id] == 2) {
+          return ConfigurePortPhase2(xhc, port_id, trb->bits.slot_id);
+        }
+        return MAKE_ERROR(Error::kInvalidPhase);
+      } else if (TRBDynamicCast<ConfigureEndpointCommandTRB>(trb->Pointer())) {
+        auto dev = xhc.DeviceManager()->FindBySlot(trb->bits.slot_id);
+        if (dev == nullptr) {
+          return MAKE_ERROR(Error::kInvalidSlotID);
+        }
+        auto port_id = dev->DeviceContext()->slot_context.bits.root_hub_port_num;
+        switch (port_config_phase[port_id]) {
+        case 4:
+          return ConfigurePortPhase4(xhc, port_id, trb->bits.slot_id);
+        }
+        return MAKE_ERROR(Error::kInvalidPhase);
+      } else {
+        auto dev = xhc.DeviceManager()->FindBySlot(trb->bits.slot_id);
+        if (dev == nullptr) {
+          return MAKE_ERROR(Error::kInvalidSlotID);
+        }
+        auto port_id = dev->DeviceContext()->slot_context.bits.root_hub_port_num;
+        switch (port_config_phase[port_id]) {
+        case 3:
+          return ConfigurePortPhase3(xhc, port_id, trb->bits.slot_id);
+        }
+        return MAKE_ERROR(Error::kInvalidPhase);
+      }
+
+      return MAKE_ERROR(Error::kInvalidPhase);
+    } else {
+      return MAKE_ERROR(Error::kNotImplemented);
+    }
     return MAKE_ERROR(Error::kSuccess);
   }
 }
@@ -275,62 +334,13 @@ namespace usb::xhci {
   }
 
   Error ConfigurePort(Controller& xhc, Port& port) {
-    if (!port.IsConnected()) {
-      return MAKE_ERROR(Error::kPortNotConnected);
+    if (port_config_phase[port.Number()] != 0) {
+      return MAKE_ERROR(Error::kSuccess);
     }
+
     printk("Configuring Port %d\n", port.Number());
 
-    port_status[port.Number()] = 1;
-
-    ResetPort(port, true);
-    auto slot_id = EnableSlot(xhc, true);
-    if (slot_id.error) {
-      return slot_id.error;
-    }
-
-    if (auto err = AddressDevice(xhc, port, slot_id.value, true)) {
-      return err;
-    }
-
-    auto dev = xhc.DeviceManager()->FindBySlot(slot_id.value);
-    if (dev == nullptr) {
-      return MAKE_ERROR(Error::kInvalidSlotID);
-    }
-
-    if (auto err = dev->StartInitialize()) {
-      return err;
-    }
-
-    while (!dev->IsInitialized()) {
-      auto event_trb = WaitEvent<TransferEventTRB>(xhc);
-      if (event_trb.error) {
-        return event_trb.error;
-      }
-      if (auto err = dev->OnTransferEventReceived(*event_trb.value)) {
-        return err;
-      }
-      xhc.PrimaryEventRing()->Pop();
-    }
-
-    printk("device on slot %d has been initialized\n", slot_id.value);
-
-    ConfigureEndpoints(xhc, *dev, dev->EndpointConfigs(), dev->NumEndpointConfigs());
-
-    auto event = WaitEvent<CommandCompletionEventTRB, ConfigureEndpointCommandTRB>(xhc);
-    if (event.error) {
-      return event.error;
-    }
-    printk("ConfigureEndpointCommandTRB completed. completion code %d (%s)\n",
-        event.value.event_trb->bits.completion_code,
-        kTRBCompletionCodeToName[event.value.event_trb->bits.completion_code]);
-    xhc.PrimaryEventRing()->Pop();
-
-    if (auto err = dev->OnEndpointsConfigured()) {
-      printk("failed to handle EndpointsConfigured event: %s\n", err.Name());
-      return err;
-    }
-
-    return MAKE_ERROR(Error::kSuccess);
+    return ConfigurePortPhase0(xhc, port);
   }
 
   Error ConfigureEndpoints(Controller& xhc, Device& dev,

@@ -30,6 +30,7 @@ namespace usb {
     EndpointConfig* EndpointConfigs() { return ep_configs_.data(); }
     int NumEndpointConfigs() { return num_ep_configs_; }
     Error OnEndpointsConfigured();
+    bool IsEndpointsConfigured() { return is_endpoints_configured_; }
 
     uint8_t* Buffer() { return buf_.data(); }
 
@@ -51,6 +52,7 @@ namespace usb {
 
     std::array<uint8_t, 256> buf_{};
     bool is_initialized_ = false;
+    bool is_endpoints_configured_ = false;
 
     // following fields are used during initialization
     uint8_t num_configurations_;

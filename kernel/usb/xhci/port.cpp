@@ -20,6 +20,10 @@ namespace usb::xhci {
     return port_reg_set_.PORTSC.Read().bits.connect_status_change;
   }
 
+  bool Port::IsPortResetChanged() const {
+    return port_reg_set_.PORTSC.Read().bits.port_reset_change;
+  }
+
   int Port::Speed() const {
     return port_reg_set_.PORTSC.Read().bits.port_speed;
   }
