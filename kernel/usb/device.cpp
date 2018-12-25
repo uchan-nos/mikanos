@@ -60,7 +60,6 @@ namespace usb {
         }
       }
     }
-    is_endpoints_configured_ = true;
     return MAKE_ERROR(Error::kSuccess);
   }
 
