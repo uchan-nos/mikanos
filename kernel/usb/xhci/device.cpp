@@ -1,9 +1,8 @@
 #include "usb/xhci/device.hpp"
 
+#include "logger.hpp"
 #include "usb/memory.hpp"
 #include "usb/xhci/ring.hpp"
-
-int printk(const char* format, ...);
 
 namespace {
   using namespace usb::xhci;
@@ -58,7 +57,7 @@ namespace usb::xhci {
   }
 
   Error Device::ControlIn(int ep_num, SetupData setup_data, void* buf, int len) {
-    printk("Device::ControlIn: ep %d, buf 0x%08x, len %d\n", ep_num, buf, len);
+    Log(kDebug, "Device::ControlIn: ep %d, buf 0x%08x, len %d\n", ep_num, buf, len);
     if (ep_num < 0 || 15 < ep_num) {
       return MAKE_ERROR(Error::kInvalidEndpointNumber);
     }
@@ -100,7 +99,7 @@ namespace usb::xhci {
 
   Error Device::ControlOut(int ep_num, SetupData setup_data,
                            const void* buf, int len) {
-    printk("Device::ControlOut: ep %d, buf 0x%08x, len %d\n", ep_num, buf, len);
+    Log(kDebug, "Device::ControlOut: ep %d, buf 0x%08x, len %d\n", ep_num, buf, len);
     if (ep_num < 0 || 15 < ep_num) {
       return MAKE_ERROR(Error::kInvalidEndpointNumber);
     }
@@ -169,12 +168,13 @@ namespace usb::xhci {
     TRB* issuer_trb = trb.Pointer();
     if (trb.bits.completion_code != 1 /* Success */ &&
         trb.bits.completion_code != 13 /* Short Packet */) {
-      printk("%s has been failed: %s, residual length %d\n",
+      Log(kDebug, "%s has been failed: %s, residual length %d\n",
           kTRBTypeToName[issuer_trb->bits.trb_type],
           kTRBCompletionCodeToName[trb.bits.completion_code],
           trb.bits.trb_transfer_length);
       if (auto data_trb = TRBDynamicCast<DataStageTRB>(issuer_trb)) {
-        printk("  DataStageTRB: transfer length %d, buf 0x%08x, attr 0x%02x\n",
+        Log(kDebug,
+            "  DataStageTRB: transfer length %d, buf 0x%08x, attr 0x%02x\n",
             data_trb->bits.trb_transfer_length,
             data_trb->bits.data_buffer_pointer & 0xffffffffu,
             data_trb->data[3] & 0x7fu);
@@ -197,10 +197,11 @@ namespace usb::xhci {
 
     auto setup_stage_trb = setup_stage_map_.Get(issuer_trb);
     if (setup_stage_trb == nullptr) {
-      printk("No Corresponding Setup Stage for issuer %s\n",
+      Log(kDebug, "No Corresponding Setup Stage for issuer %s\n",
           kTRBTypeToName[issuer_trb->bits.trb_type]);
       if (auto data_trb = TRBDynamicCast<DataStageTRB>(issuer_trb)) {
-        printk("  DataStageTRB: transfer length %d, buf 0x%08x, attr 0x%02x\n",
+        Log(kDebug,
+            "  DataStageTRB: transfer length %d, buf 0x%08x, attr 0x%02x\n",
             data_trb->bits.trb_transfer_length,
             data_trb->bits.data_buffer_pointer & 0xffffffffu,
             data_trb->data[3] & 0x7fu);

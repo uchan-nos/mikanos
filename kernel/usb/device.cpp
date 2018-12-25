@@ -6,6 +6,8 @@
 #include "usb/classdriver/keyboard.hpp"
 #include "usb/classdriver/mouse.hpp"
 
+#include "logger.hpp"
+
 int printk(const char* format, ...);
 usb::HIDMouseDriver* NewHIDMouseDriver(usb::Device* usb_device, int interface_index);
 
@@ -65,7 +67,7 @@ namespace usb {
 
   Error Device::OnControlOutCompleted(SetupData setup_data,
                                       const void* buf, int len) {
-    printk("Device::OnControlOutCompleted: buf 0x%08x, len %d\n", buf, len);
+    Log(kDebug, "Device::OnControlOutCompleted: buf 0x%08x, len %d\n", buf, len);
     if (setup_data.request_type.data == 0 &&
         setup_data.request == request::kSetConfiguration) {
       return OnSetConfigurationCompleted(setup_data.value & 0xffu);
@@ -75,7 +77,7 @@ namespace usb {
 
   Error Device::OnControlInCompleted(SetupData setup_data,
                                      const void* buf, int len) {
-    printk("Device::OnControlInCompleted: buf 0x%08x, len %d\n", buf, len);
+    Log(kDebug, "Device::OnControlInCompleted: buf 0x%08x, len %d\n", buf, len);
     if (buf != buf_.data()) {
       // このイベントの発生源は Device クラスではなく，クラスドライバである
       for (auto class_driver : class_drivers_) {
@@ -112,7 +114,7 @@ namespace usb {
   }
 
   Error Device::OnInterruptInCompleted(const void* buf, int len) {
-    //printk("Device::OnInterruptInCompleted\n");
+    Log(kDebug, "Device::OnInterruptInCompleted\n");
     for (auto class_driver : class_drivers_) {
       if (class_driver != nullptr) {
         if (auto err = class_driver->OnInterruptInCompleted(buf, len)) {
@@ -133,7 +135,7 @@ namespace usb {
   }
 
   Error Device::OnConfigurationDescriptorReceived(const uint8_t* buf, int len) {
-    printk("OnConfigurationDescriptorReceived: %p, %d, config_index_=%d\n",
+    Log(kDebug, "OnConfigurationDescriptorReceived: %p, %d, config_index_=%d\n",
         buf, len, config_index_);
     if (is_initialized_) {
       return MAKE_ERROR(Error::kSuccess);
@@ -144,7 +146,7 @@ namespace usb {
   }
 
   Error Device::OnSetConfigurationCompleted(uint8_t config_value) {
-    printk("OnSetConfigurationCompleted: config_value=%d\n", config_value);
+    Log(kDebug, "OnSetConfigurationCompleted: config_value=%d\n", config_value);
     if (initialize_phase_ == 3) {
       return InitializePhase3(config_value);
     }
@@ -170,7 +172,7 @@ namespace usb {
       if (if_desc == nullptr) {
         return MAKE_ERROR(Error::kInvalidDescriptor);
       }
-      printk("Interface Descriptor: class=%d, sub=%d, protocol=%d\n",
+      Log(kDebug, "Interface Descriptor: class=%d, sub=%d, protocol=%d\n",
           if_desc->interface_class,
           if_desc->interface_sub_class,
           if_desc->interface_protocol);
@@ -215,29 +217,29 @@ namespace usb {
           conf.ep_type = static_cast<EndpointType>(ep_desc->attributes.bits.transfer_type);
           conf.max_packet_size = ep_desc->max_packet_size;
           conf.interval = ep_desc->interval;
-          printk("EndpointConf: ep_num=%d, dir_in=%d, ep_type=%d"
-                 ", max_packet_size=%d, interval=%d\n",
-                 conf.ep_num, conf.dir_in, conf.ep_type,
-                 conf.max_packet_size, conf.interval);
+          Log(kDebug, "EndpointConf: ep_num=%d, dir_in=%d, ep_type=%d"
+              ", max_packet_size=%d, interval=%d\n",
+              conf.ep_num, conf.dir_in, conf.ep_type,
+              conf.max_packet_size, conf.interval);
           class_drivers_[conf.ep_num] = class_driver;
           ++num_ep_configs_;
         } else if (auto hid_desc = DescriptorDynamicCast<HIDDescriptor>(p)) {
-          printk("HID Descriptor: release=0x%02x, num_desc=%d",
+          Log(kDebug, "HID Descriptor: release=0x%02x, num_desc=%d",
               hid_desc->hid_release,
               hid_desc->num_descriptors);
           for (int i = 0; i < hid_desc->num_descriptors; ++i) {
-            printk(", desc_type=%d, len=%d",
+            Log(kDebug, ", desc_type=%d, len=%d",
                 hid_desc->GetClassDescriptor(i)->descriptor_type,
                 hid_desc->GetClassDescriptor(i)->descriptor_length);
           }
-          printk("\n");
+          Log(kDebug, "\n");
         }
         p += p[0];
       }
     }
 
     initialize_phase_ = 3;
-    printk("issuing SetConfiguration\n");
+    Log(kDebug, "issuing SetConfiguration\n");
     return SetConfiguration(*this, 0, config_desc->configuration_value, true);
   }
 
