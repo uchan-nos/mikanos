@@ -54,8 +54,7 @@ namespace usb::xhci {
   };
 
   Error ConfigurePort(Controller& xhc, Port& port);
-  Error ConfigureEndpoints(Controller& xhc, Device& dev,
-                           const EndpointConfig* configs, int len);
+  Error ConfigureEndpoints(Controller& xhc, Device& dev);
 
   /** @brief イベントリングに登録されたイベントを高々1つ処理する．
    *
