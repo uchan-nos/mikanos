@@ -1,10 +1,9 @@
 #include "usb/xhci/xhci.hpp"
 
+#include "logger.hpp"
 #include "usb/setupdata.hpp"
 #include "usb/device.hpp"
 #include "usb/descriptor.hpp"
-
-int printk(const char* format, ...);
 
 namespace {
   using namespace usb::xhci;
@@ -63,12 +62,10 @@ namespace {
     ctx.bits.error_count = 3;
   }
 
-  Error ResetPort(Controller& xhc, Port& port, bool debug = true) {
+  Error ResetPort(Controller& xhc, Port& port) {
     const bool is_connected = port.IsConnected();
-    if (debug) {
-      printk("ResetPort: port.IsConnected() = %s\n",
-          is_connected ? "true" : "false");
-    }
+    Log(kDebug, "ResetPort: port.IsConnected() = %s\n",
+        is_connected ? "true" : "false");
 
     if (is_connected) {
       port.Reset();
@@ -77,14 +74,12 @@ namespace {
     return MAKE_ERROR(Error::kSuccess);
   }
 
-  Error EnableSlot(Controller& xhc, Port& port, bool debug = true) {
+  Error EnableSlot(Controller& xhc, Port& port) {
     const bool is_enabled = port.IsEnabled();
     const bool reset_completed = port.IsPortResetChanged();
-    if (debug) {
-      printk("EnableSlot: port.IsEnabled() = %s, port.IsPortResetChanged() = %s\n",
-          is_enabled ? "true" : "false",
-          reset_completed ? "true" : "false");
-    }
+    Log(kDebug, "EnableSlot: port.IsEnabled() = %s, port.IsPortResetChanged() = %s\n",
+        is_enabled ? "true" : "false",
+        reset_completed ? "true" : "false");
 
     if (is_enabled && reset_completed) {
       port.ClearPortResetChange();
@@ -104,16 +99,13 @@ namespace {
     return MAKE_ERROR(Error::kSuccess);
   }
 
-  Error AddressDevice(Controller& xhc, uint8_t port_id, uint8_t slot_id, bool debug = true) {
-    if (debug) {
-      printk("AddressDevice: port_id = %d, slot_id = %d\n", port_id, slot_id);
-    }
+  Error AddressDevice(Controller& xhc, uint8_t port_id, uint8_t slot_id) {
+    Log(kDebug, "AddressDevice: port_id = %d, slot_id = %d\n", port_id, slot_id);
 
     xhc.DeviceManager()->AllocDevice(slot_id, xhc.DoorbellRegisterAt(slot_id));
 
     Device* dev = xhc.DeviceManager()->FindBySlot(slot_id);
     if (dev == nullptr) {
-      if (debug) printk("failed to get a device: slot = %d\n", slot_id);
       return MAKE_ERROR(Error::kInvalidSlotID);
     }
 
@@ -142,10 +134,8 @@ namespace {
     return MAKE_ERROR(Error::kSuccess);
   }
 
-  Error InitializeDevice(Controller& xhc, uint8_t port_id, uint8_t slot_id, bool debug = true) {
-    if (debug) {
-      printk("InitializeDevice: port_id = %d, slot_id = %d\n", port_id, slot_id);
-    }
+  Error InitializeDevice(Controller& xhc, uint8_t port_id, uint8_t slot_id) {
+    Log(kDebug, "InitializeDevice: port_id = %d, slot_id = %d\n", port_id, slot_id);
 
     auto dev = xhc.DeviceManager()->FindBySlot(slot_id);
     if (dev == nullptr) {
@@ -158,10 +148,8 @@ namespace {
     return MAKE_ERROR(Error::kSuccess);
   }
 
-  Error CompleteConfiguration(Controller& xhc, uint8_t port_id, uint8_t slot_id, bool debug = true) {
-    if (debug) {
-      printk("CompleteConfiguration: port_id = %d, slot_id = %d\n", port_id, slot_id);
-    }
+  Error CompleteConfiguration(Controller& xhc, uint8_t port_id, uint8_t slot_id) {
+    Log(kDebug, "CompleteConfiguration: port_id = %d, slot_id = %d\n", port_id, slot_id);
 
     auto dev = xhc.DeviceManager()->FindBySlot(slot_id);
     if (dev == nullptr) {
@@ -175,7 +163,7 @@ namespace {
   }
 
   Error OnEvent(Controller& xhc, PortStatusChangeEventTRB& trb) {
-    printk("PortStatusChangeEvent: port_id = %d\n", trb.bits.port_id);
+    Log(kDebug, "PortStatusChangeEvent: port_id = %d\n", trb.bits.port_id);
     auto port_id = trb.bits.port_id;
     auto port = xhc.PortAt(port_id);
 
@@ -210,9 +198,8 @@ namespace {
   Error OnEvent(Controller& xhc, CommandCompletionEventTRB& trb) {
     const auto issuer_type = trb.Pointer()->bits.trb_type;
     const auto slot_id = trb.bits.slot_id;
-    printk("CommandCompletionEvent: slot_id = %d, issuer = %s\n",
-        trb.bits.slot_id,
-        kTRBTypeToName[issuer_type]);
+    Log(kDebug, "CommandCompletionEvent: slot_id = %d, issuer = %s\n",
+        trb.bits.slot_id, kTRBTypeToName[issuer_type]);
 
     if (issuer_type == EnableSlotCommandTRB::Type) {
       if (num_port_waiting_slot <= 0) {
@@ -287,7 +274,7 @@ namespace usb::xhci {
     while (op_->USBCMD.Read().bits.host_controller_reset);
     while (op_->USBSTS.Read().bits.controller_not_ready);
 
-    //printk("MaxSlots: %u\n", cap_->HCSPARAMS1.Read().bits.max_device_slots);
+    //Log(kDebug, "MaxSlots: %u\n", cap_->HCSPARAMS1.Read().bits.max_device_slots);
     // Set "Max Slots Enabled" field in CONFIG.
     auto config = op_->CONFIG.Read();
     config.bits.max_device_slots_enabled = kDeviceSize;
