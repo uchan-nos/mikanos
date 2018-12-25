@@ -17,6 +17,7 @@
 #include "font.hpp"
 #include "console.hpp"
 #include "pci.hpp"
+#include "logger.hpp"
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
 #include "usb/classdriver/mouse.hpp"
@@ -95,19 +96,20 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
     *pixel_writer, kDesktopFGColor, kDesktopBGColor
   };
   printk("Welcome to MikanOS!\n");
+  SetLogLevel(kWarn);
 
   mouse_cursor = new(mouse_cursor_buf) MouseCursor{
     pixel_writer, kDesktopBGColor, {300, 200}
   };
 
   auto err = pci::ScanAllBus();
-  printk("ScanAllBus: %s\n", err.Name());
+  Log(kDebug, "ScanAllBus: %s\n", err.Name());
 
   for (int i = 0; i < pci::num_device; ++i) {
     const auto& dev = pci::devices[i];
     auto vendor_id = pci::ReadVendorId(dev.bus, dev.device, dev.function);
     auto class_code = pci::ReadClassCode(dev.bus, dev.device, dev.function);
-    printk("%d.%d.%d: vend %04x, class %08x, head %02x\n",
+    Log(kDebug, "%d.%d.%d: vend %04x, class %08x, head %02x\n",
         dev.bus, dev.device, dev.function,
         vendor_id, class_code, dev.header_type);
   }
@@ -123,7 +125,7 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   }
 
   if (xhc_dev) {
-    printk("xHC has been found: %d.%d.%d\n",
+    Log(kInfo, "xHC has been found: %d.%d.%d\n",
         xhc_dev->bus, xhc_dev->device, xhc_dev->function);
   }
   // #@@range_end(find_xhc)
@@ -131,23 +133,25 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   const auto bar = pci::ReadBar(*xhc_dev, 0);
   //const auto mmio_base = bitutil::ClearBits(bar.value, 0xf);
   const auto mmio_base = bar.value & ~static_cast<uint64_t>(0xf);
-  printk("xHC mmio_base = %08lx\n", mmio_base);
+  Log(kDebug, "xHC mmio_base = %08lx\n", mmio_base);
   usb::xhci::Controller xhc{mmio_base};
 
-  if (auto err = xhc.Initialize()) {
-    printk("xhc.Initialize: %s\n", err.Name());
+  {
+    auto err = xhc.Initialize();
+    Log(kDebug, "xhc.Initialize: %s\n", err.Name());
   }
   xhc.Run();
 
-  printk("xHC start running\n");
+  Log(kInfo, "xHC start running\n");
 
   for (int i = 1; i <= xhc.MaxPorts(); ++i) {
     auto port = xhc.PortAt(i);
-    printk("Port %d: IsConnected=%d\n", i, port.IsConnected());
+    Log(kDebug, "Port %d: IsConnected=%d\n", i, port.IsConnected());
 
     if (port.IsConnected()) {
       if (auto err = ConfigurePort(xhc, port)) {
-        printk("failed to configure port: %s at %s:%d\n", err.Name(), err.File(), err.Line());
+        Log(kError, "failed to configure port: %s at %s:%d\n",
+            err.Name(), err.File(), err.Line());
         continue;
       }
     }
@@ -155,7 +159,7 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
 
   while (1) {
     if (auto err = ProcessEvent(xhc)) {
-      printk("Error while ProcessEvent: %s at %s:%d\n",
+      Log(kError, "Error while ProcessEvent: %s at %s:%d\n",
           err.Name(), err.File(), err.Line());
     }
   }
