@@ -168,16 +168,25 @@ namespace usb::xhci {
     TRB* issuer_trb = trb.Pointer();
     if (trb.bits.completion_code != 1 /* Success */ &&
         trb.bits.completion_code != 13 /* Short Packet */) {
-      Log(kDebug, "%s has been failed: %s, residual length %d\n",
+      Log(kWarn, "%s has been failed: %s, residual length %d, slot %d\n",
           kTRBTypeToName[issuer_trb->bits.trb_type],
           kTRBCompletionCodeToName[trb.bits.completion_code],
-          trb.bits.trb_transfer_length);
+          trb.bits.trb_transfer_length,
+          trb.bits.slot_id);
       if (auto data_trb = TRBDynamicCast<DataStageTRB>(issuer_trb)) {
-        Log(kDebug,
+        Log(kWarn,
             "  DataStageTRB: transfer length %d, buf 0x%08x, attr 0x%02x\n",
             data_trb->bits.trb_transfer_length,
             data_trb->bits.data_buffer_pointer & 0xffffffffu,
             data_trb->data[3] & 0x7fu);
+      } else if (auto setup_trb = TRBDynamicCast<SetupStageTRB>(issuer_trb)) {
+        Log(kWarn,
+            "  SetupStage TRB: req_type=%02x, req=%02x, val=%02x, ind=%02x, len=%02x\n",
+            setup_trb->bits.request_type,
+            setup_trb->bits.request,
+            setup_trb->bits.value,
+            setup_trb->bits.index,
+            setup_trb->bits.length);
       }
       return MAKE_ERROR(Error::kTransferFailed);
     }
