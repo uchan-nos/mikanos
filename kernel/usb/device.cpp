@@ -158,6 +158,7 @@ namespace usb {
     num_configurations_ = device_desc->num_configurations;
     config_index_ = 0;
     initialize_phase_ = 2;
+    Log(kDebug, "issuing GetDesc(Config): index=%d)\n", config_index_);
     return GetDescriptor(*this, 0, ConfigurationDescriptor::kType, config_index_,
                          buf_.data(), buf_.size(), true);
   }
@@ -194,12 +195,8 @@ namespace usb {
         }
       }
       if (class_driver == nullptr) {
-        // 非対応デバイス．次の Configuration を探す．
-        if (++config_index_ >= num_configurations_) {
-          return MAKE_ERROR(Error::kUnknownDevice);
-        }
-        return GetDescriptor(*this, 0, ConfigurationDescriptor::kType, config_index_,
-                             buf_.data(), buf_.size(), true);
+        // 非対応デバイス．次の interface を調べる．
+        continue;
       }
 
       p += if_desc->length;
@@ -217,6 +214,7 @@ namespace usb {
           conf.ep_type = static_cast<EndpointType>(ep_desc->attributes.bits.transfer_type);
           conf.max_packet_size = ep_desc->max_packet_size;
           conf.interval = ep_desc->interval;
+
           Log(kDebug, "EndpointConf: ep_num=%d, dir_in=%d, ep_type=%d"
               ", max_packet_size=%d, interval=%d\n",
               conf.ep_num, conf.dir_in, conf.ep_type,
@@ -239,7 +237,8 @@ namespace usb {
     }
 
     initialize_phase_ = 3;
-    Log(kDebug, "issuing SetConfiguration\n");
+    Log(kDebug, "issuing SetConfiguration: conf_val=%d\n",
+        config_desc->configuration_value);
     return SetConfiguration(*this, 0, config_desc->configuration_value, true);
   }
 
