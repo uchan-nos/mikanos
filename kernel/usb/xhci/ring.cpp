@@ -79,13 +79,13 @@ namespace usb::xhci {
     erst_[0].bits.ring_segment_base_address = reinterpret_cast<uint64_t>(buf_);
     erst_[0].bits.ring_segment_size = buf_size_;
 
-    ERSTSZ_Bitmap erstsz{};
+    ERSTSZ_Bitmap erstsz = interrupter_->ERSTSZ.Read();
     erstsz.SetSize(1);
     interrupter_->ERSTSZ.Write(erstsz);
 
     WriteDequeuePointer(&buf_[0]);
 
-    ERSTBA_Bitmap erstba{};
+    ERSTBA_Bitmap erstba = interrupter_->ERSTBA.Read();
     erstba.SetPointer(reinterpret_cast<uint64_t>(erst_));
     interrupter_->ERSTBA.Write(erstba);
 

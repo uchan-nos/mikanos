@@ -26,7 +26,7 @@ namespace usb::xhci {
       uint32_t event_ring_segment_table_max : 4;
       uint32_t : 13;
       uint32_t max_scratchpad_buffers_high : 5;
-      uint32_t : 1;
+      uint32_t scratchpad_restore : 1;
       uint32_t max_scratchpad_buffers_low : 5;
     } __attribute__((packed)) bits;
   } __attribute__((packed));

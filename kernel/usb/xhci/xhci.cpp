@@ -4,13 +4,16 @@
 #include "usb/setupdata.hpp"
 #include "usb/device.hpp"
 #include "usb/descriptor.hpp"
+#include "usb/xhci/speed.hpp"
 
 namespace {
   using namespace usb::xhci;
 
   Error RegisterCommandRing(Ring* ring, MemMapRegister<CRCR_Bitmap>* crcr) {
-    CRCR_Bitmap value{};
+    CRCR_Bitmap value = crcr->Read();
     value.bits.ring_cycle_state = true;
+    value.bits.command_stop = false;
+    value.bits.command_abort = false;
     value.SetPointer(reinterpret_cast<uint64_t>(ring->Buffer()));
     crcr->Write(value);
     return MAKE_ERROR(Error::kSuccess);
@@ -46,6 +49,17 @@ namespace {
     default:
         return 8;
     }
+  }
+
+  int MostSignificantBit(uint32_t value) {
+    if (value == 0) {
+      return -1;
+    }
+
+    int msb_index;
+    asm("bsr %1, %0"
+        : "=r"(msb_index) : "m"(value));
+    return msb_index;
   }
 
   void InitializeEP0Context(EndpointContext& ctx,
@@ -259,26 +273,46 @@ namespace usb::xhci {
       return err;
     }
 
+    auto usbcmd = op_->USBCMD.Read();
+    usbcmd.bits.interrupter_enable = false;
+    usbcmd.bits.host_system_error_enable = false;
+    usbcmd.bits.enable_wrap_event = false;
     // Host controller must be halted before resetting it.
     if (!op_->USBSTS.Read().bits.host_controller_halted) {
-      auto usbcmd = op_->USBCMD.Read();
       usbcmd.bits.run_stop = false;  // stop
-      op_->USBCMD.Write(usbcmd);
-      while (!op_->USBSTS.Read().bits.host_controller_halted);
     }
 
+    op_->USBCMD.Write(usbcmd);
+    while (!op_->USBSTS.Read().bits.host_controller_halted);
+
     // Reset controller
-    auto usbcmd = op_->USBCMD.Read();
+    usbcmd = op_->USBCMD.Read();
     usbcmd.bits.host_controller_reset = true;
     op_->USBCMD.Write(usbcmd);
     while (op_->USBCMD.Read().bits.host_controller_reset);
     while (op_->USBSTS.Read().bits.controller_not_ready);
 
-    //Log(kDebug, "MaxSlots: %u\n", cap_->HCSPARAMS1.Read().bits.max_device_slots);
+    Log(kDebug, "MaxSlots: %u\n", cap_->HCSPARAMS1.Read().bits.max_device_slots);
     // Set "Max Slots Enabled" field in CONFIG.
     auto config = op_->CONFIG.Read();
     config.bits.max_device_slots_enabled = kDeviceSize;
     op_->CONFIG.Write(config);
+
+    auto hcsparams2 = cap_->HCSPARAMS2.Read();
+    const uint16_t max_scratchpad_buffers =
+      hcsparams2.bits.max_scratchpad_buffers_low
+      | (hcsparams2.bits.max_scratchpad_buffers_high << 5);
+    if (max_scratchpad_buffers > 0) {
+      auto scratchpad_buf_arr = AllocArray<void*>(max_scratchpad_buffers, 64, 4096);
+      for (int i = 0; i < max_scratchpad_buffers; ++i) {
+        scratchpad_buf_arr[i] = AllocMem(4096, 4096, 4096);
+        Log(kDebug, "scratchpad buffer array %d = %p\n",
+            i, scratchpad_buf_arr[i]);
+      }
+      devmgr_.DeviceContexts()[0] = reinterpret_cast<DeviceContext*>(scratchpad_buf_arr);
+      Log(kInfo, "wrote scratchpad buffer array %p to dev ctx array 0\n",
+          scratchpad_buf_arr);
+    }
 
     DCBAAP_Bitmap dcbaap{};
     dcbaap.SetPointer(reinterpret_cast<uint64_t>(devmgr_.DeviceContexts()));
@@ -341,6 +375,21 @@ namespace usb::xhci {
 
     auto slot_ctx = dev.InputContext()->EnableSlotContext();
     slot_ctx->bits.context_entries = 31;
+    const auto port_id{dev.DeviceContext()->slot_context.bits.root_hub_port_num};
+    const int port_speed{xhc.PortAt(port_id).Speed()};
+    if (port_speed == 0 || port_speed > kSuperSpeedPlus) {
+      return MAKE_ERROR(Error::kUnknownXHCISpeedID);
+    }
+
+    auto convert_interval{
+      (port_speed == kFullSpeed || port_speed == kLowSpeed)
+      ? [](EndpointType type, int interval) { // for FS, LS
+        if (type == EndpointType::kIsochronous) return interval + 2;
+        else return MostSignificantBit(interval) + 3;
+      }
+      : [](EndpointType type, int interval) { // for HS, SS, SSP
+        return interval - 1;
+      }};
 
     for (int i = 0; i < len; ++i) {
       const DeviceContextIndex ep_dci{configs[i].ep_num, configs[i].dir_in};
@@ -360,7 +409,7 @@ namespace usb::xhci {
         break;
       }
       ep_ctx->bits.max_packet_size = configs[i].max_packet_size;
-      ep_ctx->bits.interval = configs[i].interval;
+      ep_ctx->bits.interval = convert_interval(configs[i].ep_type, configs[i].interval);
       ep_ctx->bits.average_trb_length = 1;
 
       auto tr = dev.AllocTransferRing(ep_dci, 32);
@@ -376,7 +425,6 @@ namespace usb::xhci {
     xhc.CommandRing()->Push(cmd);
     xhc.DoorbellRegisterAt(0)->Ring(0);
 
-    auto port_id = dev.DeviceContext()->slot_context.bits.root_hub_port_num;
     port_config_phase[port_id] = ConfigPhase::kConfiguringEndpoints;
 
     return MAKE_ERROR(Error::kSuccess);
