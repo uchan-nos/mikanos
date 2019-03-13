@@ -6,6 +6,9 @@
 
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+
 template <typename T>
 struct ArrayLength {};
 

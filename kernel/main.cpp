@@ -140,9 +140,9 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
     auto err = xhc.Initialize();
     Log(kDebug, "xhc.Initialize: %s\n", err.Name());
   }
-  xhc.Run();
 
-  Log(kInfo, "xHC start running\n");
+  Log(kInfo, "xHC starting\n");
+  xhc.Run();
 
   for (int i = 1; i <= xhc.MaxPorts(); ++i) {
     auto port = xhc.PortAt(i);
