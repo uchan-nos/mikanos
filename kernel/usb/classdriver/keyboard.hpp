@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <functional>
 #include "usb/classdriver/hid.hpp"
 
 namespace usb {
@@ -18,10 +19,12 @@ namespace usb {
 
     Error OnDataReceived() override;
 
-    void SubscribeKeyPush(std::function<void (uint8_t keycode)> observer);
+    using ObserverType = void (uint8_t keycode);
+    void SubscribeKeyPush(std::function<ObserverType> observer);
+    static std::function<ObserverType> default_observer;
 
    private:
-    std::array<std::function<void (uint8_t keycode)>, 4> observers_;
+    std::array<std::function<ObserverType>, 4> observers_;
     int num_observers_ = 0;
 
     void NotifyKeyPush(uint8_t keycode);

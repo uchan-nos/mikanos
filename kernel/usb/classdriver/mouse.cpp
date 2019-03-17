@@ -1,11 +1,8 @@
 #include "usb/classdriver/mouse.hpp"
 
 #include <algorithm>
-#include <functional>
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
-
-int printk(const char* format, ...);
 
 namespace usb {
   HIDMouseDriver::HIDMouseDriver(Device* dev, int interface_index)
@@ -31,6 +28,8 @@ namespace usb {
       std::function<void (int8_t displacement_x, int8_t displacement_y)> observer) {
     observers_[num_observers_++] = observer;
   }
+
+  std::function<HIDMouseDriver::ObserverType> HIDMouseDriver::default_observer;
 
   void HIDMouseDriver::NotifyMouseMove(int8_t displacement_x, int8_t displacement_y) {
     for (int i = 0; i < num_observers_; ++i) {

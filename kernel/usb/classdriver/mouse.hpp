@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <functional>
 #include "usb/classdriver/hid.hpp"
 
 namespace usb {
@@ -18,10 +19,12 @@ namespace usb {
 
     Error OnDataReceived() override;
 
-    void SubscribeMouseMove(std::function<void (int8_t displacement_x, int8_t displacement_y)> observer);
+    using ObserverType = void (int8_t displacement_x, int8_t displacement_y);
+    void SubscribeMouseMove(std::function<ObserverType> observer);
+    static std::function<ObserverType> default_observer;
 
    private:
-    std::array<std::function<void (int8_t displacement_x, int8_t displacement_y)>, 4> observers_;
+    std::array<std::function<ObserverType>, 4> observers_;
     int num_observers_ = 0;
 
     void NotifyMouseMove(int8_t displacement_x, int8_t displacement_y);
