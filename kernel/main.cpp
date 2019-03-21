@@ -114,7 +114,6 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   pci::Device* xhc_dev = nullptr;
   for (int i = 0; i < pci::num_device; ++i) {
     if (pci::devices[i].class_code.Match(0x0cu, 0x03u, 0x30u)) {
-      // xHC
       xhc_dev = &pci::devices[i];
       break;
     }
@@ -126,11 +125,15 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   }
   // #@@range_end(find_xhc)
 
-  const auto bar = pci::ReadBar(*xhc_dev, 0);
-  //const auto mmio_base = bitutil::ClearBits(bar.value, 0xf);
-  const auto mmio_base = bar.value & ~static_cast<uint64_t>(0xf);
-  Log(kDebug, "xHC mmio_base = %08lx\n", mmio_base);
-  usb::xhci::Controller xhc{mmio_base};
+  // #@@range_begin(read_bar)
+  const auto xhc_bar = pci::ReadBar(*xhc_dev, 0);
+  Log(kDebug, "ReadBar: %s\n", xhc_bar.error.Name());
+  const auto xhc_mmio_base = xhc_bar.value & ~static_cast<uint64_t>(0xf);
+  Log(kDebug, "xHC mmio_base = %08lx\n", xhc_mmio_base);
+  // #@@range_end(read_bar)
+
+  // #@@range_begin(init_xhc)
+  usb::xhci::Controller xhc{xhc_mmio_base};
 
   {
     auto err = xhc.Initialize();
@@ -139,7 +142,9 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
 
   Log(kInfo, "xHC starting\n");
   xhc.Run();
+  // #@@range_end(init_xhc)
 
+  // #@@range_begin(configure_port)
   usb::HIDMouseDriver::default_observer = MouseObserver;
 
   for (int i = 1; i <= xhc.MaxPorts(); ++i) {
@@ -154,13 +159,16 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
       }
     }
   }
+  // #@@range_end(configure_port)
 
+  // #@@range_begin(receive_event)
   while (1) {
     if (auto err = ProcessEvent(xhc)) {
       Log(kError, "Error while ProcessEvent: %s at %s:%d\n",
           err.Name(), err.File(), err.Line());
     }
   }
+  // #@@range_end(receive_event)
 
   while (1) __asm__("hlt");
 }
