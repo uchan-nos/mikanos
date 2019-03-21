@@ -34,6 +34,7 @@ class BGRResv8BitPerColorPixelWriter : public PixelWriter {
   virtual void Write(int x, int y, const PixelColor& c) override;
 };
 
+// #@@range_begin(vector2d)
 template <typename T>
 struct Vector2D {
   T x, y;
@@ -45,6 +46,7 @@ struct Vector2D {
     return *this;
   }
 };
+// #@@range_end(vector2d)
 
 void DrawRectangle(PixelWriter& writer, const Vector2D<int>& pos,
                    const Vector2D<int>& size, const PixelColor& c);
