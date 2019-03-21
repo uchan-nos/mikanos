@@ -58,11 +58,15 @@ namespace {
         if_desc.interface_sub_class == 1) {  // HID boot interface
       if (if_desc.interface_protocol == 1) {  // keyboard
         auto keyboard_driver = new usb::HIDKeyboardDriver{dev, if_desc.interface_number};
-        keyboard_driver->SubscribeKeyPush(usb::HIDKeyboardDriver::default_observer);
+        if (usb::HIDKeyboardDriver::default_observer) {
+          keyboard_driver->SubscribeKeyPush(usb::HIDKeyboardDriver::default_observer);
+        }
         return keyboard_driver;
       } else if (if_desc.interface_protocol == 2) {  // mouse
         auto mouse_driver = new usb::HIDMouseDriver{dev, if_desc.interface_number};
-        mouse_driver->SubscribeMouseMove(usb::HIDMouseDriver::default_observer);
+        if (usb::HIDMouseDriver::default_observer) {
+          mouse_driver->SubscribeMouseMove(usb::HIDMouseDriver::default_observer);
+        }
         return mouse_driver;
       }
     }
