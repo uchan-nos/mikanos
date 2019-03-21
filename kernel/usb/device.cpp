@@ -8,8 +8,6 @@
 
 #include "logger.hpp"
 
-int printk(const char* format, ...);
-
 namespace {
   class ConfigurationDescriptorReader {
    public:
