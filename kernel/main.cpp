@@ -46,12 +46,14 @@ int printk(const char* format, ...) {
   return result;
 }
 
+// #@@range_begin(mouse_observer)
 char mouse_cursor_buf[sizeof(MouseCursor)];
 MouseCursor* mouse_cursor;
 
 void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
   mouse_cursor->MoveRelative({displacement_x, displacement_y});
 }
+// #@@range_end(mouse_observer)
 
 extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   switch (frame_buffer_config.pixel_format) {
@@ -91,9 +93,11 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   printk("Welcome to MikanOS!\n");
   SetLogLevel(kWarn);
 
+  // #@@range_begin(new_mouse_cursor)
   mouse_cursor = new(mouse_cursor_buf) MouseCursor{
     pixel_writer, kDesktopBGColor, {300, 200}
   };
+  // #@@range_end(new_mouse_cursor)
 
   auto err = pci::ScanAllBus();
   Log(kDebug, "ScanAllBus: %s\n", err.Name());
