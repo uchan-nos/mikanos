@@ -46,16 +46,13 @@ int printk(const char* format, ...) {
   return result;
 }
 
-// #@@range_begin(mouse_observer)
 char mouse_cursor_buf[sizeof(MouseCursor)];
 MouseCursor* mouse_cursor;
 
 void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
   mouse_cursor->MoveRelative({displacement_x, displacement_y});
 }
-// #@@range_end(mouse_observer)
 
-// #@@range_begin(switch_echi2xhci)
 void SwitchEhci2Xhci(const pci::Device& xhc_dev) {
   bool intel_ehc_exist = false;
   for (int i = 0; i < pci::num_device; ++i) {
@@ -76,7 +73,6 @@ void SwitchEhci2Xhci(const pci::Device& xhc_dev) {
   Log(kDebug, "SwitchEhci2Xhci: SS = %02, xHCI = %02x\n",
       superspeed_ports, ehci2xhci_ports);
 }
-// #@@range_end(switch_echi2xhci)
 
 extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   switch (frame_buffer_config.pixel_format) {
@@ -116,11 +112,9 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   printk("Welcome to MikanOS!\n");
   SetLogLevel(kWarn);
 
-  // #@@range_begin(new_mouse_cursor)
   mouse_cursor = new(mouse_cursor_buf) MouseCursor{
     pixel_writer, kDesktopBGColor, {300, 200}
   };
-  // #@@range_end(new_mouse_cursor)
 
   auto err = pci::ScanAllBus();
   Log(kDebug, "ScanAllBus: %s\n", err.Name());
@@ -134,7 +128,6 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
         vendor_id, class_code, dev.header_type);
   }
 
-  // #@@range_begin(find_xhc)
   // Intel 製を優先して xHC を探す
   pci::Device* xhc_dev = nullptr;
   for (int i = 0; i < pci::num_device; ++i) {
@@ -151,16 +144,12 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
     Log(kInfo, "xHC has been found: %d.%d.%d\n",
         xhc_dev->bus, xhc_dev->device, xhc_dev->function);
   }
-  // #@@range_end(find_xhc)
 
-  // #@@range_begin(read_bar)
   const WithError<uint64_t> xhc_bar = pci::ReadBar(*xhc_dev, 0);
   Log(kDebug, "ReadBar: %s\n", xhc_bar.error.Name());
   const uint64_t xhc_mmio_base = xhc_bar.value & ~static_cast<uint64_t>(0xf);
   Log(kDebug, "xHC mmio_base = %08lx\n", xhc_mmio_base);
-  // #@@range_end(read_bar)
 
-  // #@@range_begin(init_xhc)
   usb::xhci::Controller xhc{xhc_mmio_base};
 
   if (0x8086 == pci::ReadVendorId(*xhc_dev)) {
@@ -173,9 +162,7 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
 
   Log(kInfo, "xHC starting\n");
   xhc.Run();
-  // #@@range_end(init_xhc)
 
-  // #@@range_begin(configure_port)
   usb::HIDMouseDriver::default_observer = MouseObserver;
 
   for (int i = 1; i <= xhc.MaxPorts(); ++i) {
@@ -190,16 +177,13 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
       }
     }
   }
-  // #@@range_end(configure_port)
 
-  // #@@range_begin(receive_event)
   while (1) {
     if (auto err = ProcessEvent(xhc)) {
       Log(kError, "Error while ProcessEvent: %s at %s:%d\n",
           err.Name(), err.File(), err.Line());
     }
   }
-  // #@@range_end(receive_event)
 
   while (1) __asm__("hlt");
 }
