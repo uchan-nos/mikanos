@@ -6,7 +6,6 @@
 
 #pragma once
 
-// #@@range_begin(mouse_class)
 #include "graphics.hpp"
 
 class MouseCursor {
@@ -20,4 +19,3 @@ class MouseCursor {
   PixelColor erase_color_;
   Vector2D<int> position_;
 };
-// #@@range_end(mouse_class)
