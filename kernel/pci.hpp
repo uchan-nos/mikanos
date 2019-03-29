@@ -74,6 +74,8 @@ namespace pci {
   /** @brief 指定された PCI デバイスの 32 ビットレジスタを読み取る */
   uint32_t ReadConfReg(const Device& dev, uint8_t reg_addr);
 
+  void WriteConfReg(const Device& dev, uint8_t reg_addr, uint32_t value);
+
   /** @brief バス番号レジスタを読み取る（ヘッダタイプ 1 用）
    *
    * 返される 32 ビット整数の構造は次の通り．
