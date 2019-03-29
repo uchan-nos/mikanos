@@ -23,6 +23,7 @@
 #include "usb/classdriver/mouse.hpp"
 #include "usb/xhci/xhci.hpp"
 #include "usb/xhci/trb.hpp"
+#include "interrupt.hpp"
 
 const PixelColor kDesktopBGColor{45, 118, 237};
 const PixelColor kDesktopFGColor{255, 255, 255};
@@ -51,6 +52,19 @@ MouseCursor* mouse_cursor;
 
 void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
   mouse_cursor->MoveRelative({displacement_x, displacement_y});
+}
+
+struct InterruptFrame {
+  uint64_t rip;
+  uint64_t cs;
+  uint64_t rflags;
+  uint64_t rsp;
+  uint64_t ss;
+};
+
+__attribute__((interrupt))
+void IntHandlerXHCI(InterruptFrame* frame) {
+  printk("IntHandlerXHCI\n");
 }
 
 extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
