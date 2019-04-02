@@ -6,9 +6,10 @@
 
 #pragma once
 
+#include <array>
 #include <cstdint>
 
-enum class DescriptorType : unsigned int {
+enum class DescriptorType {
   kUpper8Bytes   = 0,
   kLDT           = 2,
   kTSSAvailable  = 9,
@@ -27,8 +28,9 @@ union InterruptDescriptorAttribute {
     uint16_t : 1;
     uint16_t descriptor_privilege_level : 2;
     uint16_t present : 1;
-  } bits __attribute__((packed));
+  } __attribute__((packed)) bits;
 } __attribute__((packed));
+static_assert(sizeof(InterruptDescriptorAttribute) == 2);
 
 struct InterruptDescriptor {
   uint16_t offset_low;
@@ -36,10 +38,11 @@ struct InterruptDescriptor {
   InterruptDescriptorAttribute attr;
   uint16_t offset_middle;
   uint32_t offset_high;
-};
+  uint32_t reserved;
+} __attribute__((packed));
+static_assert(sizeof(InterruptDescriptor) == 16);
 
-const int kIDTNumEntry = 256;
-inline InterruptDescriptor idt[kIDTNumEntry];
+inline std::array<InterruptDescriptor, 256> idt;
 
 constexpr InterruptDescriptorAttribute MakeIDTAttr(
     DescriptorType type,
@@ -58,3 +61,5 @@ void SetIDTEntry(InterruptDescriptor& desc,
                  InterruptDescriptorAttribute attr,
                  uint64_t offset,
                  uint16_t segment_selector);
+
+void LoadIDT();
