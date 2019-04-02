@@ -75,136 +75,6 @@ void SwitchEhci2Xhci(const pci::Device& xhc_dev) {
       superspeed_ports, ehci2xhci_ports);
 }
 
-struct Capability {
-  uint8_t cap_id;
-  uint8_t next_ptr;
-};
-
-namespace pci {
-
-Capability ReadCapabilityStructure(const Device& dev, uint8_t addr) {
-  const uint32_t cap = pci::ReadConfReg(dev, addr);
-  return {
-    static_cast<uint8_t>(cap & 0xffu), // cap id
-    static_cast<uint8_t>((cap >> 8) & 0xffu) // next ptr
-  };
-}
-
-   struct MSICapability
-    {
-        union Header_Bitmap
-        {
-            uint32_t data;
-            struct
-            {
-                uint32_t capability_id : 8;
-                uint32_t next_pointer : 8;
-                uint32_t msi_enable : 1;
-                uint32_t multi_msg_capable : 3;
-                uint32_t multi_msg_enable : 3;
-                uint32_t addr_64_capable : 1;
-                uint32_t per_vector_mask_capable : 1;
-                uint32_t : 7;
-            } bits;
-        };
-
-        Header_Bitmap header;
-        uint32_t msg_addr;
-        uint32_t msg_upper_addr;
-        uint32_t msg_data;
-        uint32_t mask_bits;
-        uint32_t pending_bits;
-    };
-
-    MSICapability ReadMSICapabilityStructure(const Device& dev, uint8_t addr)
-    {
-        MSICapability msi_cap{};
-
-        msi_cap.header.data = ReadConfReg(dev, addr);
-        msi_cap.msg_addr = ReadConfReg(dev, addr + 4);
-
-        uint8_t msg_data_addr = addr + 8;
-        if (msi_cap.header.bits.addr_64_capable)
-        {
-            msi_cap.msg_upper_addr = ReadConfReg(dev, addr + 8);
-            msg_data_addr = addr + 12;
-        }
-
-        msi_cap.msg_data = ReadConfReg(dev, msg_data_addr);
-
-        if (msi_cap.header.bits.per_vector_mask_capable)
-        {
-            msi_cap.mask_bits = ReadConfReg(dev, msg_data_addr + 4);
-            msi_cap.pending_bits = ReadConfReg(dev, msg_data_addr + 8);
-        }
-
-        return msi_cap;
-    }
-
-    void WriteMSICapabilityStructure(const Device& dev, uint8_t addr, const MSICapability& msi_cap)
-    {
-        WriteConfReg(dev, addr, msi_cap.header.data);
-        WriteConfReg(dev, addr + 4, msi_cap.msg_addr);
-
-        uint8_t msg_data_addr = addr + 8;
-        if (msi_cap.header.bits.addr_64_capable)
-        {
-            WriteConfReg(dev, addr + 8, msi_cap.msg_upper_addr);
-            msg_data_addr = addr + 12;
-        }
-
-        WriteConfReg(dev, msg_data_addr, msi_cap.msg_data);
-
-        if (msi_cap.header.bits.per_vector_mask_capable)
-        {
-            WriteConfReg(dev, msg_data_addr + 4, msi_cap.mask_bits);
-            WriteConfReg(dev, msg_data_addr + 8, msi_cap.pending_bits);
-        }
-    }
-
-void ConfigureMSI(const Device& dev, uint8_t cap_addr,
-                  uint32_t msg_addr, uint32_t msg_data,
-                  unsigned int num_vector_exponent) {
-        auto msi_cap = ReadMSICapabilityStructure(dev, cap_addr);
-
-        if (msi_cap.header.bits.multi_msg_capable <= num_vector_exponent)
-        {
-            msi_cap.header.bits.multi_msg_enable =
-                msi_cap.header.bits.multi_msg_capable;
-        }
-        else
-        {
-            msi_cap.header.bits.multi_msg_enable = num_vector_exponent;
-        }
-
-        msi_cap.header.bits.msi_enable = 1;
-        msi_cap.msg_addr = msg_addr;
-        msi_cap.msg_data = msg_data;
-
-        WriteMSICapabilityStructure(dev, cap_addr, msi_cap);
-}
-
-void ConfigureMSI(const Device& dev, uint32_t msg_addr, uint32_t msg_data,
-                  unsigned int num_vector_exponent) {
-  uint8_t cap_addr = ReadConfReg(dev, 0x34) & 0xffu;
-  uint8_t msi_cap_addr = 0, msix_cap_addr = 0;
-  while (cap_addr != 0) {
-    auto cap = ReadCapabilityStructure(dev, cap_addr);
-    if (cap.cap_id == 0x05) {
-      msi_cap_addr = cap_addr;
-    } else if (cap.cap_id == 0x11) {
-      msix_cap_addr = cap_addr;
-    }
-    cap_addr = cap.next_ptr;
-  }
-
-  if (msi_cap_addr) {
-    ConfigureMSI(dev, msi_cap_addr, msg_addr, msg_data, num_vector_exponent);
-  }
-}
-
-} // namespace pci
-
 struct InterruptFrame {
   uint64_t rip;
   uint64_t cs;
@@ -303,7 +173,7 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
     *reinterpret_cast<const uint32_t*>(0xfee00020) >> 24;
   const uint32_t msi_msg_addr = 0xfee00000u | (bsp_local_apic_id << 12);
   const uint32_t msi_msg_data = 0xc000u | 0x40u;
-  ConfigureMSI(*xhc_dev, msi_msg_addr, msi_msg_data, 0);
+  pci::ConfigureMSI(*xhc_dev, msi_msg_addr, msi_msg_data, 0);
 
   const WithError<uint64_t> xhc_bar = pci::ReadBar(*xhc_dev, 0);
   Log(kDebug, "ReadBar: %s\n", xhc_bar.error.Name());
