@@ -213,9 +213,12 @@ struct InterruptFrame {
   uint64_t ss;
 };
 
+volatile auto end_of_interrupt = reinterpret_cast<uint32_t*>(0xfee000b0);
+
 __attribute__((interrupt))
 void IntHandlerXHCI(InterruptFrame* frame) {
   printk("IntHandlerXHCI\n");
+  *end_of_interrupt = 0;
 }
 
 extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
@@ -289,8 +292,12 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
         xhc_dev->bus, xhc_dev->device, xhc_dev->function);
   }
 
+  uint16_t cs = 0;
+  asm("mov %%cs, %0" : "=r"(cs));
+  printk("CS = 0x%02x\n", cs);
   SetIDTEntry(idt[0x40], MakeIDTAttr(DescriptorType::kInterruptGate, 0),
-              reinterpret_cast<uint64_t>(IntHandlerXHCI), 0x38); 
+              reinterpret_cast<uint64_t>(IntHandlerXHCI), cs);
+  LoadIDT();
 
   const uint8_t bsp_local_apic_id =
     *reinterpret_cast<const uint32_t*>(0xfee00020) >> 24;
@@ -315,6 +322,8 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
 
   Log(kInfo, "xHC starting\n");
   xhc.Run();
+
+  asm("sti");
 
   usb::HIDMouseDriver::default_observer = MouseObserver;
 
