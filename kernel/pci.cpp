@@ -149,7 +149,7 @@ namespace {
   }
 
   /** @brief 指定された MSI レジスタを設定する */
-  void ConfigureMSIRegister(const Device& dev, uint8_t cap_addr,
+  Error ConfigureMSIRegister(const Device& dev, uint8_t cap_addr,
                             uint32_t msg_addr, uint32_t msg_data,
                             unsigned int num_vector_exponent) {
     auto msi_cap = ReadMSICapability(dev, cap_addr);
@@ -166,6 +166,14 @@ namespace {
     msi_cap.msg_data = msg_data;
 
     WriteMSICapability(dev, cap_addr, msi_cap);
+    return MAKE_ERROR(Error::kSuccess);
+  }
+
+  /** @brief 指定された MSI レジスタを設定する */
+  Error ConfigureMSIXRegister(const Device& dev, uint8_t cap_addr,
+                             uint32_t msg_addr, uint32_t msg_data,
+                             unsigned int num_vector_exponent) {
+    return MAKE_ERROR(Error::kNotImplemented);
   }
 }
 
@@ -276,8 +284,8 @@ namespace pci {
     return header;
   }
 
-  void ConfigureMSI(const Device& dev, uint32_t msg_addr, uint32_t msg_data,
-                    unsigned int num_vector_exponent) {
+  Error ConfigureMSI(const Device& dev, uint32_t msg_addr, uint32_t msg_data,
+                     unsigned int num_vector_exponent) {
     uint8_t cap_addr = ReadConfReg(dev, 0x34) & 0xffu;
     uint8_t msi_cap_addr = 0, msix_cap_addr = 0;
     while (cap_addr != 0) {
@@ -291,7 +299,10 @@ namespace pci {
     }
 
     if (msi_cap_addr) {
-      ConfigureMSIRegister(dev, msi_cap_addr, msg_addr, msg_data, num_vector_exponent);
+      return ConfigureMSIRegister(dev, msi_cap_addr, msg_addr, msg_data, num_vector_exponent);
+    } else if (msix_cap_addr) {
+      return ConfigureMSIXRegister(dev, msix_cap_addr, msg_addr, msg_data, num_vector_exponent);
     }
+    return MAKE_ERROR(Error::kNoPCIMSI);
   }
 }
