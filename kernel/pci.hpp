@@ -149,6 +149,6 @@ namespace pci {
    * @param msg_data  割り込み発生時に書き込むメッセージの値
    * @param num_vector_exponent  割り当てるベクタ数（2^n の n を指定）
    */
-  void ConfigureMSI(const Device& dev, uint32_t msg_addr, uint32_t msg_data,
-                    unsigned int num_vector_exponent);
+  Error ConfigureMSI(const Device& dev, uint32_t msg_addr, uint32_t msg_data,
+                     unsigned int num_vector_exponent);
 }
