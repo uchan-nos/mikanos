@@ -64,9 +64,16 @@ struct InterruptFrame {
 
 volatile auto end_of_interrupt = reinterpret_cast<uint32_t*>(0xfee000b0);
 
+usb::xhci::Controller* xhc;
+
 __attribute__((interrupt))
 void IntHandlerXHCI(InterruptFrame* frame) {
-  printk("IntHandlerXHCI\n");
+  while (xhc->PrimaryEventRing()->HasFront()) {
+    if (auto err = ProcessEvent(*xhc)) {
+      Log(kError, "Error while ProcessEvent: %s at %s:%d\n",
+          err.Name(), err.File(), err.Line());
+    }
+  }
   *end_of_interrupt = 0;
 }
 
@@ -165,6 +172,7 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   Log(kInfo, "xHC starting\n");
   xhc.Run();
 
+  ::xhc = &xhc;
   asm("sti");
 
   usb::HIDMouseDriver::default_observer = MouseObserver;
@@ -179,13 +187,6 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
             err.Name(), err.File(), err.Line());
         continue;
       }
-    }
-  }
-
-  while (1) {
-    if (auto err = ProcessEvent(xhc)) {
-      Log(kError, "Error while ProcessEvent: %s at %s:%d\n",
-          err.Name(), err.File(), err.Line());
     }
   }
 
