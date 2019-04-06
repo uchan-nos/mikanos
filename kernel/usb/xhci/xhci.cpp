@@ -29,7 +29,7 @@ namespace {
     kConfigured,
   };
 
-  std::array<ConfigPhase, 256> port_config_phase{};  // index: port number
+  std::array<volatile ConfigPhase, 256> port_config_phase{};  // index: port number
   std::array<uint8_t, 4> port_waiting_slot{};  // value: port number
   int num_port_waiting_slot = 0;
 
@@ -82,8 +82,8 @@ namespace {
         is_connected ? "true" : "false");
 
     if (is_connected) {
-      port.Reset();
       port_config_phase[port.Number()] = ConfigPhase::kResettingPort;
+      port.Reset();
     }
     return MAKE_ERROR(Error::kSuccess);
   }
@@ -104,11 +104,11 @@ namespace {
       port_waiting_slot[num_port_waiting_slot] = port.Number();
       ++num_port_waiting_slot;
 
+      port_config_phase[port.Number()] = ConfigPhase::kEnablingSlot;
+
       EnableSlotCommandTRB cmd{};
       xhc.CommandRing()->Push(cmd);
       xhc.DoorbellRegisterAt(0)->Ring(0);
-
-      port_config_phase[port.Number()] = ConfigPhase::kEnablingSlot;
     }
     return MAKE_ERROR(Error::kSuccess);
   }
@@ -139,11 +139,11 @@ namespace {
 
     xhc.DeviceManager()->LoadDCBAA(slot_id);
 
+    port_config_phase[port_id] = ConfigPhase::kAddressingDevice;
+
     AddressDeviceCommandTRB addr_dev_cmd{dev->InputContext(), slot_id};
     xhc.CommandRing()->Push(addr_dev_cmd);
     xhc.DoorbellRegisterAt(0)->Ring(0);
-
-    port_config_phase[port_id] = ConfigPhase::kAddressingDevice;
 
     return MAKE_ERROR(Error::kSuccess);
   }
@@ -156,8 +156,8 @@ namespace {
       return MAKE_ERROR(Error::kInvalidSlotID);
     }
 
-    dev->StartInitialize();
     port_config_phase[port_id] = ConfigPhase::kInitializingDevice;
+    dev->StartInitialize();
 
     return MAKE_ERROR(Error::kSuccess);
   }
@@ -421,11 +421,11 @@ namespace usb::xhci {
       ep_ctx->bits.error_count = 3;
     }
 
+    port_config_phase[port_id] = ConfigPhase::kConfiguringEndpoints;
+
     ConfigureEndpointCommandTRB cmd{dev.InputContext(), dev.SlotID()};
     xhc.CommandRing()->Push(cmd);
     xhc.DoorbellRegisterAt(0)->Ring(0);
-
-    port_config_phase[port_id] = ConfigPhase::kConfiguringEndpoints;
 
     return MAKE_ERROR(Error::kSuccess);
   }
