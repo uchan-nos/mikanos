@@ -66,7 +66,7 @@ namespace {
     }
 
     int msb_index;
-    asm("bsr %1, %0"
+    __asm__("bsr %1, %0"
         : "=r"(msb_index) : "m"(value));
     return msb_index;
   }
