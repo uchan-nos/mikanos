@@ -27,5 +27,5 @@ void LoadIDT() {
   memcpy(&idtr_buf[0], &length, sizeof(uint16_t));
   memcpy(&idtr_buf[sizeof(uint16_t)], &offset, sizeof(uintptr_t));
 
-  asm("lidt %0" : : "m"(idtr_buf));
+  __asm__("lidt %0" : : "m"(idtr_buf));
 }
