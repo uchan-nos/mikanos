@@ -42,7 +42,7 @@ struct InterruptDescriptor {
 } __attribute__((packed));
 static_assert(sizeof(InterruptDescriptor) == 16);
 
-inline std::array<InterruptDescriptor, 256> idt;
+extern std::array<InterruptDescriptor, 256> idt;
 
 constexpr InterruptDescriptorAttribute MakeIDTAttr(
     DescriptorType type,
