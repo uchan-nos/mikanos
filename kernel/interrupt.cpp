@@ -6,6 +6,8 @@
 
 #include "interrupt.hpp"
 
+std::array<InterruptDescriptor, 256> idt;
+
 void SetIDTEntry(InterruptDescriptor& desc,
                  InterruptDescriptorAttribute attr,
                  uint64_t offset,
