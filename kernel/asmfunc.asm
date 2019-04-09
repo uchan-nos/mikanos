@@ -18,3 +18,9 @@ IoIn32:
     mov dx, di    ; dx = addr
     in eax, dx
     ret
+
+global GetCS  ; uint16_t GetCS(void);
+GetCS:
+    xor eax, eax  ; also clears upper 32 bits of rax
+    mov ax, cs
+    ret
