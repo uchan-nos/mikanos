@@ -24,6 +24,7 @@
 #include "usb/xhci/xhci.hpp"
 #include "usb/xhci/trb.hpp"
 #include "interrupt.hpp"
+#include "asmfunc.h"
 
 const PixelColor kDesktopBGColor{45, 118, 237};
 const PixelColor kDesktopFGColor{255, 255, 255};
@@ -169,9 +170,7 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
         xhc_dev->bus, xhc_dev->device, xhc_dev->function);
   }
 
-  uint16_t cs = 0;
-  asm("mov %%cs, %0" : "=r"(cs));
-  printk("CS = 0x%02x\n", cs);
+  const uint16_t cs = GetCS();
   SetIDTEntry(idt[0x40], MakeIDTAttr(DescriptorType::kInterruptGate, 0),
               reinterpret_cast<uint64_t>(IntHandlerXHCI), cs);
   LoadIDT();
@@ -201,7 +200,7 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   xhc.Run();
 
   ::xhc = &xhc;
-  asm("sti");
+  __asm__("sti");
 
   usb::HIDMouseDriver::default_observer = MouseObserver;
 
