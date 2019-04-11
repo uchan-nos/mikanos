@@ -173,7 +173,7 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   const uint16_t cs = GetCS();
   SetIDTEntry(idt[0x40], MakeIDTAttr(DescriptorType::kInterruptGate, 0),
               reinterpret_cast<uint64_t>(IntHandlerXHCI), cs);
-  LoadIDT();
+  LoadIDT(sizeof(idt) - 1, reinterpret_cast<uintptr_t>(&idt[0]));
 
   const uint8_t bsp_local_apic_id =
     *reinterpret_cast<const uint32_t*>(0xfee00020) >> 24;
