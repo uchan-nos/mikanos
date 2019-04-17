@@ -161,15 +161,16 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   }
 
   const uint16_t cs = GetCS();
-  SetIDTEntry(idt[0x40], MakeIDTAttr(DescriptorType::kInterruptGate, 0),
+  SetIDTEntry(idt[InterruptVector::kXHCI], MakeIDTAttr(DescriptorType::kInterruptGate, 0),
               reinterpret_cast<uint64_t>(IntHandlerXHCI), cs);
   LoadIDT(sizeof(idt) - 1, reinterpret_cast<uintptr_t>(&idt[0]));
 
   const uint8_t bsp_local_apic_id =
     *reinterpret_cast<const uint32_t*>(0xfee00020) >> 24;
-  const uint32_t msi_msg_addr = 0xfee00000u | (bsp_local_apic_id << 12);
-  const uint32_t msi_msg_data = 0xc000u | 0x40u;
-  pci::ConfigureMSI(*xhc_dev, msi_msg_addr, msi_msg_data, 0);
+  pci::ConfigureMSIFixedDestination(
+      *xhc_dev, bsp_local_apic_id,
+      pci::MSITriggerMode::kLevel, pci::MSIDeliveryMode::kFixed,
+      InterruptVector::kXHCI, 0);
 
   const WithError<uint64_t> xhc_bar = pci::ReadBar(*xhc_dev, 0);
   Log(kDebug, "ReadBar: %s\n", xhc_bar.error.Name());
