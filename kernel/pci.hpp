@@ -151,4 +151,23 @@ namespace pci {
    */
   Error ConfigureMSI(const Device& dev, uint32_t msg_addr, uint32_t msg_data,
                      unsigned int num_vector_exponent);
+
+  enum class MSITriggerMode {
+    kEdge = 0,
+    kLevel = 1
+  };
+
+  enum class MSIDeliveryMode {
+    kFixed          = 0b000,
+    kLowestPriority = 0b001,
+    kSMI            = 0b010,
+    kNMI            = 0b100,
+    kINIT           = 0b101,
+    kExtINT         = 0b111,
+  };
+
+  Error ConfigureMSIFixedDestination(
+      const Device& dev, uint8_t apic_id,
+      MSITriggerMode trigger_mode, MSIDeliveryMode delivery_mode,
+      uint8_t vector, unsigned int num_vector_exponent);
 }

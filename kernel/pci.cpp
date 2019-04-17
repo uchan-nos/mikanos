@@ -305,4 +305,16 @@ namespace pci {
     }
     return MAKE_ERROR(Error::kNoPCIMSI);
   }
+
+  Error ConfigureMSIFixedDestination(
+      const Device& dev, uint8_t apic_id,
+      MSITriggerMode trigger_mode, MSIDeliveryMode delivery_mode,
+      uint8_t vector, unsigned int num_vector_exponent) {
+    uint32_t msg_addr = 0xfee00000u | (apic_id << 12);
+    uint32_t msg_data = (static_cast<uint32_t>(delivery_mode) << 8) | vector;
+    if (trigger_mode == MSITriggerMode::kLevel) {
+      msg_data |= 0xc000;
+    }
+    return ConfigureMSI(dev, msg_addr, msg_data, num_vector_exponent);
+  }
 }
