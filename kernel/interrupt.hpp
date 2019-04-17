@@ -30,7 +30,6 @@ union InterruptDescriptorAttribute {
     uint16_t present : 1;
   } __attribute__((packed)) bits;
 } __attribute__((packed));
-static_assert(sizeof(InterruptDescriptorAttribute) == 2);
 
 struct InterruptDescriptor {
   uint16_t offset_low;
@@ -40,7 +39,6 @@ struct InterruptDescriptor {
   uint32_t offset_high;
   uint32_t reserved;
 } __attribute__((packed));
-static_assert(sizeof(InterruptDescriptor) == 16);
 
 extern std::array<InterruptDescriptor, 256> idt;
 
