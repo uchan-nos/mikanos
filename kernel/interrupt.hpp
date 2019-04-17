@@ -60,6 +60,13 @@ void SetIDTEntry(InterruptDescriptor& desc,
                  uint64_t offset,
                  uint16_t segment_selector);
 
+class InterruptVector {
+ public:
+  enum Number {
+    kXHCI = 0x40,
+  };
+};
+
 struct InterruptFrame {
   uint64_t rip;
   uint64_t cs;
