@@ -76,16 +76,6 @@ void SwitchEhci2Xhci(const pci::Device& xhc_dev) {
       superspeed_ports, ehci2xhci_ports);
 }
 
-struct InterruptFrame {
-  uint64_t rip;
-  uint64_t cs;
-  uint64_t rflags;
-  uint64_t rsp;
-  uint64_t ss;
-};
-
-volatile auto end_of_interrupt = reinterpret_cast<uint32_t*>(0xfee000b0);
-
 usb::xhci::Controller* xhc;
 
 __attribute__((interrupt))
@@ -96,7 +86,7 @@ void IntHandlerXHCI(InterruptFrame* frame) {
           err.Name(), err.File(), err.Line());
     }
   }
-  *end_of_interrupt = 0;
+  NotifyEndOfInterrupt();
 }
 
 extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
