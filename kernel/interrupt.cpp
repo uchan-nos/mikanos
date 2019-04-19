@@ -6,8 +6,11 @@
 
 #include "interrupt.hpp"
 
+// #@@range_begin(idt_array)
 std::array<InterruptDescriptor, 256> idt;
+// #@@range_end(idt_array)
 
+// #@@range_begin(set_idt_entry)
 void SetIDTEntry(InterruptDescriptor& desc,
                  InterruptDescriptorAttribute attr,
                  uint64_t offset,
@@ -18,8 +21,11 @@ void SetIDTEntry(InterruptDescriptor& desc,
   desc.offset_high = offset >> 32;
   desc.segment_selector = segment_selector;
 }
+// #@@range_end(set_idt_entry)
 
+// #@@range_begin(notify_eoi)
 void NotifyEndOfInterrupt() {
   volatile auto end_of_interrupt = reinterpret_cast<uint32_t*>(0xfee000b0);
   *end_of_interrupt = 0;
 }
+// #@@range_end(notify_eoi)
