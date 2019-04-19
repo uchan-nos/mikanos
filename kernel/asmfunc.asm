@@ -25,6 +25,7 @@ GetCS:
     mov ax, cs
     ret
 
+; #@@range_begin(load_idt_function)
 global LoadIDT  ; void LoadIDT(uint16_t limit, uint64_t offset);
 LoadIDT:
     push rbp
@@ -36,3 +37,4 @@ LoadIDT:
     mov rsp, rbp
     pop rbp
     ret
+; #@@range_end(load_idt_function)
