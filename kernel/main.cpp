@@ -58,7 +58,6 @@ void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
 
 usb::xhci::Controller* xhc;
 
-// #@@range_begin(queue_message)
 struct Message {
   enum Type {
     kInterruptXHCI,
@@ -66,15 +65,12 @@ struct Message {
 };
 
 ArrayQueue<Message>* main_queue;
-// #@@range_end(queue_message)
 
-// #@@range_begin(xhci_handler)
 __attribute__((interrupt))
 void IntHandlerXHCI(InterruptFrame* frame) {
   main_queue->Push(Message{Message::kInterruptXHCI});
   NotifyEndOfInterrupt();
 }
-// #@@range_end(xhci_handler)
 
 extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   switch (frame_buffer_config.pixel_format) {
@@ -197,9 +193,7 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
     }
   }
 
-  // #@@range_begin(event_loop)
   while (true) {
-    // #@@range_begin(get_front_message)
     __asm__("cli");
     if (main_queue.Count() == 0) {
       __asm__("sti\n\thlt");
@@ -209,7 +203,6 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
     Message msg = main_queue.Front();
     main_queue.Pop();
     __asm__("sti");
-    // #@@range_end(get_front_message)
 
     switch (msg.type) {
     case Message::kInterruptXHCI:
@@ -224,7 +217,6 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
       Log(kError, "Unknown message type: %d\n", msg.type);
     }
   }
-  // #@@range_end(event_loop)
 }
 
 extern "C" void __cxa_pure_virtual() {
