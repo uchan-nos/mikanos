@@ -28,8 +28,8 @@ TEST(MemoryManager, AllocateMultipleLine) {
 TEST(MemoryManager, AllocateNoEnoughMemory) {
   const auto frame1 = mgr.Allocate(BitmapMemoryManager::kFrameCount + 1);
 
-  CHECK_TRUE(frame1.error);
-  CHECK_EQUAL(0, frame1.value.ID());
+  CHECK_EQUAL(Error::kNoEnoughMemory, frame1.error.Cause());
+  CHECK_EQUAL(kNullFrame.ID(), frame1.value.ID());
 }
 
 TEST(MemoryManager, Free) {
@@ -55,4 +55,13 @@ TEST(MemoryManager, MarkAllocated) {
   const auto frame1 = mgr.Allocate(64);
 
   CHECK_EQUAL(64, frame1.value.ID());
+}
+
+TEST(MemoryManager, SetMemoryRange) {
+  const auto frame1 = mgr.Allocate(1);
+  mgr.SetMemoryRange(FrameID{10}, FrameID{64});
+  const auto frame2 = mgr.Allocate(1);
+
+  CHECK_EQUAL(0, frame1.value.ID());
+  CHECK_EQUAL(10, frame2.value.ID());
 }
