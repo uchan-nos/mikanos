@@ -7,9 +7,9 @@ OBJS := $(addprefix $(OBJROOT)/,$(filter-out $(EXCLUDE_OBJS),$(OBJS)))
 OBJS := $(OBJS) main.o logger.o test_memory_manager.o
 DEPENDS = $(join $(dir $(OBJS)),$(addprefix .,$(notdir $(OBJS:.o=.d))))
 
-CPPFLAGS += -I. -I..
-CFLAGS += -O2 -Wall -g -fPIC
-CXXFLAGS += -O2 -Wall -g -fPIC -std=c++2a
+CPPFLAGS = -I. -I..
+CFLAGS = -O2 -Wall -g -fPIC
+CXXFLAGS = -O2 -Wall -g -fPIC -std=c++2a
 
 CC = clang
 CXX = clang++
@@ -32,29 +32,31 @@ test.run: $(OBJS)
 $(OBJROOT)/%.o: ../%.cpp Makefile
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
+$(OBJROOT)/.%.d: ../%.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -MM $< > $@
+	$(eval OBJ = $(<:.cpp=.o))
+	sed --in-place 's|$(notdir $(OBJ))|$(OBJ)|' $@
+
 .%.d: %.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -MM $< > $@
 	$(eval OBJ = $(<:.cpp=.o))
 	sed --in-place 's|$(notdir $(OBJ))|$(OBJ)|' $@
 
-%.o: %.c Makefile
+$(OBJROOT)/%.o: ../%.c Makefile
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-.%.d: %.c
+$(OBJROOT)/.%.d: ../%.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -MM $< > $@
 	$(eval OBJ = $(<:.c=.o))
 	sed --in-place 's|$(notdir $(OBJ))|$(OBJ)|' $@
 
-%.o: %.asm Makefile
-	nasm -f elf64 -o $@ $<
-
-%.o: ../%.asm Makefile
+$(OBJROOT)/%.o: ../%.asm Makefile
 	nasm -f elf64 -o $@ $<
 
 hankaku.bin: ../hankaku.txt
 	../../tools/makefont.py -o $@ $<
 
-hankaku.o: hankaku.bin
+$(OBJROOT)/hankaku.o: hankaku.bin
 	objcopy -I binary -O elf64-x86-64 -B i386:x86-64 $< $@
 
 .%.d: %.bin
