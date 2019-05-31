@@ -7,6 +7,7 @@
 #pragma once
 
 #include <array>
+#include <limits>
 
 #include "error.hpp"
 
@@ -37,7 +38,7 @@ class FrameID {
   size_t id_;
 };
 
-static const FrameID kNullFrame{0};
+static const FrameID kNullFrame{std::numeric_limits<size_t>::max()};
 
 /** @brief ビットマップ配列を用いてフレーム単位でメモリ管理するクラス．
  *
@@ -66,8 +67,20 @@ class BitmapMemoryManager {
   Error Free(FrameID start_frame, size_t num_frames);
   void MarkAllocated(FrameID start_frame, size_t num_frames);
 
+  /** @brief このメモリマネージャで扱うメモリ範囲を設定する．
+   * この呼び出し以降，Allocate によるメモリ割り当ては設定された範囲内でのみ行われる．
+   *
+   * @param range_begin_ メモリ範囲の始点
+   * @param range_end_   メモリ範囲の終点．最終フレームの次のフレーム．
+   */
+  void SetMemoryRange(FrameID range_begin, FrameID range_end);
+
  private:
   std::array<MapLineType, kFrameCount / kBitsPerMapLine> alloc_map_;
+  /** @brief このメモリマネージャで扱うメモリ範囲の始点． */
+  FrameID range_begin_;
+  /** @brief このメモリマネージャで扱うメモリ範囲の終点．最終フレームの次のフレーム． */
+  FrameID range_end_;
 
   bool GetBit(FrameID frame) const;
   void SetBit(FrameID frame, bool allocated);
