@@ -7,4 +7,8 @@ extern "C" {
   uint32_t IoIn32(uint16_t addr);
   uint16_t GetCS(void);
   void LoadIDT(uint16_t limit, uint64_t offset);
+  void LoadGDT(uint16_t limit, uint64_t offset);
+  void SetCS(uint16_t value);
+  void SetDSAll(uint16_t value);
+  void SetCR3(uint64_t value);
 }
