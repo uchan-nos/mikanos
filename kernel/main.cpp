@@ -94,8 +94,10 @@ void IntHandlerXHCI(InterruptFrame* frame) {
   NotifyEndOfInterrupt();
 }
 
+// #@@range_begin(pass_memory_map)
 extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config,
                            const MemoryMap& memory_map) {
+// #@@range_end(pass_memory_map)
   switch (frame_buffer_config.pixel_format) {
     case kPixelRGBResv8BitPerColor:
       pixel_writer = new(pixel_writer_buf)
@@ -139,6 +141,7 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config,
     MemoryType::kEfiConventionalMemory,
   };
 
+  // #@@range_begin(print_memory_map)
   printk("memory_map: %p\n", &memory_map);
   for (uintptr_t iter = reinterpret_cast<uintptr_t>(memory_map.buffer);
        iter < reinterpret_cast<uintptr_t>(memory_map.buffer) + memory_map.map_size;
@@ -155,6 +158,7 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config,
       }
     }
   }
+  // #@@range_end(print_memory_map)
 
   mouse_cursor = new(mouse_cursor_buf) MouseCursor{
     pixel_writer, kDesktopBGColor, {300, 200}
