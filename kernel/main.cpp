@@ -96,8 +96,14 @@ void IntHandlerXHCI(InterruptFrame* frame) {
   NotifyEndOfInterrupt();
 }
 
-extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config,
-                           const MemoryMap& memory_map) {
+alignas(16) uint8_t kernel_main_stack[1024 * 1024];
+
+extern "C" void KernelMainNewStack(
+    const FrameBufferConfig& frame_buffer_config_ref,
+    const MemoryMap& memory_map_ref) {
+  FrameBufferConfig frame_buffer_config{frame_buffer_config_ref};
+  MemoryMap memory_map{memory_map_ref};
+
   switch (frame_buffer_config.pixel_format) {
     case kPixelRGBResv8BitPerColor:
       pixel_writer = new(pixel_writer_buf)
@@ -144,7 +150,6 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config,
 
   SetupIdentityPageTable();
 
-  printk("memory_map: %p\n", &memory_map);
   const auto memory_map_base = reinterpret_cast<uintptr_t>(memory_map.buffer);
   for (uintptr_t iter = memory_map_base;
        iter < memory_map_base + memory_map.map_size;
