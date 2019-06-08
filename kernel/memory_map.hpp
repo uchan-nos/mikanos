@@ -47,6 +47,7 @@ inline bool operator==(MemoryType lhs, uint32_t rhs) {
   return rhs == lhs;
 }
 
+// #@@range_begin(is_available)
 inline bool IsAvailable(MemoryType memory_type) {
   return
     memory_type == MemoryType::kEfiBootServicesCode ||
@@ -55,4 +56,5 @@ inline bool IsAvailable(MemoryType memory_type) {
 }
 
 const int kUEFIPageSize = 4096;
+// #@@range_end(is_available)
 #endif
