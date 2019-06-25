@@ -2,8 +2,7 @@
 
 #include <algorithm>
 #include "usb/device.hpp"
-
-int printk(const char* format, ...);
+#include "logger.hpp"
 
 namespace usb {
   HIDBaseDriver::HIDBaseDriver(Device* dev, int interface_index,
@@ -17,54 +16,48 @@ namespace usb {
   }
 
   Error HIDBaseDriver::SetEndpoint(const EndpointConfig& config) {
-    if (config.ep_type == EndpointType::kInterrupt && config.dir_in) {
-      ep_interrupt_in_ = config.ep_num;
-    } else if (config.ep_type == EndpointType::kInterrupt && !config.dir_in) {
-      ep_interrupt_out_ = config.ep_num;
+    if (config.ep_type == EndpointType::kInterrupt && config.ep_id.IsIn()) {
+      ep_interrupt_in_ = config.ep_id;
+    } else if (config.ep_type == EndpointType::kInterrupt && !config.ep_id.IsIn()) {
+      ep_interrupt_out_ = config.ep_id;
     }
     return MAKE_ERROR(Error::kSuccess);
   }
 
   Error HIDBaseDriver::OnEndpointsConfigured() {
     SetupData setup_data{};
-    setup_data.request_type.bits.direction = request_type::kIn;
+    setup_data.request_type.bits.direction = request_type::kOut;
     setup_data.request_type.bits.type = request_type::kClass;
     setup_data.request_type.bits.recipient = request_type::kInterface;
-    setup_data.request = request::kGetReport;
-    setup_data.value = 0x0100; // Input Report
+    setup_data.request = request::kSetProtocol;
+    setup_data.value = 0; // boot protocol
     setup_data.index = interface_index_;
-    setup_data.length = in_packet_size_; // bytes
-    return ParentDevice()->ControlIn(0, setup_data, buf_.data(), buf_.size());
+    setup_data.length = 0;
+
+    initialize_phase_ = 1;
+    return ParentDevice()->ControlOut(kDefaultControlPipeID, setup_data, nullptr, 0, this);
   }
 
-  Error HIDBaseDriver::OnControlOutCompleted(SetupData setup_data,
-                                                 const void* buf, int len) {
+  Error HIDBaseDriver::OnControlCompleted(EndpointID ep_id, SetupData setup_data,
+                                          const void* buf, int len) {
+    Log(kDebug, "HIDBaseDriver::OnControlCompleted: dev %08x, phase = %d, len = %d\n",
+        this, initialize_phase_, len);
+    if (initialize_phase_ == 1) {
+      initialize_phase_ = 2;
+      return ParentDevice()->InterruptIn(ep_interrupt_in_, buf_.data(), in_packet_size_);
+    }
+
     return MAKE_ERROR(Error::kNotImplemented);
   }
 
-  Error HIDBaseDriver::OnControlInCompleted(SetupData setup_data,
-                                                const void* buf, int len) {
-    if (buf != buf_.data()) {
-      return MAKE_ERROR(Error::kSuccess);
+  Error HIDBaseDriver::OnInterruptCompleted(EndpointID ep_id, const void* buf, int len) {
+    if (ep_id.IsIn()) {
+      OnDataReceived();
+      std::copy_n(buf_.begin(), len, previous_buf_.begin());
+      return ParentDevice()->InterruptIn(ep_interrupt_in_, buf_.data(), in_packet_size_);
     }
-    //printk("HIDBaseDriver::OnControlInCompleted: len = %d\n", len);
-    OnDataReceived();
-    std::copy_n(buf_.begin(), len, previous_buf_.begin());
-    return ParentDevice()->InterruptIn(ep_interrupt_in_, buf_.data(), buf_.size());
-  }
 
-  Error HIDBaseDriver::OnInterruptOutCompleted(const void* buf, int len) {
     return MAKE_ERROR(Error::kNotImplemented);
-  }
-
-  Error HIDBaseDriver::OnInterruptInCompleted(const void* buf, int len) {
-    if (buf != buf_.data()) {
-      return MAKE_ERROR(Error::kSuccess);
-    }
-    //printk("HIDBaseDriver::OnInterruptInCompleted: len = %d\n", len);
-    OnDataReceived();
-    std::copy_n(buf_.begin(), len, previous_buf_.begin());
-    return ParentDevice()->InterruptIn(ep_interrupt_in_, buf_.data(), buf_.size());
   }
 }
 

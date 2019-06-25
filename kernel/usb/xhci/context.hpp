@@ -1,5 +1,7 @@
 #pragma once
 
+#include "usb/endpoint.hpp"
+
 namespace usb::xhci {
   class Ring;
   union TRB;
@@ -71,6 +73,7 @@ namespace usb::xhci {
     int value;
 
     explicit DeviceContextIndex(int dci) : value{dci} {}
+    DeviceContextIndex(EndpointID ep_id) : value{ep_id.Address()} {}
 
     DeviceContextIndex(int ep_num, bool dir_in)
         : value{2 * ep_num + (ep_num == 0 ? 1 : dir_in)} {}
