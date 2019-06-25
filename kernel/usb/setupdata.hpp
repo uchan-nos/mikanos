@@ -46,6 +46,7 @@ namespace usb {
 
     // HID class specific report values
     const int kGetReport = 1;
+    const int kSetProtocol = 11;
   }
 
   namespace descriptor_type {
@@ -79,5 +80,14 @@ namespace usb {
     uint16_t index;
     uint16_t length;
   } __attribute__((packed));
+
+  inline bool operator ==(SetupData lhs, SetupData rhs) {
+    return
+      lhs.request_type.data == rhs.request_type.data &&
+      lhs.request == rhs.request &&
+      lhs.value == rhs.value &&
+      lhs.index == rhs.index &&
+      lhs.length == rhs.length;
+  }
 }
 

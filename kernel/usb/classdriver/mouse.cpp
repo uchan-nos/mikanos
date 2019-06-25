@@ -3,6 +3,7 @@
 #include <algorithm>
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
+#include "logger.hpp"
 
 namespace usb {
   HIDMouseDriver::HIDMouseDriver(Device* dev, int interface_index)
@@ -13,6 +14,7 @@ namespace usb {
     int8_t displacement_x = Buffer()[1];
     int8_t displacement_y = Buffer()[2];
     NotifyMouseMove(displacement_x, displacement_y);
+    Log(kDebug, "%02x,(%3d,%3d)\n", Buffer()[0], displacement_x, displacement_y);
     return MAKE_ERROR(Error::kSuccess);
   }
 

@@ -21,6 +21,7 @@ namespace {
 
   enum class ConfigPhase {
     kNotConnected,
+    kWaitingAddressed,
     kResettingPort,
     kEnablingSlot,
     kAddressingDevice,
@@ -28,10 +29,18 @@ namespace {
     kConfiguringEndpoints,
     kConfigured,
   };
+  /* root hub port はリセット処理をしてからアドレスを割り当てるまでは
+   * 他の処理を挟まず，そのポートについての処理だけをしなければならない．
+   * kWaitingAddressed はリセット（kResettingPort）からアドレス割り当て
+   * （kAddressingDevice）までの一連の処理の実行を待っている状態．
+   */
 
   std::array<volatile ConfigPhase, 256> port_config_phase{};  // index: port number
-  std::array<uint8_t, 4> port_waiting_slot{};  // value: port number
-  int num_port_waiting_slot = 0;
+
+  /** kResettingPort から kAddressingDevice までの処理を実行中のポート番号．
+   * 0 ならその状態のポートがないことを示す．
+   */
+  uint8_t addressing_port{0};
 
   void InitializeSlotContext(SlotContext& ctx, Port& port) {
     ctx.bits.route_string = 0;
@@ -81,7 +90,19 @@ namespace {
     Log(kDebug, "ResetPort: port.IsConnected() = %s\n",
         is_connected ? "true" : "false");
 
-    if (is_connected) {
+    if (!is_connected) {
+      return MAKE_ERROR(Error::kSuccess);
+    }
+
+    if (addressing_port != 0) {
+      port_config_phase[port.Number()] = ConfigPhase::kWaitingAddressed;
+    } else {
+      const auto port_phase = port_config_phase[port.Number()];
+      if (port_phase != ConfigPhase::kNotConnected &&
+          port_phase != ConfigPhase::kWaitingAddressed) {
+        return MAKE_ERROR(Error::kInvalidPhase);
+      }
+      addressing_port = port.Number();
       port_config_phase[port.Number()] = ConfigPhase::kResettingPort;
       port.Reset();
     }
@@ -97,12 +118,6 @@ namespace {
 
     if (is_enabled && reset_completed) {
       port.ClearPortResetChange();
-
-      if (num_port_waiting_slot >= port_waiting_slot.size()) {
-        return MAKE_ERROR(Error::kFull);
-      }
-      port_waiting_slot[num_port_waiting_slot] = port.Number();
-      ++num_port_waiting_slot;
 
       port_config_phase[port.Number()] = ConfigPhase::kEnablingSlot;
 
@@ -216,17 +231,11 @@ namespace {
         trb.bits.slot_id, kTRBTypeToName[issuer_type]);
 
     if (issuer_type == EnableSlotCommandTRB::Type) {
-      if (num_port_waiting_slot <= 0) {
-        return MAKE_ERROR(Error::kEmpty);
-      }
-      auto port_id = port_waiting_slot[num_port_waiting_slot - 1];
-
-      if (port_config_phase[port_id] != ConfigPhase::kEnablingSlot) {
+      if (port_config_phase[addressing_port] != ConfigPhase::kEnablingSlot) {
         return MAKE_ERROR(Error::kInvalidPhase);
       }
 
-      --num_port_waiting_slot;
-      return AddressDevice(xhc, port_id, slot_id);
+      return AddressDevice(xhc, addressing_port, slot_id);
     } else if (issuer_type == AddressDeviceCommandTRB::Type) {
       auto dev = xhc.DeviceManager()->FindBySlot(slot_id);
       if (dev == nullptr) {
@@ -234,8 +243,23 @@ namespace {
       }
 
       auto port_id = dev->DeviceContext()->slot_context.bits.root_hub_port_num;
+
+      if (port_id != addressing_port) {
+        return MAKE_ERROR(Error::kInvalidPhase);
+      }
       if (port_config_phase[port_id] != ConfigPhase::kAddressingDevice) {
         return MAKE_ERROR(Error::kInvalidPhase);
+      }
+
+      addressing_port = 0;
+      for (int i = 0; i < port_config_phase.size(); ++i) {
+        if (port_config_phase[i] == ConfigPhase::kWaitingAddressed) {
+          auto port = xhc.PortAt(i);
+          if (auto err = ResetPort(xhc, port); err) {
+            return err;
+          }
+          break;
+        }
       }
 
       return InitializeDevice(xhc, port_id, slot_id);
@@ -392,20 +416,20 @@ namespace usb::xhci {
       }};
 
     for (int i = 0; i < len; ++i) {
-      const DeviceContextIndex ep_dci{configs[i].ep_num, configs[i].dir_in};
+      const DeviceContextIndex ep_dci{configs[i].ep_id};
       auto ep_ctx = dev.InputContext()->EnableEndpoint(ep_dci);
       switch (configs[i].ep_type) {
       case EndpointType::kControl:
         ep_ctx->bits.ep_type = 4;
         break;
       case EndpointType::kIsochronous:
-        ep_ctx->bits.ep_type = configs[i].dir_in ? 5 : 1;
+        ep_ctx->bits.ep_type = configs[i].ep_id.IsIn() ? 5 : 1;
         break;
       case EndpointType::kBulk:
-        ep_ctx->bits.ep_type = configs[i].dir_in ? 6 : 2;
+        ep_ctx->bits.ep_type = configs[i].ep_id.IsIn() ? 6 : 2;
         break;
       case EndpointType::kInterrupt:
-        ep_ctx->bits.ep_type = configs[i].dir_in ? 7 : 3;
+        ep_ctx->bits.ep_type = configs[i].ep_id.IsIn() ? 7 : 3;
         break;
       }
       ep_ctx->bits.max_packet_size = configs[i].max_packet_size;
