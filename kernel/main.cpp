@@ -53,8 +53,10 @@ int printk(const char* format, ...) {
   return result;
 }
 
+// #@@range_begin(memman_buf)
 char memory_manager_buf[sizeof(BitmapMemoryManager)];
 BitmapMemoryManager* memory_manager;
+// #@@range_end(memman_buf)
 
 char mouse_cursor_buf[sizeof(MouseCursor)];
 MouseCursor* mouse_cursor;
@@ -154,6 +156,7 @@ extern "C" void KernelMainNewStack(
 
   SetupIdentityPageTable();
 
+  // #@@range_begin(mark_allocated)
   ::memory_manager = new(memory_manager_buf) BitmapMemoryManager;
 
   const auto memory_map_base = reinterpret_cast<uintptr_t>(memory_map.buffer);
@@ -173,6 +176,7 @@ extern "C" void KernelMainNewStack(
     }
   }
   memory_manager->SetMemoryRange(FrameID{1}, FrameID{available_end / kBytesPerFrame});
+  // #@@range_end(mark_allocated)
 
   mouse_cursor = new(mouse_cursor_buf) MouseCursor{
     pixel_writer, kDesktopBGColor, {300, 200}
