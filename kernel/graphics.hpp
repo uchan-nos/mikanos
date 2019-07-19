@@ -8,10 +8,14 @@ struct PixelColor {
 
 class PixelWriter {
  public:
-  PixelWriter(const FrameBufferConfig& config) : config_{config} {
-  }
-  virtual ~PixelWriter() = default;
   virtual void Write(int x, int y, const PixelColor& c) = 0;
+};
+
+class FrameBufferWriter : public PixelWriter {
+ public:
+  FrameBufferWriter(const FrameBufferConfig& config) : config_{config} {
+  }
+  virtual ~FrameBufferWriter() = default;
 
  protected:
   uint8_t* PixelAt(int x, int y) {
@@ -22,15 +26,15 @@ class PixelWriter {
   const FrameBufferConfig& config_;
 };
 
-class RGBResv8BitPerColorPixelWriter : public PixelWriter {
+class RGBResv8BitPerColorPixelWriter : public FrameBufferWriter {
  public:
-  using PixelWriter::PixelWriter;
+  using FrameBufferWriter::FrameBufferWriter;
   virtual void Write(int x, int y, const PixelColor& c) override;
 };
 
-class BGRResv8BitPerColorPixelWriter : public PixelWriter {
+class BGRResv8BitPerColorPixelWriter : public FrameBufferWriter {
  public:
-  using PixelWriter::PixelWriter;
+  using FrameBufferWriter::FrameBufferWriter;
   virtual void Write(int x, int y, const PixelColor& c) override;
 };
 
