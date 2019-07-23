@@ -30,6 +30,8 @@
 #include "segment.hpp"
 #include "paging.hpp"
 #include "memory_manager.hpp"
+#include "window.hpp"
+#include "layer.hpp"
 
 const PixelColor kDesktopBGColor{45, 118, 237};
 const PixelColor kDesktopFGColor{255, 255, 255};
@@ -56,11 +58,11 @@ int printk(const char* format, ...) {
 char memory_manager_buf[sizeof(BitmapMemoryManager)];
 BitmapMemoryManager* memory_manager;
 
-char mouse_cursor_buf[sizeof(MouseCursor)];
-MouseCursor* mouse_cursor;
+LayerManager* layer_manager;
+unsigned int mouse_layer_id;
 
 void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
-  mouse_cursor->MoveRelative({displacement_x, displacement_y});
+  layer_manager->MoveRelative(mouse_layer_id, {displacement_x, displacement_y});
 }
 
 void SwitchEhci2Xhci(const pci::Device& xhc_dev) {
@@ -140,8 +142,9 @@ extern "C" void KernelMainNewStack(
                 {160, 160, 160});
 
   console = new(console_buf) Console{
-    *pixel_writer, kDesktopFGColor, kDesktopBGColor
+    kDesktopFGColor, kDesktopBGColor
   };
+  console->SetWriter(pixel_writer);
   printk("Welcome to MikanOS!\n");
   SetLogLevel(kWarn);
 
@@ -185,10 +188,6 @@ extern "C" void KernelMainNewStack(
         err.Name(), err.File(), err.Line());
     exit(1);
   }
-
-  mouse_cursor = new(mouse_cursor_buf) MouseCursor{
-    pixel_writer, kDesktopBGColor, {300, 200}
-  };
 
   std::array<Message, 32> main_queue_data;
   ArrayQueue<Message> main_queue{main_queue_data};
@@ -268,6 +267,48 @@ extern "C" void KernelMainNewStack(
       }
     }
   }
+
+  auto bgwindow = std::make_shared<Window>(Bitmap2D{kFrameWidth, kFrameHeight});
+  auto bgwriter = bgwindow->Bitmap().PixelWriter();
+
+  FillRectangle(*bgwriter,
+                {0, 0},
+                {kFrameWidth, kFrameHeight - 50},
+                kDesktopBGColor);
+  FillRectangle(*bgwriter,
+                {0, kFrameHeight - 50},
+                {kFrameWidth, 50},
+                {1, 8, 17});
+  FillRectangle(*bgwriter,
+                {0, kFrameHeight - 50},
+                {kFrameWidth / 5, 50},
+                {80, 80, 80});
+  DrawRectangle(*bgwriter,
+                {10, kFrameHeight - 40},
+                {30, 30},
+                {160, 160, 160});
+  console->SetWriter(bgwriter);
+
+  auto mouse_window = std::make_shared<Window>(
+      Bitmap2D{kMouseCursorWidth, kMouseCursorHeight});
+  mouse_window->SetTransparentColor(kMouseTransparentColor);
+  DrawMouseCursor(mouse_window->Bitmap().PixelWriter(), {0, 0});
+
+  layer_manager = new LayerManager;
+  layer_manager->SetWriter(pixel_writer);
+
+  auto bglayer_id = layer_manager->NewLayer()
+    .SetWindow(bgwindow)
+    .Move({kFrameWidth / 2, kFrameHeight / 2})
+    .ID();
+  mouse_layer_id = layer_manager->NewLayer()
+    .SetWindow(mouse_window)
+    .Move({200, 200})
+    .ID();
+
+  layer_manager->Topmost(bglayer_id);
+  layer_manager->Topmost(mouse_layer_id);
+  layer_manager->Draw();
 
   while (true) {
     __asm__("cli");
