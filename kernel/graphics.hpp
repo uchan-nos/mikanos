@@ -6,9 +6,20 @@ struct PixelColor {
   uint8_t r, g, b;
 };
 
+inline bool operator==(const PixelColor& lhs, const PixelColor& rhs) {
+  return lhs.r == rhs.r && lhs.g == rhs.g && lhs.b == rhs.b;
+}
+
+inline bool operator!=(const PixelColor& lhs, const PixelColor& rhs) {
+  return !(lhs == rhs);
+}
+
 class PixelWriter {
  public:
+  virtual ~PixelWriter() = default;
   virtual void Write(int x, int y, const PixelColor& c) = 0;
+  virtual int Width() const = 0;
+  virtual int Height() const = 0;
 };
 
 class FrameBufferWriter : public PixelWriter {
@@ -16,6 +27,8 @@ class FrameBufferWriter : public PixelWriter {
   FrameBufferWriter(const FrameBufferConfig& config) : config_{config} {
   }
   virtual ~FrameBufferWriter() = default;
+  virtual int Width() const override { return config_.horizontal_resolution; }
+  virtual int Height() const override { return config_.vertical_resolution; }
 
  protected:
   uint8_t* PixelAt(int x, int y) {
