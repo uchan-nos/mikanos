@@ -71,7 +71,7 @@ class Window {
    */
   void DrawTo(PixelWriter& writer, Vector2D<int> position);
   /** @brief 透過色を設定する。 */
-  void SetTransparentColor(PixelColor c);
+  void SetTransparentColor(std::optional<PixelColor> c);
 
  private:
   Bitmap2D bitmap_;
