@@ -7,51 +7,46 @@
 #pragma once
 
 #include <vector>
+#include <optional>
 #include "graphics.hpp"
 
+/** @brief Bitmap2D クラスは平面の描画領域を提供する。
+ */
 class Bitmap2D {
  public:
+  /** @brief BitmapWriter は Bitmap2D と関連付けられた PixelWriter を提供する。
+   */
   class BitmapWriter : public PixelWriter {
    public:
-    BitmapWriter(Bitmap2D& bitmap) : bitmap_{bitmap} {
-    }
-
-    virtual void Write(int x, int y, const PixelColor& c) override {
-      bitmap_.At(x, y) = c;
-    }
-
-    virtual int Width() const override {
-      return bitmap_.Width();
-    }
-
-    virtual int Height() const override {
-      return bitmap_.Height();
-    }
+    BitmapWriter(Bitmap2D& bitmap);
+    /** @brief 指定された位置に指定された色を描く */
+    virtual void Write(int x, int y, const PixelColor& c) override;
+    /** @brief Width は関連付けられた Bitmap2D の横幅をピクセル単位で返す。 */
+    virtual int Width() const override;
+    /** @brief Height は関連付けられた Bitmap2D の高さをピクセル単位で返す。 */
+    virtual int Height() const override;
 
    private:
     Bitmap2D& bitmap_;
   };
 
-  Bitmap2D(int width, int height) : width_{width}, height_{height}, data_(height, std::vector<PixelColor>(width, PixelColor{})), writer_{*this} {
-  }
-  ~Bitmap2D() = default;
-  Bitmap2D(Bitmap2D&& rhs) : width_{rhs.width_}, height_{rhs.height_}, data_{std::move(rhs.data_)}, writer_{*this} {
-  }
-  Bitmap2D& operator=(Bitmap2D&& rhs) {
-    width_ = rhs.width_;
-    height_ = rhs.height_;
-    data_ = std::move(rhs.data_);
-    return *this;
-  }
+  /** @brief 指定されたピクセル数の平面描画領域を作成する。 */
+  Bitmap2D(int width, int height);
+  ~Bitmap2D();
+  Bitmap2D(Bitmap2D&& rhs);
+  Bitmap2D& operator=(Bitmap2D&& rhs);
 
-  PixelColor& At(int x, int y) { return data_[y][x]; }
-  const PixelColor& At(int x, int y) const { return data_[y][x]; }
-  BitmapWriter* PixelWriter() {
-    return &writer_;
-  }
+  /** @brief 指定した位置のピクセルを返す。 */
+  PixelColor& At(int x, int y);
+  /** @brief 指定した位置のピクセルを返す。 */
+  const PixelColor& At(int x, int y) const;
+  /** @brief このインスタンスに紐付いた BitmapWriter を取得する。 */
+  BitmapWriter* PixelWriter();
 
-  int Width() const { return width_; }
-  int Height() const { return height_; }
+  /** @brief 平面描画領域の横幅をピクセル単位で返す。 */
+  int Width() const;
+  /** @brief 平面描画領域の高さをピクセル単位で返す。 */
+  int Height() const;
 
  private:
   int width_, height_;
@@ -59,47 +54,24 @@ class Bitmap2D {
   BitmapWriter writer_{*this};
 };
 
-/** @brief Windows クラスはグラフィックの表示領域を表す。
+/** @brief Window クラスはグラフィックの表示領域を表す。
  *
  * タイトルやメニューがあるウィンドウだけでなく，マウスカーソルの表示領域なども対象とする。
  */
 class Window {
  public:
-  Window(Bitmap2D&& bitmap) : bitmap_{std::move(bitmap)} {
-  }
-
-  Bitmap2D& Bitmap() {
-    return bitmap_;
-  }
-
-  void DrawTo(PixelWriter& writer, Vector2D<int> center_position) {
-    int origin_x = center_position.x - bitmap_.Width() / 2;
-    int origin_y = center_position.y - bitmap_.Height() / 2;
-
-    if (transparent_color_) {
-      const auto tc = transparent_color_.value();
-      for (int y = 0; y < bitmap_.Height(); ++y) {
-        for (int x = 0; x < bitmap_.Width(); ++x) {
-          const auto c = bitmap_.At(x, y);
-          if (c != tc) {
-            writer.Write(origin_x + x, origin_y + y, c);
-          }
-        }
-      }
-      return;
-    }
-
-    for (int y = 0; y < bitmap_.Height(); ++y) {
-      for (int x = 0; x < bitmap_.Width(); ++x) {
-        auto c = bitmap_.At(x, y);
-        writer.Write(origin_x + x, origin_y + y, c);
-      }
-    }
-  }
-
-  void SetTransparentColor(PixelColor c) {
-    transparent_color_ = c;
-  }
+  /** @brief 指定した Bitmap2D を表示領域として持つウィンドウを生成する。 */
+  Window(Bitmap2D&& bitmap);
+  /** @brief このウィンドウの表示領域を返す。 */
+  Bitmap2D& Bitmap();
+  /** @brief 与えられた PixelWriter にこのウィンドウの表示領域を描画する。
+   *
+   * @param writer  描画先
+   * @param position  writer の左上を基準とした描画位置
+   */
+  void DrawTo(PixelWriter& writer, Vector2D<int> position);
+  /** @brief 透過色を設定する。 */
+  void SetTransparentColor(PixelColor c);
 
  private:
   Bitmap2D bitmap_;
