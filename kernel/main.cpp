@@ -299,7 +299,7 @@ extern "C" void KernelMainNewStack(
 
   auto bglayer_id = layer_manager->NewLayer()
     .SetWindow(bgwindow)
-    .Move({kFrameWidth / 2, kFrameHeight / 2})
+    .Move({0, 0})
     .ID();
   mouse_layer_id = layer_manager->NewLayer()
     .SetWindow(mouse_window)
