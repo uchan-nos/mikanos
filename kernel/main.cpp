@@ -33,9 +33,6 @@
 #include "window.hpp"
 #include "layer.hpp"
 
-const PixelColor kDesktopBGColor{45, 118, 237};
-const PixelColor kDesktopFGColor{255, 255, 255};
-
 char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
 PixelWriter* pixel_writer;
 
@@ -121,25 +118,7 @@ extern "C" void KernelMainNewStack(
       break;
   }
 
-  const int kFrameWidth = frame_buffer_config.horizontal_resolution;
-  const int kFrameHeight = frame_buffer_config.vertical_resolution;
-
-  FillRectangle(*pixel_writer,
-                {0, 0},
-                {kFrameWidth, kFrameHeight - 50},
-                kDesktopBGColor);
-  FillRectangle(*pixel_writer,
-                {0, kFrameHeight - 50},
-                {kFrameWidth, 50},
-                {1, 8, 17});
-  FillRectangle(*pixel_writer,
-                {0, kFrameHeight - 50},
-                {kFrameWidth / 5, 50},
-                {80, 80, 80});
-  DrawRectangle(*pixel_writer,
-                {10, kFrameHeight - 40},
-                {30, 30},
-                {160, 160, 160});
+  DrawDesktop(*pixel_writer);
 
   console = new(console_buf) Console{
     kDesktopFGColor, kDesktopBGColor
@@ -268,25 +247,13 @@ extern "C" void KernelMainNewStack(
     }
   }
 
+  const int kFrameWidth = frame_buffer_config.horizontal_resolution;
+  const int kFrameHeight = frame_buffer_config.vertical_resolution;
+
   auto bgwindow = std::make_shared<Window>(Bitmap2D{kFrameWidth, kFrameHeight});
   auto bgwriter = bgwindow->Bitmap().PixelWriter();
 
-  FillRectangle(*bgwriter,
-                {0, 0},
-                {kFrameWidth, kFrameHeight - 50},
-                kDesktopBGColor);
-  FillRectangle(*bgwriter,
-                {0, kFrameHeight - 50},
-                {kFrameWidth, 50},
-                {1, 8, 17});
-  FillRectangle(*bgwriter,
-                {0, kFrameHeight - 50},
-                {kFrameWidth / 5, 50},
-                {80, 80, 80});
-  DrawRectangle(*bgwriter,
-                {10, kFrameHeight - 40},
-                {30, 30},
-                {160, 160, 160});
+  DrawDesktop(*bgwriter);
   console->SetWriter(bgwriter);
 
   auto mouse_window = std::make_shared<Window>(
