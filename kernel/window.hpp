@@ -12,6 +12,7 @@
 
 /** @brief Bitmap2D クラスは平面の描画領域を提供する。
  */
+// #@@range_begin(bitmap2d)
 class Bitmap2D {
  public:
   /** @brief BitmapWriter は Bitmap2D と関連付けられた PixelWriter を提供する。
@@ -53,11 +54,13 @@ class Bitmap2D {
   std::vector<std::vector<PixelColor>> data_;
   BitmapWriter writer_{*this};
 };
+// #@@range_end(bitmap2d)
 
 /** @brief Window クラスはグラフィックの表示領域を表す。
  *
  * タイトルやメニューがあるウィンドウだけでなく，マウスカーソルの表示領域なども対象とする。
  */
+// #@@range_begin(window)
 class Window {
  public:
   /** @brief 指定した Bitmap2D を表示領域として持つウィンドウを生成する。 */
@@ -77,3 +80,4 @@ class Window {
   Bitmap2D bitmap_;
   std::optional<PixelColor> transparent_color_{std::nullopt};
 };
+// #@@range_end(window)
