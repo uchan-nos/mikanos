@@ -19,19 +19,23 @@ class Window {
  public:
   /** @brief WindowWriter は Window と関連付けられた PixelWriter を提供する。
    */
+  // #@@range_begin(windowwriter)
   class WindowWriter : public PixelWriter {
    public:
-    WindowWriter(Window& bitmap);
+    WindowWriter(Window& window) : window_{window} {}
     /** @brief 指定された位置に指定された色を描く */
-    virtual void Write(int x, int y, const PixelColor& c) override;
+    virtual void Write(int x, int y, const PixelColor& c) override {
+      window_.At(x, y) = c;
+    }
     /** @brief Width は関連付けられた Window の横幅をピクセル単位で返す。 */
-    virtual int Width() const override;
+    virtual int Width() const override { return window_.Width(); }
     /** @brief Height は関連付けられた Window の高さをピクセル単位で返す。 */
-    virtual int Height() const override;
+    virtual int Height() const override { return window_.Height(); }
 
    private:
     Window& window_;
   };
+  // #@@range_end(windowwriter)
 
   /** @brief 指定されたピクセル数の平面描画領域を作成する。 */
   Window(int width, int height);
