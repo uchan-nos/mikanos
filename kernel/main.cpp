@@ -257,16 +257,16 @@ extern "C" void KernelMainNewStack(
   const int kFrameWidth = frame_buffer_config.horizontal_resolution;
   const int kFrameHeight = frame_buffer_config.vertical_resolution;
 
-  auto bgwindow = std::make_shared<Window>(Bitmap2D{kFrameWidth, kFrameHeight});
-  auto bgwriter = bgwindow->Bitmap().PixelWriter();
+  auto bgwindow = std::make_shared<Window>(kFrameWidth, kFrameHeight);
+  auto bgwriter = bgwindow->Writer();
 
   DrawDesktop(*bgwriter);
   console->SetWriter(bgwriter);
 
   auto mouse_window = std::make_shared<Window>(
-      Bitmap2D{kMouseCursorWidth, kMouseCursorHeight});
+      kMouseCursorWidth, kMouseCursorHeight);
   mouse_window->SetTransparentColor(kMouseTransparentColor);
-  DrawMouseCursor(mouse_window->Bitmap().PixelWriter(), {0, 0});
+  DrawMouseCursor(mouse_window->Writer(), {0, 0});
 
   layer_manager = new LayerManager;
   layer_manager->SetWriter(pixel_writer);
