@@ -1,27 +1,5 @@
 #include "window.hpp"
 
-// #@@range_begin(windowwriter_ctor)
-Window::WindowWriter::WindowWriter(Window& window) : window_{window} {
-}
-// #@@range_end(windowwriter_ctor)
-
-// #@@range_begin(windowwriter_write)
-void Window::WindowWriter::Write(int x, int y, const PixelColor& c) {
-  window_.At(x, y) = c;
-}
-// #@@range_end(windowwriter_write)
-
-// #@@range_begin(windowwriter_width_height)
-int Window::WindowWriter::Width() const {
-  return window_.Width();
-}
-
-int Window::WindowWriter::Height() const {
-  return window_.Height();
-}
-// #@@range_end(windowwriter_width_height)
-
-
 // #@@range_begin(window_ctor)
 Window::Window(int width, int height) : width_{width}, height_{height} {
   data_.resize(height);
@@ -49,23 +27,22 @@ Window& Window::operator=(Window&& rhs) {
 
 // #@@range_begin(window_drawto)
 void Window::DrawTo(PixelWriter& writer, Vector2D<int> position) {
-  if (transparent_color_) {
-    const auto tc = transparent_color_.value();
+  if (!transparent_color_) {
     for (int y = 0; y < Height(); ++y) {
       for (int x = 0; x < Width(); ++x) {
-        const auto c = At(x, y);
-        if (c != tc) {
-          writer.Write(position.x + x, position.y + y, c);
-        }
+        writer.Write(position.x + x, position.y + y, At(x, y));
       }
     }
     return;
   }
 
+  const auto tc = transparent_color_.value();
   for (int y = 0; y < Height(); ++y) {
     for (int x = 0; x < Width(); ++x) {
       const auto c = At(x, y);
-      writer.Write(position.x + x, position.y + y, c);
+      if (c != tc) {
+        writer.Write(position.x + x, position.y + y, c);
+      }
     }
   }
 }
