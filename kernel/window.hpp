@@ -39,9 +39,9 @@ class Window {
 
   /** @brief 指定されたピクセル数の平面描画領域を作成する。 */
   Window(int width, int height);
-  ~Window();
-  Window(Window&& rhs);
-  Window& operator=(Window&& rhs);
+  ~Window() = default;
+  Window(const Window& rhs) = delete;
+  Window& operator=(const Window& rhs) = delete;
 
   /** @brief 与えられた PixelWriter にこのウィンドウの表示領域を描画する。
    *
