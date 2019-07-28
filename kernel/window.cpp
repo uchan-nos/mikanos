@@ -7,22 +7,6 @@ Window::Window(int width, int height) : width_{width}, height_{height} {
     data_[y].resize(width);
   }
 }
-
-Window::~Window() = default;
-
-Window::Window(Window&& rhs)
-  : width_{rhs.width_}, height_{rhs.height_},
-    data_{std::move(rhs.data_)}, writer_{*this},
-    transparent_color_{rhs.transparent_color_} {
-}
-
-Window& Window::operator=(Window&& rhs) {
-  width_ = rhs.width_;
-  height_ = rhs.height_;
-  data_ = std::move(rhs.data_);
-  transparent_color_ = rhs.transparent_color_;
-  return *this;
-}
 // #@@range_end(window_ctor)
 
 // #@@range_begin(window_drawto)
