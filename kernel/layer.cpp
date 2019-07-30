@@ -52,7 +52,7 @@ void LayerManager::SetWriter(PixelWriter* writer) {
 // #@@range_begin(layermgr_newlayer)
 Layer& LayerManager::NewLayer() {
   ++latest_id_;
-  auto [ it, _ ] = layers_.emplace(latest_id_, new Layer{latest_id_});
+  auto [ it, inserted ] = layers_.emplace(latest_id_, new Layer{latest_id_});
   return *it->second;
 }
 // #@@range_end(layermgr_newlayer)
