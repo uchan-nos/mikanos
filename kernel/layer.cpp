@@ -1,5 +1,7 @@
 #include "layer.hpp"
 
+#include <algorithm>
+
 // #@@range_begin(layer_ctor)
 Layer::Layer(unsigned int id) : id_{id} {
 }
@@ -52,8 +54,7 @@ void LayerManager::SetWriter(PixelWriter* writer) {
 // #@@range_begin(layermgr_newlayer)
 Layer& LayerManager::NewLayer() {
   ++latest_id_;
-  auto [ it, inserted ] = layers_.emplace(latest_id_, new Layer{latest_id_});
-  return *it->second;
+  return *layers_.emplace_back(new Layer{latest_id_});
 }
 // #@@range_end(layermgr_newlayer)
 
@@ -67,12 +68,12 @@ void LayerManager::Draw() const {
 
 // #@@range_begin(layermgr_move)
 void LayerManager::Move(unsigned int id, Vector2D<int> new_position) {
-  layers_[id]->Move(new_position);
+  FindLayer(id)->Move(new_position);
   Draw();
 }
 
 void LayerManager::MoveRelative(unsigned int id, Vector2D<int> pos_diff) {
-  layers_[id]->MoveRelative(pos_diff);
+  FindLayer(id)->MoveRelative(pos_diff);
   Draw();
 }
 // #@@range_end(layermgr_move)
@@ -87,7 +88,7 @@ void LayerManager::UpDown(unsigned int id, int new_height) {
     new_height = layer_stack_.size();
   }
 
-  auto layer = layers_[id].get();
+  auto layer = FindLayer(id);
   auto new_pos = layer_stack_.begin() + new_height;
   auto old_pos = std::find(layer_stack_.begin(), layer_stack_.end(), layer);
   if (old_pos == layer_stack_.end()) {
@@ -108,7 +109,7 @@ void LayerManager::UpDown(unsigned int id, int new_height) {
 
 // #@@range_begin(layermgr_hide)
 void LayerManager::Hide(unsigned int id) {
-  auto layer = layers_[id].get();
+  auto layer = FindLayer(id);
   auto pos = std::find(layer_stack_.begin(), layer_stack_.end(), layer);
   if (pos != layer_stack_.end()) {
     layer_stack_.erase(pos);
@@ -121,3 +122,16 @@ void LayerManager::Topmost(unsigned int id) {
   UpDown(id, layer_stack_.size());
 }
 // #@@range_end(layermgr_topmost)
+
+// #@@range_begin(layermgr_findlayer)
+Layer* LayerManager::FindLayer(unsigned int id) {
+  auto pred = [id](const std::unique_ptr<Layer>& elem) {
+    return elem->ID() == id;
+  };
+  auto it = std::find_if(layers_.begin(), layers_.end(), pred);
+  if (it == layers_.end()) {
+    return nullptr;
+  }
+  return it->get();
+}
+// #@@range_end(layermgr_findlayer)
