@@ -61,6 +61,7 @@ unsigned int mouse_layer_id;
 
 void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
   layer_manager->MoveRelative(mouse_layer_id, {displacement_x, displacement_y});
+  layer_manager->Draw();
 }
 // #@@range_end(layermgr_mousehandler)
 
@@ -280,8 +281,8 @@ extern "C" void KernelMainNewStack(
     .Move({200, 200})
     .ID();
 
-  layer_manager->Topmost(bglayer_id);
-  layer_manager->Topmost(mouse_layer_id);
+  layer_manager->UpDown(bglayer_id, 0);
+  layer_manager->UpDown(mouse_layer_id, 1);
   layer_manager->Draw();
   // #@@range_end(main_window)
 

@@ -61,9 +61,9 @@ class LayerManager {
   /** @brief 現在表示状態にあるレイヤーを描画する。 */
   void Draw() const;
 
-  /** @brief レイヤーの位置情報を指定された絶対座標へと更新して再描画する。 */
+  /** @brief レイヤーの位置情報を指定された絶対座標へと更新する。再描画はしない。 */
   void Move(unsigned int id, Vector2D<int> new_position);
-  /** @brief レイヤーの位置情報を指定された相対座標へと更新して再描画する。 */
+  /** @brief レイヤーの位置情報を指定された相対座標へと更新する。再描画はしない。 */
   void MoveRelative(unsigned int id, Vector2D<int> pos_diff);
 
   /** @brief レイヤーの高さ方向の位置を指定された位置に移動する。
@@ -75,8 +75,6 @@ class LayerManager {
   void UpDown(unsigned int id, int new_height);
   /** @brief レイヤーを非表示とする。 */
   void Hide(unsigned int id);
-  /** @brief レイヤーを最前面に移動する。 */
-  void Topmost(unsigned int id);
 
  private:
   PixelWriter* writer_{nullptr};
