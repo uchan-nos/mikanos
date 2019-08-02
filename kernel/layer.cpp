@@ -89,17 +89,15 @@ void LayerManager::UpDown(unsigned int id, int new_height) {
   }
 
   auto layer = FindLayer(id);
-  auto new_pos = layer_stack_.begin() + new_height;
   auto old_pos = std::find(layer_stack_.begin(), layer_stack_.end(), layer);
+  auto new_pos = layer_stack_.begin() + new_height;
+
   if (old_pos == layer_stack_.end()) {
     layer_stack_.insert(new_pos, layer);
     return;
   }
-  if (old_pos == new_pos) {
-    return;
-  }
 
-  if (old_pos < new_pos) {
+  if (new_pos == layer_stack_.end()) {
     --new_pos;
   }
   layer_stack_.erase(old_pos);
