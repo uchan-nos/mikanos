@@ -69,12 +69,10 @@ void LayerManager::Draw() const {
 // #@@range_begin(layermgr_move)
 void LayerManager::Move(unsigned int id, Vector2D<int> new_position) {
   FindLayer(id)->Move(new_position);
-  Draw();
 }
 
 void LayerManager::MoveRelative(unsigned int id, Vector2D<int> pos_diff) {
   FindLayer(id)->MoveRelative(pos_diff);
-  Draw();
 }
 // #@@range_end(layermgr_move)
 
@@ -114,12 +112,6 @@ void LayerManager::Hide(unsigned int id) {
   }
 }
 // #@@range_end(layermgr_hide)
-
-// #@@range_begin(layermgr_topmost)
-void LayerManager::Topmost(unsigned int id) {
-  UpDown(id, layer_stack_.size());
-}
-// #@@range_end(layermgr_topmost)
 
 // #@@range_begin(layermgr_findlayer)
 Layer* LayerManager::FindLayer(unsigned int id) {
