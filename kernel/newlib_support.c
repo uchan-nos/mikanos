@@ -5,7 +5,6 @@ void _exit(void) {
   while (1) __asm__("hlt");
 }
 
-// #@@range_begin(sbrk)
 caddr_t program_break, program_break_end;
 
 caddr_t sbrk(int incr) {
@@ -18,7 +17,6 @@ caddr_t sbrk(int incr) {
   program_break += incr;
   return prev_break;
 }
-// #@@range_end(sbrk)
 
 int getpid(void) {
   return 1;
