@@ -66,7 +66,6 @@ void BitmapMemoryManager::SetBit(FrameID frame, bool allocated) {
   }
 }
 
-// #@@range_begin(set_program_break)
 extern "C" caddr_t program_break, program_break_end;
 
 Error InitializeHeap(BitmapMemoryManager& memory_manager) {
@@ -80,4 +79,3 @@ Error InitializeHeap(BitmapMemoryManager& memory_manager) {
   program_break_end = program_break + kHeapFrames * kBytesPerFrame;
   return MAKE_ERROR(Error::kSuccess);
 }
-// #@@range_end(set_program_break)

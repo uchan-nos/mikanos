@@ -15,7 +15,6 @@ Console::Console(const PixelColor& fg_color, const PixelColor& bg_color)
       buffer_{}, cursor_row_{0}, cursor_column_{0} {
 }
 
-// #@@range_begin(putstring)
 void Console::PutString(const char* s) {
   while (*s) {
     if (*s == '\n') {
@@ -31,9 +30,7 @@ void Console::PutString(const char* s) {
     layer_manager->Draw();
   }
 }
-// #@@range_end(putstring)
 
-// #@@range_begin(console_setwriter)
 void Console::SetWriter(PixelWriter* writer) {
   if (writer == writer_) {
     return;
@@ -41,7 +38,6 @@ void Console::SetWriter(PixelWriter* writer) {
   writer_ = writer;
   Refresh();
 }
-// #@@range_end(console_setwriter)
 
 void Console::Newline() {
   cursor_column_ = 0;
@@ -61,10 +57,8 @@ void Console::Newline() {
   }
 }
 
-// #@@range_begin(console_refresh)
 void Console::Refresh() {
   for (int row = 0; row < kRows; ++row) {
     WriteString(*writer_, 0, 16 * row, buffer_[row], fg_color_);
   }
 }
-// #@@range_end(console_refresh)
