@@ -14,12 +14,10 @@
  *
  * タイトルやメニューがあるウィンドウだけでなく，マウスカーソルの表示領域なども対象とする。
  */
-// #@@range_begin(window)
 class Window {
  public:
   /** @brief WindowWriter は Window と関連付けられた PixelWriter を提供する。
    */
-  // #@@range_begin(windowwriter)
   class WindowWriter : public PixelWriter {
    public:
     WindowWriter(Window& window) : window_{window} {}
@@ -35,7 +33,6 @@ class Window {
    private:
     Window& window_;
   };
-  // #@@range_end(windowwriter)
 
   /** @brief 指定されたピクセル数の平面描画領域を作成する。 */
   Window(int width, int height);
@@ -70,4 +67,3 @@ class Window {
   WindowWriter writer_{*this};
   std::optional<PixelColor> transparent_color_{std::nullopt};
 };
-// #@@range_end(window)
