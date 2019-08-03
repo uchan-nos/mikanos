@@ -1,15 +1,12 @@
 #include "window.hpp"
 
-// #@@range_begin(window_ctor)
 Window::Window(int width, int height) : width_{width}, height_{height} {
   data_.resize(height);
   for (int y = 0; y < height; ++y) {
     data_[y].resize(width);
   }
 }
-// #@@range_end(window_ctor)
 
-// #@@range_begin(window_drawto)
 void Window::DrawTo(PixelWriter& writer, Vector2D<int> position) {
   if (!transparent_color_) {
     for (int y = 0; y < Height(); ++y) {
@@ -30,13 +27,10 @@ void Window::DrawTo(PixelWriter& writer, Vector2D<int> position) {
     }
   }
 }
-// #@@range_end(window_drawto)
 
-// #@@range_begin(window_settc)
 void Window::SetTransparentColor(std::optional<PixelColor> c) {
   transparent_color_ = c;
 }
-// #@@range_end(window_settc)
 
 Window::WindowWriter* Window::Writer() {
   return &writer_;
