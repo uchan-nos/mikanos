@@ -10,7 +10,7 @@
 class FrameBuffer {
  public:
   Error Initialize(const FrameBufferConfig& config);
-  Error Copy(int x, int y, const FrameBuffer& src);
+  Error Copy(Vector2D<int> pos, const FrameBuffer& src);
 
   FrameBufferWriter& Writer() { return *writer_; }
 

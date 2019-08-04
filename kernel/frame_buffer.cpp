@@ -32,7 +32,7 @@ Error FrameBuffer::Initialize(const FrameBufferConfig& config) {
   return MAKE_ERROR(Error::kSuccess);
 }
 
-Error FrameBuffer::Copy(int x, int y, const FrameBuffer& src) {
+Error FrameBuffer::Copy(Vector2D<int> pos, const FrameBuffer& src) {
   if (config_.pixel_format != src.config_.pixel_format) {
     return MAKE_ERROR(Error::kUnknownPixelFormat);
   }
@@ -46,10 +46,10 @@ Error FrameBuffer::Copy(int x, int y, const FrameBuffer& src) {
   const auto src_width = src.config_.horizontal_resolution;
   const auto src_height = src.config_.vertical_resolution;
 
-  const int copy_start_dst_x = std::max(x, 0);
-  const int copy_start_dst_y = std::max(y, 0);
-  const int copy_end_dst_x = std::min(x + src_width, dst_width);
-  const int copy_end_dst_y = std::min(y + src_height, dst_height);
+  const int copy_start_dst_x = std::max(pos.x, 0);
+  const int copy_start_dst_y = std::max(pos.y, 0);
+  const int copy_end_dst_x = std::min(pos.x + src_width, dst_width);
+  const int copy_end_dst_y = std::min(pos.y + src_height, dst_height);
 
   const auto bytes_per_pixel = (bits_per_pixel + 7) / 8;
   const auto bytes_per_copy_line =
