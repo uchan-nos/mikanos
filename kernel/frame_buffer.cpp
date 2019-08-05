@@ -68,6 +68,33 @@ Error FrameBuffer::Copy(Vector2D<int> pos, const FrameBuffer& src) {
   return MAKE_ERROR(Error::kSuccess);
 }
 
+void FrameBuffer::Move(Vector2D<int> src_pos, Vector2D<int> src_size, Vector2D<int> dst_pos) {
+  const auto bits_per_pixel = BitsPerPixel(config_.pixel_format);
+  const auto bytes_per_pixel = (bits_per_pixel + 7) / 8;
+
+  if (dst_pos.y < src_pos.y) { // move up
+    uint8_t* dst_buf = config_.frame_buffer + bytes_per_pixel *
+      (config_.pixels_per_scan_line * dst_pos.y + dst_pos.x);
+    const uint8_t* src_buf = config_.frame_buffer + bytes_per_pixel *
+      (config_.pixels_per_scan_line * src_pos.y + src_pos.x);
+    for (int y = 0; y < src_size.y; ++y) {
+      memcpy(dst_buf, src_buf, bytes_per_pixel * src_size.x);
+      dst_buf += bytes_per_pixel * config_.pixels_per_scan_line;
+      src_buf += bytes_per_pixel * config_.pixels_per_scan_line;
+    }
+  } else { // move down
+    uint8_t* dst_buf = config_.frame_buffer + bytes_per_pixel *
+      (config_.pixels_per_scan_line * (dst_pos.y + src_size.y - 1) + dst_pos.x);
+    const uint8_t* src_buf = config_.frame_buffer + bytes_per_pixel *
+      (config_.pixels_per_scan_line * (src_pos.y + src_size.y - 1) + src_pos.x);
+    for (int y = 0; y < src_size.y; ++y) {
+      memcpy(dst_buf, src_buf, bytes_per_pixel * src_size.x);
+      dst_buf -= bytes_per_pixel * config_.pixels_per_scan_line;
+      src_buf -= bytes_per_pixel * config_.pixels_per_scan_line;
+    }
+  }
+}
+
 int BitsPerPixel(PixelFormat format) {
   switch (format) {
     case kPixelRGBResv8BitPerColor: return 32;
