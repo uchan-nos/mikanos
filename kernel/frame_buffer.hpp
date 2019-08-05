@@ -20,5 +20,3 @@ class FrameBuffer {
   std::vector<uint8_t> buffer_{};
   std::unique_ptr<FrameBufferWriter> writer_{};
 };
-
-int BitsPerPixel(PixelFormat format);
