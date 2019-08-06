@@ -63,6 +63,6 @@ int Window::Height() const {
   return height_;
 }
 
-void Window::Move(Vector2D<int> src_pos, Vector2D<int> src_size, Vector2D<int> dst_pos) {
-  shadow_buffer_.Move(src_pos, src_size, dst_pos);
+void Window::Move(Vector2D<int> dst_pos, const Rectangle<int>& src) {
+  shadow_buffer_.Move(dst_pos, src);
 }
