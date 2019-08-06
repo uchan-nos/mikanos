@@ -57,7 +57,8 @@ void Console::Newline() {
   }
 
   if (window_) {
-    window_->Move({0, 16}, {8 * kColumns, 16 * (kRows - 1)}, {0, 0});
+    Rectangle<int> move_src{{0, 16}, {8 * kColumns, 16 * (kRows - 1)}};
+    window_->Move({0, 0}, move_src);
     for (int y = 16 * (kRows - 1); y < 16 * kRows; ++y) {
       for (int x = 0; x < 8 * kColumns; ++x) {
         writer_->Write(Vector2D<int>{x, y}, bg_color_);

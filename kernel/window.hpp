@@ -68,7 +68,7 @@ class Window {
    * @param src_size  移動元矩形の大きさ
    * @param dst_pos   移動先の原点
    */
-  void Move(Vector2D<int> src_pos, Vector2D<int> src_size, Vector2D<int> dst_pos);
+  void Move(Vector2D<int> dst_pos, const Rectangle<int>& src);
 
  private:
   int width_, height_;
