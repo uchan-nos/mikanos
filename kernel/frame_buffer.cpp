@@ -56,7 +56,7 @@ Error FrameBuffer::Initialize(const FrameBufferConfig& config) {
   return MAKE_ERROR(Error::kSuccess);
 }
 
-Error FrameBuffer::Copy(Vector2D<int> dst_pos, const FrameBuffer& src) {
+Error FrameBuffer::Copy(Vector2D<int> dst_pos, const FrameBuffer& src, const Rectangle<int>& src_area) {
   if (config_.pixel_format != src.config_.pixel_format) {
     return MAKE_ERROR(Error::kUnknownPixelFormat);
   }
@@ -67,13 +67,12 @@ Error FrameBuffer::Copy(Vector2D<int> dst_pos, const FrameBuffer& src) {
   }
 
   const auto dst_size = FrameBufferSize(config_);
-  const auto src_size = FrameBufferSize(src.config_);
 
   const Vector2D<int> dst_start = ElementMax(dst_pos, {0, 0});
-  const Vector2D<int> dst_end = ElementMin(dst_pos + src_size, dst_size);
+  const Vector2D<int> dst_end = ElementMin(dst_pos + src_area.size, dst_size);
 
   uint8_t* dst_buf = FrameAddrAt(dst_start, config_);
-  const uint8_t* src_buf = FrameAddrAt({0, 0}, src.config_);
+  const uint8_t* src_buf = FrameAddrAt(src_area.pos, src.config_);
 
   for (int y = dst_start.y; y < dst_end.y; ++y) {
     memcpy(dst_buf, src_buf, bytes_per_pixel * (dst_end.x - dst_start.x));
