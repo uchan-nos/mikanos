@@ -33,7 +33,9 @@
 #include "window.hpp"
 #include "layer.hpp"
 
+// #@@range_begin(include_timer)
 #include "timer.hpp"
+// #@@range_end(include_timer)
 
 char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
 PixelWriter* pixel_writer;
@@ -59,6 +61,7 @@ BitmapMemoryManager* memory_manager;
 
 unsigned int mouse_layer_id;
 
+// #@@range_begin(mouse_observer)
 void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
   layer_manager->MoveRelative(mouse_layer_id, {displacement_x, displacement_y});
   StartLAPICTimer();
@@ -67,6 +70,7 @@ void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
   StopLAPICTimer();
   printk("MouseObserver: elapsed = %u\n", elapsed);
 }
+// #@@range_end(mouse_observer)
 
 void SwitchEhci2Xhci(const pci::Device& xhc_dev) {
   bool intel_ehc_exist = false;
@@ -130,10 +134,12 @@ extern "C" void KernelMainNewStack(
     kDesktopFGColor, kDesktopBGColor
   };
   console->SetWriter(pixel_writer);
+  // #@@range_begin(initialize_lapic_timer)
   printk("Welcome to MikanOS!\n");
   SetLogLevel(kWarn);
 
   InitializeLAPICTimer();
+  // #@@range_end(initialize_lapic_timer)
 
   SetupSegments();
 
