@@ -270,6 +270,7 @@ extern "C" void KernelMainNewStack(
   mouse_window->SetTransparentColor(kMouseTransparentColor);
   DrawMouseCursor(mouse_window->Writer(), {0, 0});
 
+  // #@@range_begin(create_screen)
   FrameBuffer screen;
   if (auto err = screen.Initialize(frame_buffer_config)) {
     Log(kError, "failed to initialize frame buffer: %s at %s:%d\n",
@@ -278,6 +279,7 @@ extern "C" void KernelMainNewStack(
 
   layer_manager = new LayerManager;
   layer_manager->SetWriter(&screen);
+  // #@@range_end(create_screen)
 
   auto bglayer_id = layer_manager->NewLayer()
     .SetWindow(bgwindow)
