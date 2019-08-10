@@ -40,6 +40,7 @@ void Console::SetWriter(PixelWriter* writer) {
   Refresh();
 }
 
+// #@@range_begin(set_window)
 void Console::SetWindow(const std::shared_ptr<Window>& window) {
   if (window == window_) {
     return;
@@ -48,7 +49,9 @@ void Console::SetWindow(const std::shared_ptr<Window>& window) {
   writer_ = window->Writer();
   Refresh();
 }
+// #@@range_end(set_window)
 
+// #@@range_begin(newline)
 void Console::Newline() {
   cursor_column_ = 0;
   if (cursor_row_ < kRows - 1) {
@@ -78,6 +81,7 @@ void Console::Newline() {
 
   memset(buffer_[kRows - 1], 0, kColumns + 1);
 }
+// #@@range_end(newline)
 
 void Console::Refresh() {
   for (int row = 0; row < kRows; ++row) {
