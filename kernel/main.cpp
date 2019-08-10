@@ -268,8 +268,10 @@ extern "C" void KernelMainNewStack(
       kFrameWidth, kFrameHeight, frame_buffer_config.pixel_format);
   auto bgwriter = bgwindow->Writer();
 
+  // #@@range_begin(set_window)
   DrawDesktop(*bgwriter);
   console->SetWindow(bgwindow);
+  // #@@range_end(set_window)
 
   auto mouse_window = std::make_shared<Window>(
       kMouseCursorWidth, kMouseCursorHeight, frame_buffer_config.pixel_format);
