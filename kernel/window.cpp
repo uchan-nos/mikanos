@@ -2,7 +2,6 @@
 
 #include "logger.hpp"
 
-// #@@range_begin(ctor)
 Window::Window(int width, int height, PixelFormat shadow_format) : width_{width}, height_{height} {
   data_.resize(height);
   for (int y = 0; y < height; ++y) {
@@ -20,9 +19,7 @@ Window::Window(int width, int height, PixelFormat shadow_format) : width_{width}
         err.Name(), err.File(), err.Line());
   }
 }
-// #@@range_end(ctor)
 
-// #@@range_begin(drawto)
 void Window::DrawTo(FrameBuffer& dst, Vector2D<int> position) {
   if (!transparent_color_) {
     dst.Copy(position, shadow_buffer_);
@@ -40,7 +37,6 @@ void Window::DrawTo(FrameBuffer& dst, Vector2D<int> position) {
     }
   }
 }
-// #@@range_end(drawto)
 
 void Window::SetTransparentColor(std::optional<PixelColor> c) {
   transparent_color_ = c;
@@ -50,7 +46,6 @@ Window::WindowWriter* Window::Writer() {
   return &writer_;
 }
 
-// #@@range_begin(write)
 const PixelColor& Window::At(Vector2D<int> pos) const{
   return data_[pos.y][pos.x];
 }
@@ -59,7 +54,6 @@ void Window::Write(Vector2D<int> pos, PixelColor c) {
   data_[pos.y][pos.x] = c;
   shadow_buffer_.Writer().Write(pos, c);
 }
-// #@@range_end(write)
 
 int Window::Width() const {
   return width_;
