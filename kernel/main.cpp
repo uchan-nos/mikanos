@@ -41,6 +41,7 @@ PixelWriter* pixel_writer;
 char console_buf[sizeof(Console)];
 Console* console;
 
+// #@@range_begin(measure_printk)
 int printk(const char* format, ...) {
   va_list ap;
   int result;
@@ -59,6 +60,7 @@ int printk(const char* format, ...) {
   console->PutString(s);
   return result;
 }
+// #@@range_end(measure_printk)
 
 char memory_manager_buf[sizeof(BitmapMemoryManager)];
 BitmapMemoryManager* memory_manager;
