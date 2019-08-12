@@ -22,12 +22,10 @@ class Window {
   class WindowWriter : public PixelWriter {
    public:
     WindowWriter(Window& window) : window_{window} {}
-    // #@@range_begin(windowwriter_write)
     /** @brief 指定された位置に指定された色を描く */
     virtual void Write(Vector2D<int> pos, const PixelColor& c) override {
       window_.Write(pos, c);
     }
-    // #@@range_end(windowwriter_write)
     /** @brief Width は関連付けられた Window の横幅をピクセル単位で返す。 */
     virtual int Width() const override { return window_.Width(); }
     /** @brief Height は関連付けられた Window の高さをピクセル単位で返す。 */
@@ -64,7 +62,6 @@ class Window {
   /** @brief 平面描画領域の高さをピクセル単位で返す。 */
   int Height() const;
 
-  // #@@range_begin(fields)
  private:
   int width_, height_;
   std::vector<std::vector<PixelColor>> data_{};
@@ -72,5 +69,4 @@ class Window {
   std::optional<PixelColor> transparent_color_{std::nullopt};
 
   FrameBuffer shadow_buffer_{};
-  // #@@range_end(fields)
 };
