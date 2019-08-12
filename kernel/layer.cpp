@@ -28,33 +28,27 @@ Layer& Layer::MoveRelative(Vector2D<int> pos_diff) {
   return *this;
 }
 
-// #@@range_begin(layer_drawto)
 void Layer::DrawTo(FrameBuffer& screen) const {
   if (window_) {
     window_->DrawTo(screen, pos_);
   }
 }
-// #@@range_end(layer_drawto)
 
 
-// #@@range_begin(layermgr_setwriter)
 void LayerManager::SetWriter(FrameBuffer* screen) {
   screen_ = screen;
 }
-// #@@range_end(layermgr_setwriter)
 
 Layer& LayerManager::NewLayer() {
   ++latest_id_;
   return *layers_.emplace_back(new Layer{latest_id_});
 }
 
-// #@@range_begin(layermgr_draw)
 void LayerManager::Draw() const {
   for (auto layer : layer_stack_) {
     layer->DrawTo(*screen_);
   }
 }
-// #@@range_end(layermgr_draw)
 
 void LayerManager::Move(unsigned int id, Vector2D<int> new_position) {
   FindLayer(id)->Move(new_position);
