@@ -56,7 +56,6 @@ char memory_manager_buf[sizeof(BitmapMemoryManager)];
 BitmapMemoryManager* memory_manager;
 
 // #@@range_begin(layermgr_mousehandler)
-LayerManager* layer_manager;
 unsigned int mouse_layer_id;
 
 void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
