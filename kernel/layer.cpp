@@ -125,3 +125,5 @@ Layer* LayerManager::FindLayer(unsigned int id) {
   return it->get();
 }
 // #@@range_end(layermgr_findlayer)
+
+LayerManager* layer_manager;
