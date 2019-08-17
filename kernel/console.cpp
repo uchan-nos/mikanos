@@ -8,6 +8,7 @@
 
 #include <cstring>
 #include "font.hpp"
+#include "layer.hpp"
 
 Console::Console(const PixelColor& fg_color, const PixelColor& bg_color)
     : writer_{nullptr}, fg_color_{fg_color}, bg_color_{bg_color},
@@ -32,6 +33,9 @@ void Console::PutString(const char* s) {
       ++cursor_column_;
     }
     ++s;
+  }
+  if (layer_manager) {
+    layer_manager->Draw();
   }
 }
 
