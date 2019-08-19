@@ -1,6 +1,5 @@
 #include "frame_buffer.hpp"
 
-// #@@range_begin(utils)
 namespace {
   int BytesPerPixel(PixelFormat format) {
     switch (format) {
@@ -24,9 +23,7 @@ namespace {
             static_cast<int>(config.vertical_resolution)};
   }
 }
-// #@@range_end(utils)
 
-// #@@range_begin(initialize)
 Error FrameBuffer::Initialize(const FrameBufferConfig& config) {
   config_ = config;
 
@@ -58,9 +55,7 @@ Error FrameBuffer::Initialize(const FrameBufferConfig& config) {
 
   return MAKE_ERROR(Error::kSuccess);
 }
-// #@@range_end(initialize)
 
-// #@@range_begin(copy)
 Error FrameBuffer::Copy(Vector2D<int> dst_pos, const FrameBuffer& src) {
   if (config_.pixel_format != src.config_.pixel_format) {
     return MAKE_ERROR(Error::kUnknownPixelFormat);
@@ -88,9 +83,7 @@ Error FrameBuffer::Copy(Vector2D<int> dst_pos, const FrameBuffer& src) {
 
   return MAKE_ERROR(Error::kSuccess);
 }
-// #@@range_end(copy)
 
-// #@@range_begin(move)
 void FrameBuffer::Move(Vector2D<int> dst_pos, const Rectangle<int>& src) {
   const auto bytes_per_pixel = BytesPerPixel(config_.pixel_format);
   const auto bytes_per_scan_line = BytesPerScanLine(config_);
@@ -113,4 +106,3 @@ void FrameBuffer::Move(Vector2D<int> dst_pos, const Rectangle<int>& src) {
     }
   }
 }
-// #@@range_end(move)
