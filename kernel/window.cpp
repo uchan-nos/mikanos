@@ -73,6 +73,7 @@ void Window::Move(Vector2D<int> dst_pos, const Rectangle<int>& src) {
 }
 
 
+// #@@range_begin(utils)
 namespace {
   const int kCloseButtonWidth = 16;
   const int kCloseButtonHeight = 14;
@@ -101,7 +102,9 @@ namespace {
     };
   }
 }
+// #@@range_end(utils)
 
+// #@@range_begin(draw_window)
 void DrawWindow(PixelWriter& writer, const char* title) {
   auto fill_rect = [&writer](Vector2D<int> pos, Vector2D<int> size, uint32_t c) {
     FillRectangle(writer, pos, size, ToColor(c));
@@ -136,3 +139,4 @@ void DrawWindow(PixelWriter& writer, const char* title) {
     }
   }
 }
+// #@@range_end(draw_window)
