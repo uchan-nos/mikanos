@@ -55,6 +55,7 @@ int printk(const char* format, ...) {
 char memory_manager_buf[sizeof(BitmapMemoryManager)];
 BitmapMemoryManager* memory_manager;
 
+// #@@range_begin(limit_mouse_area)
 unsigned int mouse_layer_id;
 Vector2D<int> screen_size;
 Vector2D<int> mouse_position;
@@ -67,6 +68,7 @@ void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
   layer_manager->Move(mouse_layer_id, mouse_position);
   layer_manager->Draw();
 }
+// #@@range_end(limit_mouse_area)
 
 void SwitchEhci2Xhci(const pci::Device& xhc_dev) {
   bool intel_ehc_exist = false;
@@ -253,8 +255,10 @@ extern "C" void KernelMainNewStack(
     }
   }
 
+  // #@@range_begin(screen_size)
   screen_size.x = frame_buffer_config.horizontal_resolution;
   screen_size.y = frame_buffer_config.vertical_resolution;
+  // #@@range_end(screen_size)
 
   auto bgwindow = std::make_shared<Window>(
       screen_size.x, screen_size.y, frame_buffer_config.pixel_format);
