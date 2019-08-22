@@ -56,7 +56,6 @@ Error FrameBuffer::Initialize(const FrameBufferConfig& config) {
   return MAKE_ERROR(Error::kSuccess);
 }
 
-// #@@range_begin(copy)
 Error FrameBuffer::Copy(Vector2D<int> dst_pos, const FrameBuffer& src,
                         const Rectangle<int>& src_area) {
   if (config_.pixel_format != src.config_.pixel_format) {
@@ -85,7 +84,6 @@ Error FrameBuffer::Copy(Vector2D<int> dst_pos, const FrameBuffer& src,
 
   return MAKE_ERROR(Error::kSuccess);
 }
-// #@@range_end(copy)
 
 void FrameBuffer::Move(Vector2D<int> dst_pos, const Rectangle<int>& src) {
   const auto bytes_per_pixel = BytesPerPixel(config_.pixel_format);
