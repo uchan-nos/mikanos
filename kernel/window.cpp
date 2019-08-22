@@ -21,7 +21,6 @@ Window::Window(int width, int height, PixelFormat shadow_format) : width_{width}
   }
 }
 
-// #@@range_begin(drawto)
 void Window::DrawTo(FrameBuffer& dst, Vector2D<int> pos, const Rectangle<int>& area) {
   if (!transparent_color_) {
     Rectangle<int> window_area{pos, Size()};
@@ -29,7 +28,6 @@ void Window::DrawTo(FrameBuffer& dst, Vector2D<int> pos, const Rectangle<int>& a
     dst.Copy(intersection.pos, shadow_buffer_, {intersection.pos - pos, intersection.size});
     return;
   }
-// #@@range_end(drawto)
 
   const auto tc = transparent_color_.value();
   auto& writer = dst.Writer();
