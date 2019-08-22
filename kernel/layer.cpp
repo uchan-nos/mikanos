@@ -39,21 +39,31 @@ void Layer::DrawTo(FrameBuffer& screen, const Rectangle<int>& area) const {
 }
 
 
+// #@@range_begin(set_writer)
 void LayerManager::SetWriter(FrameBuffer* screen) {
   screen_ = screen;
+
+  FrameBufferConfig shadow_config = screen->Config();
+  shadow_config.frame_buffer = nullptr;
+  shadow_screen_.Initialize(shadow_config);
 }
+// #@@range_end(set_writer)
 
 Layer& LayerManager::NewLayer() {
   ++latest_id_;
   return *layers_.emplace_back(new Layer{latest_id_});
 }
 
+// #@@range_begin(draw_area)
 void LayerManager::Draw(const Rectangle<int>& area) const {
   for (auto layer : layer_stack_) {
-    layer->DrawTo(*screen_, area);
+    layer->DrawTo(shadow_screen_, area);
   }
+  screen_->Copy(area.pos, shadow_screen_, area);
 }
+// #@@range_end(draw_area)
 
+// #@@range_begin(draw_layer)
 void LayerManager::Draw(unsigned int id) const {
   bool draw = false;
   Rectangle<int> window_area;
@@ -64,10 +74,12 @@ void LayerManager::Draw(unsigned int id) const {
       draw = true;
     }
     if (draw) {
-      layer->DrawTo(*screen_, window_area);
+      layer->DrawTo(shadow_screen_, window_area);
     }
   }
+  screen_->Copy(window_area.pos, shadow_screen_, window_area);
 }
+// #@@range_end(draw_layer)
 
 void LayerManager::Move(unsigned int id, Vector2D<int> new_pos) {
   auto layer = FindLayer(id);
