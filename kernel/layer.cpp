@@ -32,13 +32,11 @@ Layer& Layer::MoveRelative(Vector2D<int> pos_diff) {
   return *this;
 }
 
-// #@@range_begin(layer_drawto)
 void Layer::DrawTo(FrameBuffer& screen, const Rectangle<int>& area) const {
   if (window_) {
     window_->DrawTo(screen, pos_, area);
   }
 }
-// #@@range_end(layer_drawto)
 
 
 void LayerManager::SetWriter(FrameBuffer* screen) {
@@ -50,7 +48,6 @@ Layer& LayerManager::NewLayer() {
   return *layers_.emplace_back(new Layer{latest_id_});
 }
 
-// #@@range_begin(layermgr_draw)
 void LayerManager::Draw(const Rectangle<int>& area) const {
   for (auto layer : layer_stack_) {
     layer->DrawTo(*screen_, area);
@@ -71,9 +68,7 @@ void LayerManager::Draw(unsigned int id) const {
     }
   }
 }
-// #@@range_end(layermgr_draw)
 
-// #@@range_begin(layermgr_move)
 void LayerManager::Move(unsigned int id, Vector2D<int> new_pos) {
   auto layer = FindLayer(id);
   const auto window_size = layer->GetWindow()->Size();
@@ -82,7 +77,6 @@ void LayerManager::Move(unsigned int id, Vector2D<int> new_pos) {
   Draw({old_pos, window_size});
   Draw(id);
 }
-// #@@range_end(layermgr_move)
 
 void LayerManager::MoveRelative(unsigned int id, Vector2D<int> pos_diff) {
   auto layer = FindLayer(id);
