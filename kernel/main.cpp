@@ -271,11 +271,9 @@ extern "C" void KernelMainNewStack(
       160, 52, frame_buffer_config.pixel_format);
   DrawWindow(*main_window->Writer(), "Hello Window");
 
-  // #@@range_begin(make_console_window)
   auto console_window = std::make_shared<Window>(
       Console::kColumns * 8, Console::kRows * 16, frame_buffer_config.pixel_format);
   console->SetWindow(console_window);
-  // #@@range_end(make_console_window)
 
   FrameBuffer screen;
   if (auto err = screen.Initialize(frame_buffer_config)) {
@@ -298,32 +296,26 @@ extern "C" void KernelMainNewStack(
     .SetWindow(main_window)
     .Move({300, 100})
     .ID();
-  // #@@range_begin(make_console_layer)
   console->SetLayerID(layer_manager->NewLayer()
     .SetWindow(console_window)
     .Move({0, 0})
     .ID());
-  // #@@range_end(make_console_layer)
 
-  // #@@range_begin(draw_all_layer)
   layer_manager->UpDown(bglayer_id, 0);
   layer_manager->UpDown(console->LayerID(), 1);
   layer_manager->UpDown(main_window_layer_id, 2);
   layer_manager->UpDown(mouse_layer_id, 3);
   layer_manager->Draw({{0, 0}, screen_size});
-  // #@@range_end(draw_all_layer)
 
   char str[128];
   unsigned int count = 0;
 
   while (true) {
-    // #@@range_begin(draw_window_layer)
     ++count;
     sprintf(str, "%010u", count);
     FillRectangle(*main_window->Writer(), {24, 28}, {8 * 10, 16}, {0xc6, 0xc6, 0xc6});
     WriteString(*main_window->Writer(), {24, 28}, str, {0, 0, 0});
     layer_manager->Draw(main_window_layer_id);
-    // #@@range_end(draw_window_layer)
 
     __asm__("cli");
     if (main_queue.Count() == 0) {
