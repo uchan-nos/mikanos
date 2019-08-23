@@ -80,7 +80,7 @@ class LayerManager {
 // #@@range_begin(layermgr_fields)
  private:
   FrameBuffer* screen_{nullptr};
-  mutable FrameBuffer shadow_screen_{};
+  mutable FrameBuffer back_buffer_{};
 // #@@range_end(layermgr_fields)
   std::vector<std::unique_ptr<Layer>> layers_{};
   std::vector<Layer*> layer_stack_{};
