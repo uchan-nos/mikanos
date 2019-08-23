@@ -77,11 +77,9 @@ class LayerManager {
   /** @brief レイヤーを非表示とする。 */
   void Hide(unsigned int id);
 
-// #@@range_begin(layermgr_fields)
  private:
   FrameBuffer* screen_{nullptr};
   mutable FrameBuffer back_buffer_{};
-// #@@range_end(layermgr_fields)
   std::vector<std::unique_ptr<Layer>> layers_{};
   std::vector<Layer*> layer_stack_{};
   unsigned int latest_id_{0};
