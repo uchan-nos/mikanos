@@ -66,16 +66,17 @@ Error FrameBuffer::Copy(Vector2D<int> dst_pos, const FrameBuffer& src, const Rec
     return MAKE_ERROR(Error::kUnknownPixelFormat);
   }
 
-  const auto dst_size = FrameBufferSize(config_);
+  const Rectangle<int> src_area_shifted{dst_pos, src_area.size};
+  const Rectangle<int> src_outline{dst_pos - src_area.pos, FrameBufferSize(src.config_)};
+  const Rectangle<int> dst_outline{{0, 0}, FrameBufferSize(config_)};
+  const auto copy_area = dst_outline.Intersect(src_outline.Intersect(src_area_shifted));
+  const auto src_start_pos = copy_area.pos - (dst_pos - src_area.pos);
 
-  const Vector2D<int> dst_start = ElementMax(dst_pos, {0, 0});
-  const Vector2D<int> dst_end = ElementMin(dst_pos + src_area.size, dst_size);
+  uint8_t* dst_buf = FrameAddrAt(copy_area.pos, config_);
+  const uint8_t* src_buf = FrameAddrAt(src_start_pos, src.config_);
 
-  uint8_t* dst_buf = FrameAddrAt(dst_start, config_);
-  const uint8_t* src_buf = FrameAddrAt(src_area.pos, src.config_);
-
-  for (int y = dst_start.y; y < dst_end.y; ++y) {
-    memcpy(dst_buf, src_buf, bytes_per_pixel * (dst_end.x - dst_start.x));
+  for (int y = 0; y < copy_area.size.y; ++y) {
+    memcpy(dst_buf, src_buf, bytes_per_pixel * copy_area.size.x);
     dst_buf += BytesPerScanLine(config_);
     src_buf += BytesPerScanLine(src.config_);
   }
