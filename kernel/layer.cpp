@@ -126,6 +126,7 @@ void LayerManager::Hide(unsigned int id) {
   }
 }
 
+// #@@range_begin(layermgr_findlayer_bypos)
 Layer* LayerManager::FindLayerByPosition(Vector2D<int> pos, unsigned int exclude_id) const {
   auto pred = [pos, exclude_id](Layer* layer) {
     if (layer->ID() == exclude_id) {
@@ -146,6 +147,7 @@ Layer* LayerManager::FindLayerByPosition(Vector2D<int> pos, unsigned int exclude
   }
   return *it;
 }
+// #@@range_end(layermgr_findlayer_bypos)
 
 Layer* LayerManager::FindLayer(unsigned int id) {
   auto pred = [id](const std::unique_ptr<Layer>& elem) {
