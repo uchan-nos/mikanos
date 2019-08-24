@@ -65,6 +65,16 @@ void MouseObserver(uint8_t buttons, int8_t displacement_x, int8_t displacement_y
   mouse_position = ElementMax(newpos, {0, 0});
 
   layer_manager->Move(mouse_layer_id, mouse_position);
+
+  if (buttons & 0x01) {
+    auto layer = layer_manager->FindLayerByPosition(mouse_position, mouse_layer_id);
+    if (layer) {
+      printk("MouseObserver: btn=%x, layer=%u\n", buttons, layer->ID());
+      layer_manager->MoveRelative(layer->ID(), {displacement_x, displacement_y});
+    } else {
+      printk("MouseObserver: btn=%x, layer=nil\n", buttons);
+    }
+  }
 }
 
 void SwitchEhci2Xhci(const pci::Device& xhc_dev) {
