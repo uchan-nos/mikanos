@@ -59,6 +59,7 @@ unsigned int mouse_layer_id;
 Vector2D<int> screen_size;
 Vector2D<int> mouse_position;
 
+// #@@range_begin(mouse_observer)
 void MouseObserver(uint8_t buttons, int8_t displacement_x, int8_t displacement_y) {
   static unsigned int mouse_drag_layer_id = 0;
   static uint8_t previous_buttons = 0;
@@ -89,6 +90,7 @@ void MouseObserver(uint8_t buttons, int8_t displacement_x, int8_t displacement_y
 
   previous_buttons = buttons;
 }
+// #@@range_end(mouse_observer)
 
 void SwitchEhci2Xhci(const pci::Device& xhc_dev) {
   bool intel_ehc_exist = false;
