@@ -61,3 +61,12 @@ void DrawDesktop(PixelWriter& writer) {
                 {30, 30},
                 {160, 160, 160});
 }
+
+FrameBufferConfig screen_config;
+
+Vector2D<int> ScreenSize() {
+  return {
+    static_cast<int>(screen_config.horizontal_resolution),
+    static_cast<int>(screen_config.vertical_resolution)
+  };
+}
