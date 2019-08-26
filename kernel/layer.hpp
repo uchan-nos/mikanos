@@ -44,13 +44,11 @@ class Layer {
   /** @brief 指定された描画先にウィンドウの内容を描画する。 */
   void DrawTo(FrameBuffer& screen, const Rectangle<int>& area) const;
 
-  // #@@range_begin(fields)
  private:
   unsigned int id_;
   Vector2D<int> pos_{};
   std::shared_ptr<Window> window_{};
   bool draggable_{false};
-  // #@@range_end(fields)
 };
 
 /** @brief LayerManager は複数のレイヤーを管理する。 */
