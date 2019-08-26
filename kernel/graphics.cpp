@@ -70,3 +70,18 @@ Vector2D<int> ScreenSize() {
     static_cast<int>(screen_config.vertical_resolution)
   };
 }
+
+namespace {
+  char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
+}
+
+PixelWriter* MakeScreenWriter() {
+  switch (screen_config.pixel_format) {
+    case kPixelRGBResv8BitPerColor:
+      return new(pixel_writer_buf) RGBResv8BitPerColorPixelWriter{screen_config};
+    case kPixelBGRResv8BitPerColor:
+      return new(pixel_writer_buf) BGRResv8BitPerColorPixelWriter{screen_config};
+  }
+
+  exit(1);
+}
