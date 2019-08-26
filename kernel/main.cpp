@@ -29,9 +29,6 @@
 #include "window.hpp"
 #include "layer.hpp"
 
-char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
-PixelWriter* pixel_writer;
-
 char console_buf[sizeof(Console)];
 Console* console;
 
@@ -73,16 +70,7 @@ extern "C" void KernelMainNewStack(
   screen_config = frame_buffer_config_ref;
   MemoryMap memory_map{memory_map_ref};
 
-  switch (screen_config.pixel_format) {
-    case kPixelRGBResv8BitPerColor:
-      pixel_writer = new(pixel_writer_buf)
-        RGBResv8BitPerColorPixelWriter{screen_config};
-      break;
-    case kPixelBGRResv8BitPerColor:
-      pixel_writer = new(pixel_writer_buf)
-        BGRResv8BitPerColorPixelWriter{screen_config};
-      break;
-  }
+  PixelWriter* pixel_writer = MakeScreenWriter();
 
   DrawDesktop(*pixel_writer);
 
