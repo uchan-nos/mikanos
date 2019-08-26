@@ -21,7 +21,6 @@
 #include "logger.hpp"
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
-#include "usb/classdriver/mouse.hpp"
 #include "usb/xhci/xhci.hpp"
 #include "usb/xhci/trb.hpp"
 #include "interrupt.hpp"
@@ -54,41 +53,6 @@ int printk(const char* format, ...) {
 
 char memory_manager_buf[sizeof(BitmapMemoryManager)];
 BitmapMemoryManager* memory_manager;
-
-unsigned int mouse_layer_id;
-Vector2D<int> screen_size;
-Vector2D<int> mouse_position;
-
-void MouseObserver(uint8_t buttons, int8_t displacement_x, int8_t displacement_y) {
-  static unsigned int mouse_drag_layer_id = 0;
-  static uint8_t previous_buttons = 0;
-
-  const auto oldpos = mouse_position;
-  auto newpos = mouse_position + Vector2D<int>{displacement_x, displacement_y};
-  newpos = ElementMin(newpos, screen_size + Vector2D<int>{-1, -1});
-  mouse_position = ElementMax(newpos, {0, 0});
-
-  const auto posdiff = mouse_position - oldpos;
-
-  layer_manager->Move(mouse_layer_id, mouse_position);
-
-  const bool previous_left_pressed = (previous_buttons & 0x01);
-  const bool left_pressed = (buttons & 0x01);
-  if (!previous_left_pressed && left_pressed) {
-    auto layer = layer_manager->FindLayerByPosition(mouse_position, mouse_layer_id);
-    if (layer && layer->IsDraggable()) {
-      mouse_drag_layer_id = layer->ID();
-    }
-  } else if (previous_left_pressed && left_pressed) {
-    if (mouse_drag_layer_id > 0) {
-      layer_manager->MoveRelative(mouse_drag_layer_id, posdiff);
-    }
-  } else if (previous_left_pressed && !left_pressed) {
-    mouse_drag_layer_id = 0;
-  }
-
-  previous_buttons = buttons;
-}
 
 void SwitchEhci2Xhci(const pci::Device& xhc_dev) {
   bool intel_ehc_exist = false;
@@ -132,17 +96,17 @@ alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 extern "C" void KernelMainNewStack(
     const FrameBufferConfig& frame_buffer_config_ref,
     const MemoryMap& memory_map_ref) {
-  FrameBufferConfig frame_buffer_config{frame_buffer_config_ref};
+  screen_config = frame_buffer_config_ref;
   MemoryMap memory_map{memory_map_ref};
 
-  switch (frame_buffer_config.pixel_format) {
+  switch (screen_config.pixel_format) {
     case kPixelRGBResv8BitPerColor:
       pixel_writer = new(pixel_writer_buf)
-        RGBResv8BitPerColorPixelWriter{frame_buffer_config};
+        RGBResv8BitPerColorPixelWriter{screen_config};
       break;
     case kPixelBGRResv8BitPerColor:
       pixel_writer = new(pixel_writer_buf)
-        BGRResv8BitPerColorPixelWriter{frame_buffer_config};
+        BGRResv8BitPerColorPixelWriter{screen_config};
       break;
   }
 
@@ -260,8 +224,6 @@ extern "C" void KernelMainNewStack(
 
   ::xhc = &xhc;
 
-  usb::HIDMouseDriver::default_observer = MouseObserver;
-
   for (int i = 1; i <= xhc.MaxPorts(); ++i) {
     auto port = xhc.PortAt(i);
     Log(kDebug, "Port %d: IsConnected=%d\n", i, port.IsConnected());
@@ -275,31 +237,25 @@ extern "C" void KernelMainNewStack(
     }
   }
 
-  screen_size.x = frame_buffer_config.horizontal_resolution;
-  screen_size.y = frame_buffer_config.vertical_resolution;
+  const auto screen_size = ScreenSize();
 
   auto bgwindow = std::make_shared<Window>(
-      screen_size.x, screen_size.y, frame_buffer_config.pixel_format);
+      screen_size.x, screen_size.y, screen_config.pixel_format);
   auto bgwriter = bgwindow->Writer();
 
   DrawDesktop(*bgwriter);
 
-  auto mouse_window = std::make_shared<Window>(
-      kMouseCursorWidth, kMouseCursorHeight, frame_buffer_config.pixel_format);
-  mouse_window->SetTransparentColor(kMouseTransparentColor);
-  DrawMouseCursor(mouse_window->Writer(), {0, 0});
-  mouse_position = {200, 200};
 
   auto main_window = std::make_shared<Window>(
-      160, 52, frame_buffer_config.pixel_format);
+      160, 52, screen_config.pixel_format);
   DrawWindow(*main_window->Writer(), "Hello Window");
 
   auto console_window = std::make_shared<Window>(
-      Console::kColumns * 8, Console::kRows * 16, frame_buffer_config.pixel_format);
+      Console::kColumns * 8, Console::kRows * 16, screen_config.pixel_format);
   console->SetWindow(console_window);
 
   FrameBuffer screen;
-  if (auto err = screen.Initialize(frame_buffer_config)) {
+  if (auto err = screen.Initialize(screen_config)) {
     Log(kError, "failed to initialize frame buffer: %s at %s:%d\n",
         err.Name(), err.File(), err.Line());
   }
@@ -307,13 +263,11 @@ extern "C" void KernelMainNewStack(
   layer_manager = new LayerManager;
   layer_manager->SetWriter(&screen);
 
+  auto mouse = MakeMouse();
+
   auto bglayer_id = layer_manager->NewLayer()
     .SetWindow(bgwindow)
     .Move({0, 0})
-    .ID();
-  mouse_layer_id = layer_manager->NewLayer()
-    .SetWindow(mouse_window)
-    .Move(mouse_position)
     .ID();
   auto main_window_layer_id = layer_manager->NewLayer()
     .SetWindow(main_window)
@@ -328,7 +282,7 @@ extern "C" void KernelMainNewStack(
   layer_manager->UpDown(bglayer_id, 0);
   layer_manager->UpDown(console->LayerID(), 1);
   layer_manager->UpDown(main_window_layer_id, 2);
-  layer_manager->UpDown(mouse_layer_id, 3);
+  layer_manager->UpDown(mouse->LayerID(), 3);
   layer_manager->Draw({{0, 0}, screen_size});
 
   char str[128];
