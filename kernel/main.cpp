@@ -65,7 +65,6 @@ std::deque<Message>* main_queue;
 
 alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 
-// #@@range_begin(main_function)
 extern "C" void KernelMainNewStack(
     const FrameBufferConfig& frame_buffer_config_ref,
     const MemoryMap& memory_map_ref) {
@@ -90,9 +89,10 @@ extern "C" void KernelMainNewStack(
   InitializeMainWindow();
   InitializeMouse();
   layer_manager->Draw({{0, 0}, ScreenSize()});
-// #@@range_end(main_function)
 
+  // #@@range_begin(call_init_timer)
   InitializeLAPICTimer();
+  // #@@range_end(call_init_timer)
 
   char str[128];
   unsigned int count = 0;
@@ -114,6 +114,7 @@ extern "C" void KernelMainNewStack(
     main_queue->pop_front();
     __asm__("sti");
 
+    // #@@range_begin(process_event)
     switch (msg.type) {
     case Message::kInterruptXHCI:
       usb::xhci::ProcessEvents();
@@ -121,6 +122,7 @@ extern "C" void KernelMainNewStack(
     case Message::kInterruptLAPICTimer:
       printk("Timer interrupt\n");
       break;
+    // #@@range_end(process_event)
     default:
       Log(kError, "Unknown message type: %d\n", msg.type);
     }
