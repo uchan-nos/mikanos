@@ -28,7 +28,6 @@ void NotifyEndOfInterrupt() {
   *end_of_interrupt = 0;
 }
 
-// #@@range_begin(int_handler)
 namespace {
   std::deque<Message>* msg_queue;
 
@@ -38,15 +37,15 @@ namespace {
     NotifyEndOfInterrupt();
   }
 
+  // #@@range_begin(int_handler)
   __attribute__((interrupt))
   void IntHandlerLAPICTimer(InterruptFrame* frame) {
     LAPICTimerOnInterrupt();
     NotifyEndOfInterrupt();
   }
+  // #@@range_end(int_handler)
 }
-// #@@range_end(int_handler)
 
-// #@@range_begin(register_handler)
 void InitializeInterrupt(std::deque<Message>* msg_queue) {
   ::msg_queue = msg_queue;
 
@@ -60,4 +59,3 @@ void InitializeInterrupt(std::deque<Message>* msg_queue) {
               kKernelCS);
   LoadIDT(sizeof(idt) - 1, reinterpret_cast<uintptr_t>(&idt[0]));
 }
-// #@@range_end(register_handler)
