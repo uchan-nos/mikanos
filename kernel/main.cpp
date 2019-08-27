@@ -90,13 +90,12 @@ extern "C" void KernelMainNewStack(
   InitializeMouse();
   layer_manager->Draw({{0, 0}, ScreenSize()});
 
-  // #@@range_begin(call_init_timer)
   InitializeLAPICTimer();
-  // #@@range_end(call_init_timer)
 
   char str[128];
 
   while (true) {
+    // #@@range_begin(show_tick)
     __asm__("cli");
     const auto tick = timer_manager->CurrentTick();
     __asm__("sti");
@@ -111,12 +110,12 @@ extern "C" void KernelMainNewStack(
       __asm__("sti\n\thlt");
       continue;
     }
+    // #@@range_end(show_tick)
 
     Message msg = main_queue->front();
     main_queue->pop_front();
     __asm__("sti");
 
-    // #@@range_begin(process_event)
     switch (msg.type) {
     case Message::kInterruptXHCI:
       usb::xhci::ProcessEvents();
@@ -124,7 +123,6 @@ extern "C" void KernelMainNewStack(
     case Message::kInterruptLAPICTimer:
       printk("Timer interrupt\n");
       break;
-    // #@@range_end(process_event)
     default:
       Log(kError, "Unknown message type: %d\n", msg.type);
     }
