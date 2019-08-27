@@ -7,7 +7,6 @@ void StartLAPICTimer();
 uint32_t LAPICTimerElapsed();
 void StopLAPICTimer();
 
-// #@@range_begin(timermgr)
 class TimerManager {
  public:
   void Tick();
@@ -18,6 +17,5 @@ class TimerManager {
 };
 
 extern TimerManager* timer_manager;
-// #@@range_end(timermgr)
 
 void LAPICTimerOnInterrupt();
