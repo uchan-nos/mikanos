@@ -37,13 +37,11 @@ namespace {
     NotifyEndOfInterrupt();
   }
 
-  // #@@range_begin(int_handler)
   __attribute__((interrupt))
   void IntHandlerLAPICTimer(InterruptFrame* frame) {
     LAPICTimerOnInterrupt();
     NotifyEndOfInterrupt();
   }
-  // #@@range_end(int_handler)
 }
 
 void InitializeInterrupt(std::deque<Message>* msg_queue) {
