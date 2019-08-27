@@ -29,9 +29,6 @@
 #include "window.hpp"
 #include "layer.hpp"
 
-char console_buf[sizeof(Console)];
-Console* console;
-
 int printk(const char* format, ...) {
   va_list ap;
   int result;
@@ -64,17 +61,11 @@ alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 extern "C" void KernelMainNewStack(
     const FrameBufferConfig& frame_buffer_config_ref,
     const MemoryMap& memory_map_ref) {
-  screen_config = frame_buffer_config_ref;
   MemoryMap memory_map{memory_map_ref};
 
-  PixelWriter* pixel_writer = MakeScreenWriter();
+  InitializeGraphics(frame_buffer_config_ref);
+  InitializeConsole();
 
-  DrawDesktop(*pixel_writer);
-
-  console = new(console_buf) Console{
-    kDesktopFGColor, kDesktopBGColor
-  };
-  console->SetWriter(pixel_writer);
   printk("Welcome to MikanOS!\n");
   SetLogLevel(kWarn);
 
