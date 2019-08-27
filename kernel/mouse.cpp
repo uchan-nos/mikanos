@@ -1,5 +1,7 @@
 #include "mouse.hpp"
 
+#include <limits>
+#include <memory>
 #include "graphics.hpp"
 #include "layer.hpp"
 #include "usb/classdriver/mouse.hpp"
@@ -83,7 +85,7 @@ void Mouse::OnInterrupt(uint8_t buttons, int8_t displacement_x, int8_t displacem
   previous_buttons_ = buttons;
 }
 
-std::shared_ptr<Mouse> MakeMouse() {
+void InitializeMouse() {
   auto mouse_window = std::make_shared<Window>(
       kMouseCursorWidth, kMouseCursorHeight, screen_config.pixel_format);
   mouse_window->SetTransparentColor(kMouseTransparentColor);
@@ -95,10 +97,10 @@ std::shared_ptr<Mouse> MakeMouse() {
 
   auto mouse = std::make_shared<Mouse>(mouse_layer_id);
   mouse->SetPosition({200, 200});
+  layer_manager->UpDown(mouse->LayerID(), std::numeric_limits<int>::max());
+
   usb::HIDMouseDriver::default_observer =
     [mouse](uint8_t buttons, int8_t displacement_x, int8_t displacement_y) {
       mouse->OnInterrupt(buttons, displacement_x, displacement_y);
     };
-
-  return mouse;
 }
