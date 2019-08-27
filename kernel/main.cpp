@@ -69,15 +69,8 @@ extern "C" void KernelMainNewStack(
   printk("Welcome to MikanOS!\n");
   SetLogLevel(kWarn);
 
-  SetupSegments();
-
-  const uint16_t kernel_cs = 1 << 3;
-  const uint16_t kernel_ss = 2 << 3;
-  SetDSAll(0);
-  SetCSSS(kernel_cs, kernel_ss);
-
-  SetupIdentityPageTable();
-
+  InitializeSegmentation();
+  InitializePaging();
   InitializeMemoryManager(memory_map);
 
   std::array<Message, 32> main_queue_data;
@@ -97,7 +90,7 @@ extern "C" void KernelMainNewStack(
   }
 
   SetIDTEntry(idt[InterruptVector::kXHCI], MakeIDTAttr(DescriptorType::kInterruptGate, 0),
-              reinterpret_cast<uint64_t>(IntHandlerXHCI), kernel_cs);
+              reinterpret_cast<uint64_t>(IntHandlerXHCI), kKernelCS);
   LoadIDT(sizeof(idt) - 1, reinterpret_cast<uintptr_t>(&idt[0]));
 
   auto xhc = usb::xhci::MakeRunController();
