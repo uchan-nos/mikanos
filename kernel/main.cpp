@@ -11,6 +11,7 @@
 #include <numeric>
 #include <vector>
 #include <deque>
+#include <limits>
 
 #include "frame_buffer_config.hpp"
 #include "memory_map.hpp"
@@ -44,6 +45,22 @@ int printk(const char* format, ...) {
   return result;
 }
 
+std::shared_ptr<Window> main_window;
+unsigned int main_window_layer_id;
+void InitializeMainWindow() {
+  main_window = std::make_shared<Window>(
+      160, 52, screen_config.pixel_format);
+  DrawWindow(*main_window->Writer(), "Hello Window");
+
+  main_window_layer_id = layer_manager->NewLayer()
+    .SetWindow(main_window)
+    .SetDraggable(true)
+    .Move({300, 100})
+    .ID();
+
+  layer_manager->UpDown(main_window_layer_id, std::numeric_limits<int>::max());
+}
+
 std::deque<Message>* main_queue;
 
 alignas(16) uint8_t kernel_main_stack[1024 * 1024];
@@ -68,53 +85,10 @@ extern "C" void KernelMainNewStack(
   InitializePCI();
   usb::xhci::Initialize();
 
-  const auto screen_size = ScreenSize();
-
-  auto bgwindow = std::make_shared<Window>(
-      screen_size.x, screen_size.y, screen_config.pixel_format);
-  auto bgwriter = bgwindow->Writer();
-
-  DrawDesktop(*bgwriter);
-
-
-  auto main_window = std::make_shared<Window>(
-      160, 52, screen_config.pixel_format);
-  DrawWindow(*main_window->Writer(), "Hello Window");
-
-  auto console_window = std::make_shared<Window>(
-      Console::kColumns * 8, Console::kRows * 16, screen_config.pixel_format);
-  console->SetWindow(console_window);
-
-  FrameBuffer screen;
-  if (auto err = screen.Initialize(screen_config)) {
-    Log(kError, "failed to initialize frame buffer: %s at %s:%d\n",
-        err.Name(), err.File(), err.Line());
-  }
-
-  layer_manager = new LayerManager;
-  layer_manager->SetWriter(&screen);
-
-  auto mouse = MakeMouse();
-
-  auto bglayer_id = layer_manager->NewLayer()
-    .SetWindow(bgwindow)
-    .Move({0, 0})
-    .ID();
-  auto main_window_layer_id = layer_manager->NewLayer()
-    .SetWindow(main_window)
-    .SetDraggable(true)
-    .Move({300, 100})
-    .ID();
-  console->SetLayerID(layer_manager->NewLayer()
-    .SetWindow(console_window)
-    .Move({0, 0})
-    .ID());
-
-  layer_manager->UpDown(bglayer_id, 0);
-  layer_manager->UpDown(console->LayerID(), 1);
-  layer_manager->UpDown(main_window_layer_id, 2);
-  layer_manager->UpDown(mouse->LayerID(), 3);
-  layer_manager->Draw({{0, 0}, screen_size});
+  InitializeLayer();
+  InitializeMainWindow();
+  InitializeMouse();
+  layer_manager->Draw({{0, 0}, ScreenSize()});
 
   char str[128];
   unsigned int count = 0;
