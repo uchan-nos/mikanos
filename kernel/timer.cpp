@@ -32,6 +32,7 @@ void StopLAPICTimer() {
   initial_count = 0;
 }
 
+// #@@range_begin(timermgr_tick)
 void TimerManager::Tick() {
   ++tick_;
 }
@@ -41,3 +42,4 @@ TimerManager* timer_manager;
 void LAPICTimerOnInterrupt() {
   timer_manager->Tick();
 }
+// #@@range_end(timermgr_tick)
