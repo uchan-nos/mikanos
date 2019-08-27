@@ -10,11 +10,13 @@ namespace {
   volatile uint32_t& divide_config = *reinterpret_cast<uint32_t*>(0xfee003e0);
 }
 
+// #@@range_begin(init_timer)
 void InitializeLAPICTimer() {
   divide_config = 0b1011; // divide 1:1
   lvt_timer = (0b010 << 16) | InterruptVector::kLAPICTimer; // not-masked, periodic
   initial_count = kCountMax;
 }
+// #@@range_end(init_timer)
 
 void StartLAPICTimer() {
   initial_count = kCountMax;
