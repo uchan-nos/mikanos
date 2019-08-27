@@ -207,6 +207,4 @@ void InitializeLayer() {
 
   layer_manager->UpDown(bglayer_id, 0);
   layer_manager->UpDown(console->LayerID(), 1);
-
-  Log(kError, "initialize layer completed\n");
 }
