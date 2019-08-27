@@ -66,6 +66,7 @@ namespace usb::xhci {
    */
   Error ProcessEvent(Controller& xhc);
 
-  std::shared_ptr<Controller> MakeRunController();
-  void ProcessEvents(const std::shared_ptr<Controller>& xhc);
+  extern Controller* controller;
+  void Initialize();
+  void ProcessEvents();
 }
