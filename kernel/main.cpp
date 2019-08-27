@@ -24,7 +24,6 @@
 #include "usb/xhci/xhci.hpp"
 #include "interrupt.hpp"
 #include "asmfunc.h"
-#include "queue.hpp"
 #include "segment.hpp"
 #include "paging.hpp"
 #include "memory_manager.hpp"
