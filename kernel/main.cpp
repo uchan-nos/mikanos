@@ -90,7 +90,7 @@ extern "C" void KernelMainNewStack(
   InitializeMouse();
   layer_manager->Draw({{0, 0}, ScreenSize()});
 
-  InitializeLAPICTimer();
+  InitializeLAPICTimer(*main_queue);
 
   char str[128];
 
@@ -118,8 +118,8 @@ extern "C" void KernelMainNewStack(
     case Message::kInterruptXHCI:
       usb::xhci::ProcessEvents();
       break;
-    case Message::kInterruptLAPICTimer:
-      printk("Timer interrupt\n");
+    case Message::kTimerTimeout:
+      printk("Timer timeout\n");
       break;
     default:
       Log(kError, "Unknown message type: %d\n", msg.type);
