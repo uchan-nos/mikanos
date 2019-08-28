@@ -90,10 +90,12 @@ extern "C" void KernelMainNewStack(
   InitializeMouse();
   layer_manager->Draw({{0, 0}, ScreenSize()});
 
+  // #@@range_begin(add_sample_timer)
   InitializeLAPICTimer(*main_queue);
 
   timer_manager->AddTimer(Timer(200, 2));
   timer_manager->AddTimer(Timer(600, -1));
+  // #@@range_end(add_sample_timer)
 
   char str[128];
 
@@ -121,6 +123,7 @@ extern "C" void KernelMainNewStack(
     case Message::kInterruptXHCI:
       usb::xhci::ProcessEvents();
       break;
+    // #@@range_begin(timer_event)
     case Message::kTimerTimeout:
       printk("Timer: timeout = %lu, value = %d\n",
           msg.arg.timer.timeout, msg.arg.timer.value);
@@ -129,6 +132,7 @@ extern "C" void KernelMainNewStack(
             msg.arg.timer.timeout + 100, msg.arg.timer.value + 1));
       }
       break;
+    // #@@range_end(timer_event)
     default:
       Log(kError, "Unknown message type: %d\n", msg.type);
     }
