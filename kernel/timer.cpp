@@ -34,7 +34,6 @@ Timer::Timer(unsigned long timeout, int value)
     : timeout_{timeout}, value_{value} {
 }
 
-// #@@range_begin(timermgr_addtimer)
 TimerManager::TimerManager(std::deque<Message>& msg_queue)
     : msg_queue_{msg_queue} {
   timers_.push(Timer{std::numeric_limits<unsigned long>::max(), -1});
@@ -43,9 +42,7 @@ TimerManager::TimerManager(std::deque<Message>& msg_queue)
 void TimerManager::AddTimer(const Timer& timer) {
   timers_.push(timer);
 }
-// #@@range_end(timermgr_addtimer)
 
-// #@@range_begin(timermgr_tick)
 void TimerManager::Tick() {
   ++tick_;
   while (true) {
@@ -62,7 +59,6 @@ void TimerManager::Tick() {
     timers_.pop();
   }
 }
-// #@@range_end(timermgr_tick)
 
 TimerManager* timer_manager;
 
