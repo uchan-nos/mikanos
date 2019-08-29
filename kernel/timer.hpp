@@ -10,7 +10,6 @@ void StartLAPICTimer();
 uint32_t LAPICTimerElapsed();
 void StopLAPICTimer();
 
-// #@@range_begin(timer)
 class Timer {
  public:
   Timer(unsigned long timeout, int value);
@@ -21,16 +20,12 @@ class Timer {
   unsigned long timeout_;
   int value_;
 };
-// #@@range_end(timer)
 
-// #@@range_begin(timer_less)
 /** @brief タイマー優先度を比較する。タイムアウトが遠いほど優先度低。 */
 inline bool operator<(const Timer& lhs, const Timer& rhs) {
   return lhs.Timeout() > rhs.Timeout();
 }
-// #@@range_end(timer_less)
 
-// #@@range_begin(timermgr)
 class TimerManager {
  public:
   TimerManager(std::deque<Message>& msg_queue);
@@ -43,7 +38,6 @@ class TimerManager {
   std::priority_queue<Timer> timers_{};
   std::deque<Message>& msg_queue_;
 };
-// #@@range_end(timermgr)
 
 extern TimerManager* timer_manager;
 
