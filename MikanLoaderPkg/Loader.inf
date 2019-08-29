@@ -18,8 +18,11 @@
   UefiLib
   UefiApplicationEntryPoint
 
+#@range_begin(acpi_guid)
 [Guids]
   gEfiFileInfoGuid
+  gEfiAcpiTableGuid
+#@range_end(acpi_guid)
 
 [Protocols]
   gEfiLoadedImageProtocolGuid
