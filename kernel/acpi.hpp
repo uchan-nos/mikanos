@@ -20,9 +20,10 @@ struct RSDP {
   uint64_t xsdt_address;
   uint8_t extended_checksum;
   char reserved[3];
+
+  bool IsValid() const;
 } __attribute__((packed));
 
-bool IsValid(const RSDP& rsdp);
 void Initialize(const RSDP& rsdp);
 
 } // namespace acpi
