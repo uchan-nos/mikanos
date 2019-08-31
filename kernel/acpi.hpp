@@ -25,7 +25,6 @@ struct RSDP {
   bool IsValid() const;
 } __attribute__((packed));
 
-// #@@range_begin(xsdt)
 struct DescriptionHeader {
   char signature[4];
   uint32_t length;
@@ -46,9 +45,7 @@ struct XSDT {
   const DescriptionHeader& operator[](size_t i) const;
   size_t Count() const;
 } __attribute__((packed));
-// #@@range_end(xsdt)
 
-// #@@range_begin(fadt)
 struct FADT {
   DescriptionHeader header;
 
@@ -60,7 +57,6 @@ struct FADT {
 } __attribute__((packed));
 
 extern const FADT* fadt;
-// #@@range_end(fadt)
 
 void Initialize(const RSDP& rsdp);
 
