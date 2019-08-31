@@ -347,7 +347,6 @@ EFI_STATUS EFIAPI UefiMain(
       Halt();
   }
 
-  // #@@range_begin(get_acpitable)
   VOID* acpi_table = NULL;
   for (UINTN i = 0; i < system_table->NumberOfTableEntries; ++i) {
     if (CompareGuid(&gEfiAcpiTableGuid,
@@ -362,7 +361,6 @@ EFI_STATUS EFIAPI UefiMain(
                               const VOID*);
   EntryPointType* entry_point = (EntryPointType*)entry_addr;
   entry_point(&config, &memmap, acpi_table);
-  // #@@range_end(get_acpitable)
 
   Print(L"All done\n");
 
