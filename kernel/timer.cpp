@@ -1,5 +1,6 @@
 #include "timer.hpp"
 
+#include "acpi.hpp"
 #include "interrupt.hpp"
 
 namespace {
@@ -10,13 +11,25 @@ namespace {
   volatile uint32_t& divide_config = *reinterpret_cast<uint32_t*>(0xfee003e0);
 }
 
+// #@@range_begin(init_timer)
 void InitializeLAPICTimer(std::deque<Message>& msg_queue) {
   timer_manager = new TimerManager{msg_queue};
 
   divide_config = 0b1011; // divide 1:1
+  lvt_timer = 0b001 << 16; // masked, one-shot
+
+  StartLAPICTimer();
+  acpi::WaitMilliseconds(100);
+  const auto elapsed = LAPICTimerElapsed();
+  StopLAPICTimer();
+
+  lapic_timer_freq = static_cast<unsigned long>(elapsed) * 10;
+
+  divide_config = 0b1011; // divide 1:1
   lvt_timer = (0b010 << 16) | InterruptVector::kLAPICTimer; // not-masked, periodic
-  initial_count = 0x1000000u;
+  initial_count = lapic_timer_freq / kTimerFreq;
 }
+// #@@range_end(init_timer)
 
 void StartLAPICTimer() {
   initial_count = kCountMax;
@@ -61,6 +74,7 @@ void TimerManager::Tick() {
 }
 
 TimerManager* timer_manager;
+unsigned long lapic_timer_freq;
 
 void LAPICTimerOnInterrupt() {
   timer_manager->Tick();
