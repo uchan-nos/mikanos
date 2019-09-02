@@ -5,6 +5,7 @@
 
 namespace {
 
+// #@@range_begin(keycode_map)
 const char keycode_map[256] = {
   0,    0,    0,    0,    'a',  'b',  'c',  'd', // 0
   'e',  'f',  'g',  'h',  'i',  'j',  'k',  'l', // 8
@@ -20,18 +21,22 @@ const char keycode_map[256] = {
   '\n', '1',  '2',  '3',  '4',  '5',  '6',  '7', // 88
   '8',  '9',  '0',  '.', '\\',  0,    0,    '=', // 96
 };
+// #@@range_end(keycode_map)
 
 } // namespace
 
 int printk(const char* format, ...);
 
+// #@@range_begin(on_interrupt)
 void Keyboard::OnInterrupt(uint8_t keycode) {
   const char ascii = keycode_map[keycode];
   if (ascii != '\0') {
     printk("%c", ascii);
   }
 }
+// #@@range_end(on_interrupt)
 
+// #@@range_begin(initkb)
 void InitializeKeyboard() {
   auto keyboard = std::make_shared<Keyboard>();
   usb::HIDKeyboardDriver::default_observer =
@@ -39,3 +44,4 @@ void InitializeKeyboard() {
       keyboard->OnInterrupt(keycode);
     };
 }
+// #@@range_end(initkb)
