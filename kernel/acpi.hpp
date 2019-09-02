@@ -56,10 +56,8 @@ struct FADT {
   char reserved3[276 - 116];
 } __attribute__((packed));
 
-// #@@range_begin(pmtimer_freq)
 extern const FADT* fadt;
 const int kPMTimerFreq = 3579545;
-// #@@range_end(pmtimer_freq)
 
 void WaitMilliseconds(unsigned long msec);
 void Initialize(const RSDP& rsdp);
