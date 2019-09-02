@@ -11,7 +11,6 @@ namespace {
   volatile uint32_t& divide_config = *reinterpret_cast<uint32_t*>(0xfee003e0);
 }
 
-// #@@range_begin(init_timer)
 void InitializeLAPICTimer(std::deque<Message>& msg_queue) {
   timer_manager = new TimerManager{msg_queue};
 
@@ -29,7 +28,6 @@ void InitializeLAPICTimer(std::deque<Message>& msg_queue) {
   lvt_timer = (0b010 << 16) | InterruptVector::kLAPICTimer; // not-masked, periodic
   initial_count = lapic_timer_freq / kTimerFreq;
 }
-// #@@range_end(init_timer)
 
 void StartLAPICTimer() {
   initial_count = kCountMax;
