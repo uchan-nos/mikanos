@@ -96,7 +96,9 @@ extern "C" void KernelMainNewStack(
   acpi::Initialize(acpi_table);
   InitializeLAPICTimer(*main_queue);
 
+  // #@@range_begin(call_initkb)
   InitializeKeyboard();
+  // #@@range_end(call_initkb)
 
   char str[128];
 
