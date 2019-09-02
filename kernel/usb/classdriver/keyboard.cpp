@@ -9,6 +9,7 @@ namespace usb {
       : HIDBaseDriver{dev, interface_index, 8} {
   }
 
+  // #@@range_begin(on_data_received)
   Error HIDKeyboardDriver::OnDataReceived() {
     for (int i = 2; i < 8; ++i) {
       const uint8_t key = Buffer()[i];
@@ -16,13 +17,14 @@ namespace usb {
         continue;
       }
       const auto& prev_buf = PreviousBuffer();
-      if (std::find(prev_buf.begin(), prev_buf.end(), key) != prev_buf.end()) {
+      if (std::find(prev_buf.begin() + 2, prev_buf.end(), key) != prev_buf.end()) {
         continue;
       }
-      NotifyKeyPush(key);
+      NotifyKeyPush(Buffer()[0], key);
     }
     return MAKE_ERROR(Error::kSuccess);
   }
+  // #@@range_end(on_data_received)
 
   void* HIDKeyboardDriver::operator new(size_t size) {
     return AllocMem(sizeof(HIDKeyboardDriver), 0, 0);
@@ -33,16 +35,18 @@ namespace usb {
   }
 
   void HIDKeyboardDriver::SubscribeKeyPush(
-      std::function<void (uint8_t keycode)> observer) {
+      std::function<ObserverType> observer) {
     observers_[num_observers_++] = observer;
   }
 
   std::function<HIDKeyboardDriver::ObserverType> HIDKeyboardDriver::default_observer;
 
-  void HIDKeyboardDriver::NotifyKeyPush(uint8_t keycode) {
+  // #@@range_begin(notify_keypush)
+  void HIDKeyboardDriver::NotifyKeyPush(uint8_t modifier, uint8_t keycode) {
     for (int i = 0; i < num_observers_; ++i) {
-      observers_[i](keycode);
+      observers_[i](modifier, keycode);
     }
   }
+  // #@@range_end(notify_keypush)
 }
 
