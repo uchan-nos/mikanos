@@ -10,7 +10,6 @@
 #include "usb/classdriver/hid.hpp"
 
 namespace usb {
-  // #@@range_begin(hid_keyboard)
   class HIDKeyboardDriver : public HIDBaseDriver {
    public:
     HIDKeyboardDriver(Device* dev, int interface_index);
@@ -30,5 +29,4 @@ namespace usb {
 
     void NotifyKeyPush(uint8_t modifier, uint8_t keycode);
   };
-  // #@@range_end(hid_keyboard)
 }
