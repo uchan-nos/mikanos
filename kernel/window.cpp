@@ -98,14 +98,6 @@ namespace {
     ".$$$$$$$$$$$$$$@",
     "@@@@@@@@@@@@@@@@",
   };
-
-  constexpr PixelColor ToColor(uint32_t c) {
-    return {
-      static_cast<uint8_t>((c >> 16) & 0xff),
-      static_cast<uint8_t>((c >> 8) & 0xff),
-      static_cast<uint8_t>(c & 0xff)
-    };
-  }
 }
 
 void DrawWindow(PixelWriter& writer, const char* title) {
