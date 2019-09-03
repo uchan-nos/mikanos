@@ -6,11 +6,7 @@
 
 #pragma once
 
-#include <cstdint>
+#include <deque>
+#include "message.hpp"
 
-class Keyboard {
- public:
-  void OnInterrupt(uint8_t keycode);
-};
-
-void InitializeKeyboard();
+void InitializeKeyboard(std::deque<Message>& msg_queue);
