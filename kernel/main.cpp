@@ -72,18 +72,7 @@ void InitializeTextWindow() {
   text_window = std::make_shared<Window>(
       win_w, win_h, screen_config.pixel_format);
   DrawWindow(*text_window->Writer(), "Text Box Test");
-
-  auto fill_rect = [](Vector2D<int> pos, Vector2D<int> size, uint32_t c) {
-    FillRectangle(*text_window->Writer(), pos, size, ToColor(c));
-  };
-
-  const auto tb_w = win_w - 8;
-  const auto tb_h = win_h - 24 - 4;
-  fill_rect({5, 25},         {tb_w - 2, tb_h - 2}, 0xffffff);
-  fill_rect({4, 24},         {tb_w, 1},            0x848484);
-  fill_rect({4, 24},         {1, tb_h},            0x848484);
-  fill_rect({4, win_h - 4},  {tb_w, 1},            0xc6c6c6);
-  fill_rect({win_w - 4, 24}, {1, tb_h},            0xc6c6c6);
+  DrawTextbox(*text_window->Writer(), {4, 24}, {win_w - 8, win_h - 24 - 4});
 
   text_window_layer_id = layer_manager->NewLayer()
     .SetWindow(text_window)
