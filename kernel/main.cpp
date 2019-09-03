@@ -96,9 +96,7 @@ extern "C" void KernelMainNewStack(
   acpi::Initialize(acpi_table);
   InitializeLAPICTimer(*main_queue);
 
-  // #@@range_begin(call_initkb)
   InitializeKeyboard(*main_queue);
-  // #@@range_end(call_initkb)
 
   char str[128];
 
@@ -128,13 +126,11 @@ extern "C" void KernelMainNewStack(
       break;
     case Message::kTimerTimeout:
       break;
-    // #@@range_begin(event_handling)
     case Message::kKeyPush:
       if (msg.arg.keyboard.ascii != 0) {
         printk("%c", msg.arg.keyboard.ascii);
       }
       break;
-    // #@@range_end(event_handling)
     default:
       Log(kError, "Unknown message type: %d\n", msg.type);
     }
