@@ -63,6 +63,7 @@ void InitializeMainWindow() {
   layer_manager->UpDown(main_window_layer_id, std::numeric_limits<int>::max());
 }
 
+// #@@range_begin(init_textwin)
 std::shared_ptr<Window> text_window;
 unsigned int text_window_layer_id;
 void InitializeTextWindow() {
@@ -82,7 +83,9 @@ void InitializeTextWindow() {
 
   layer_manager->UpDown(text_window_layer_id, std::numeric_limits<int>::max());
 }
+// #@@range_end(init_textwin)
 
+// #@@range_begin(input_textwin)
 char text_window_value[18];
 int text_window_index;
 void InputTextWindow(char c) {
@@ -104,6 +107,7 @@ void InputTextWindow(char c) {
 
   layer_manager->Draw(text_window_layer_id);
 }
+// #@@range_end(input_textwin)
 
 std::deque<Message>* main_queue;
 
@@ -130,11 +134,13 @@ extern "C" void KernelMainNewStack(
   InitializePCI();
   usb::xhci::Initialize();
 
+  // #@@range_begin(call_init_textwin)
   InitializeLayer();
   InitializeMainWindow();
   InitializeTextWindow();
   InitializeMouse();
   layer_manager->Draw({{0, 0}, ScreenSize()});
+  // #@@range_end(call_init_textwin)
 
   acpi::Initialize(acpi_table);
   InitializeLAPICTimer(*main_queue);
@@ -169,9 +175,11 @@ extern "C" void KernelMainNewStack(
       break;
     case Message::kTimerTimeout:
       break;
+    // #@@range_begin(handle_keypush)
     case Message::kKeyPush:
       InputTextWindow(msg.arg.keyboard.ascii);
       break;
+    // #@@range_end(handle_keypush)
     default:
       Log(kError, "Unknown message type: %d\n", msg.type);
     }
