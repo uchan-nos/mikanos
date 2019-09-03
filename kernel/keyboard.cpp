@@ -25,23 +25,14 @@ const char keycode_map[256] = {
 
 } // namespace
 
-int printk(const char* format, ...);
-
-// #@@range_begin(on_interrupt)
-void Keyboard::OnInterrupt(uint8_t keycode) {
-  const char ascii = keycode_map[keycode];
-  if (ascii != '\0') {
-    printk("%c", ascii);
-  }
-}
-// #@@range_end(on_interrupt)
-
 // #@@range_begin(initkb)
-void InitializeKeyboard() {
-  auto keyboard = std::make_shared<Keyboard>();
+void InitializeKeyboard(std::deque<Message>& msg_queue) {
   usb::HIDKeyboardDriver::default_observer =
-    [keyboard](uint8_t keycode) {
-      keyboard->OnInterrupt(keycode);
+    [&msg_queue](uint8_t keycode) {
+      Message msg{Message::kKeyPush};
+      msg.arg.keyboard.keycode = keycode;
+      msg.arg.keyboard.ascii = keycode_map[keycode];
+      msg_queue.push_back(msg);
     };
 }
 // #@@range_end(initkb)
