@@ -135,7 +135,6 @@ void DrawWindow(PixelWriter& writer, const char* title) {
   }
 }
 
-// #@@range_begin(draw_textbox)
 void DrawTextbox(PixelWriter& writer, Vector2D<int> pos, Vector2D<int> size) {
   auto fill_rect =
     [&writer](Vector2D<int> pos, Vector2D<int> size, uint32_t c) {
@@ -151,4 +150,3 @@ void DrawTextbox(PixelWriter& writer, Vector2D<int> pos, Vector2D<int> size) {
   fill_rect(pos + Vector2D<int>{0, size.y}, {size.x, 1}, 0xc6c6c6);
   fill_rect(pos + Vector2D<int>{size.x, 0}, {1, size.y}, 0xc6c6c6);
 }
-// #@@range_end(draw_textbox)
