@@ -86,7 +86,6 @@ void InitializeTextWindow() {
 // #@@range_end(init_textwin)
 
 // #@@range_begin(input_textwin)
-char text_window_value[18];
 int text_window_index;
 void InputTextWindow(char c) {
   if (c == 0) {
@@ -95,12 +94,11 @@ void InputTextWindow(char c) {
 
   auto pos = []() { return Vector2D<int>{8 + 8*text_window_index, 24 + 6}; };
 
+  const int max_chars = (text_window->Width() - 16) / 8;
   if (c == '\b' && text_window_index > 0) {
     --text_window_index;
-    text_window_value[text_window_index] = 0;
     FillRectangle(*text_window->Writer(), pos(), {8, 16}, ToColor(0xffffff));
-  } else if (c >= ' ' && text_window_index < sizeof(text_window_value)) {
-    text_window_value[text_window_index] = c;
+  } else if (c >= ' ' && text_window_index < max_chars) {
     WriteAscii(*text_window->Writer(), pos(), c, ToColor(0));
     ++text_window_index;
   }
