@@ -8,7 +8,6 @@ struct PixelColor {
   uint8_t r, g, b;
 };
 
-// #@@range_begin(tocolor)
 constexpr PixelColor ToColor(uint32_t c) {
   return {
     static_cast<uint8_t>((c >> 16) & 0xff),
@@ -16,7 +15,6 @@ constexpr PixelColor ToColor(uint32_t c) {
     static_cast<uint8_t>(c & 0xff)
   };
 }
-// #@@range_end(tocolor)
 
 inline bool operator==(const PixelColor& lhs, const PixelColor& rhs) {
   return lhs.r == rhs.r && lhs.g == rhs.g && lhs.b == rhs.b;
