@@ -84,6 +84,16 @@ void InitializeTextWindow() {
 }
 
 int text_window_index;
+
+// #@@range_begin(draw_cursor)
+void DrawTextCursor(bool visible) {
+  const auto color = visible ? ToColor(0) : ToColor(0xffffff);
+  const auto pos = Vector2D<int>{8 + 8*text_window_index, 24 + 5};
+  FillRectangle(*text_window->Writer(), pos, {7, 15}, color);
+}
+// #@@range_end(draw_cursor)
+
+// #@@range_begin(input_text)
 void InputTextWindow(char c) {
   if (c == 0) {
     return;
@@ -91,17 +101,22 @@ void InputTextWindow(char c) {
 
   auto pos = []() { return Vector2D<int>{8 + 8*text_window_index, 24 + 6}; };
 
-  const int max_chars = (text_window->Width() - 16) / 8;
+  const int max_chars = (text_window->Width() - 16) / 8 - 1;
   if (c == '\b' && text_window_index > 0) {
+    DrawTextCursor(false);
     --text_window_index;
     FillRectangle(*text_window->Writer(), pos(), {8, 16}, ToColor(0xffffff));
+    DrawTextCursor(true);
   } else if (c >= ' ' && text_window_index < max_chars) {
+    DrawTextCursor(false);
     WriteAscii(*text_window->Writer(), pos(), c, ToColor(0));
     ++text_window_index;
+    DrawTextCursor(true);
   }
 
   layer_manager->Draw(text_window_layer_id);
 }
+// #@@range_end(input_text)
 
 std::deque<Message>* main_queue;
 
@@ -139,6 +154,13 @@ extern "C" void KernelMainNewStack(
 
   InitializeKeyboard(*main_queue);
 
+  // #@@range_begin(add_timer)
+  const int kTextboxCursorTimer = 1;
+  const int kTimer05Sec = static_cast<int>(kTimerFreq * 0.5);
+  timer_manager->AddTimer(Timer{kTimer05Sec, kTextboxCursorTimer});
+  bool textbox_cursor_visible = false;
+  // #@@range_end(add_timer)
+
   char str[128];
 
   while (true) {
@@ -165,8 +187,17 @@ extern "C" void KernelMainNewStack(
     case Message::kInterruptXHCI:
       usb::xhci::ProcessEvents();
       break;
+    // #@@range_begin(timer_event)
     case Message::kTimerTimeout:
+      if (msg.arg.timer.value == kTextboxCursorTimer) {
+        timer_manager->AddTimer(
+            Timer{msg.arg.timer.timeout + kTimer05Sec, kTextboxCursorTimer});
+        textbox_cursor_visible = !textbox_cursor_visible;
+        DrawTextCursor(textbox_cursor_visible);
+        layer_manager->Draw(text_window_layer_id);
+      }
       break;
+    // #@@range_end(timer_event)
     case Message::kKeyPush:
       InputTextWindow(msg.arg.keyboard.ascii);
       break;
