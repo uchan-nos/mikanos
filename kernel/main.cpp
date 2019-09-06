@@ -85,15 +85,12 @@ void InitializeTextWindow() {
 
 int text_window_index;
 
-// #@@range_begin(draw_cursor)
 void DrawTextCursor(bool visible) {
   const auto color = visible ? ToColor(0) : ToColor(0xffffff);
   const auto pos = Vector2D<int>{8 + 8*text_window_index, 24 + 5};
   FillRectangle(*text_window->Writer(), pos, {7, 15}, color);
 }
-// #@@range_end(draw_cursor)
 
-// #@@range_begin(input_text)
 void InputTextWindow(char c) {
   if (c == 0) {
     return;
@@ -116,7 +113,6 @@ void InputTextWindow(char c) {
 
   layer_manager->Draw(text_window_layer_id);
 }
-// #@@range_end(input_text)
 
 std::deque<Message>* main_queue;
 
@@ -154,14 +150,12 @@ extern "C" void KernelMainNewStack(
 
   InitializeKeyboard(*main_queue);
 
-  // #@@range_begin(add_timer)
   const int kTextboxCursorTimer = 1;
   const int kTimer05Sec = static_cast<int>(kTimerFreq * 0.5);
   __asm__("cli");
   timer_manager->AddTimer(Timer{kTimer05Sec, kTextboxCursorTimer});
   __asm__("sti");
   bool textbox_cursor_visible = false;
-  // #@@range_end(add_timer)
 
   char str[128];
 
@@ -189,7 +183,6 @@ extern "C" void KernelMainNewStack(
     case Message::kInterruptXHCI:
       usb::xhci::ProcessEvents();
       break;
-    // #@@range_begin(timer_event)
     case Message::kTimerTimeout:
       if (msg.arg.timer.value == kTextboxCursorTimer) {
         __asm__("cli");
@@ -201,7 +194,6 @@ extern "C" void KernelMainNewStack(
         layer_manager->Draw(text_window_layer_id);
       }
       break;
-    // #@@range_end(timer_event)
     case Message::kKeyPush:
       InputTextWindow(msg.arg.keyboard.ascii);
       break;
