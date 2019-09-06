@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+struct CPURegisters;
+
 extern "C" {
   void IoOut32(uint16_t addr, uint32_t data);
   uint32_t IoIn32(uint16_t addr);
@@ -11,4 +13,5 @@ extern "C" {
   void SetCSSS(uint16_t cs, uint16_t ss);
   void SetDSAll(uint16_t value);
   void SetCR3(uint64_t value);
+  void SwitchContext(CPURegisters* to, CPURegisters* current);
 }

@@ -33,6 +33,7 @@
 #include "timer.hpp"
 #include "acpi.hpp"
 #include "keyboard.hpp"
+#include "task.hpp"
 
 int printk(const char* format, ...) {
   va_list ap;
@@ -114,6 +115,43 @@ void InputTextWindow(char c) {
   layer_manager->Draw(text_window_layer_id);
 }
 
+// #@@range_begin(taskb_window)
+std::shared_ptr<Window> task_b_window;
+unsigned int task_b_window_layer_id;
+void InitializeTaskBWindow() {
+  task_b_window = std::make_shared<Window>(
+      160, 52, screen_config.pixel_format);
+  DrawWindow(*task_b_window->Writer(), "TaskB Window");
+
+  task_b_window_layer_id = layer_manager->NewLayer()
+    .SetWindow(task_b_window)
+    .SetDraggable(true)
+    .Move({100, 100})
+    .ID();
+
+  layer_manager->UpDown(task_b_window_layer_id, std::numeric_limits<int>::max());
+}
+// #@@range_end(taskb_window)
+
+// #@@range_begin(taskb_func)
+CPURegisters task_a, task_b;
+
+void TaskB(int task_id, int data) {
+  printk("TaskB: task_id=%d, data=%d\n", task_id, data);
+  char str[128];
+  int count = 0;
+  while (true) {
+    ++count;
+    sprintf(str, "%010d", count);
+    FillRectangle(*task_b_window->Writer(), {24, 28}, {8 * 10, 16}, {0xc6, 0xc6, 0xc6});
+    WriteString(*task_b_window->Writer(), {24, 28}, str, {0, 0, 0});
+    layer_manager->Draw(task_b_window_layer_id);
+
+    SwitchContext(&task_a, &task_b);
+  }
+}
+// #@@range_end(taskb_func)
+
 std::deque<Message>* main_queue;
 
 alignas(16) uint8_t kernel_main_stack[1024 * 1024];
@@ -142,6 +180,7 @@ extern "C" void KernelMainNewStack(
   InitializeLayer();
   InitializeMainWindow();
   InitializeTextWindow();
+  InitializeTaskBWindow();
   InitializeMouse();
   layer_manager->Draw({{0, 0}, ScreenSize()});
 
@@ -157,6 +196,14 @@ extern "C" void KernelMainNewStack(
   __asm__("sti");
   bool textbox_cursor_visible = false;
 
+  // #@@range_begin(init_taskb)
+  std::vector<uint64_t> task_b_stack(1024);
+  task_b.rsp = reinterpret_cast<uint64_t>(&task_b_stack[1023]);
+  task_b_stack[1023] = reinterpret_cast<uint64_t>(TaskB);
+  task_b.rdi = 1;
+  task_b.rsi = 42;
+  // #@@range_end(init_taskb)
+
   char str[128];
 
   while (true) {
@@ -169,11 +216,14 @@ extern "C" void KernelMainNewStack(
     WriteString(*main_window->Writer(), {24, 28}, str, {0, 0, 0});
     layer_manager->Draw(main_window_layer_id);
 
+    // #@@range_begin(switch_to_taskb)
     __asm__("cli");
     if (main_queue->size() == 0) {
-      __asm__("sti\n\thlt");
+      __asm__("sti");
+      SwitchContext(&task_b, &task_a);
       continue;
     }
+    // #@@range_end(switch_to_taskb)
 
     Message msg = main_queue->front();
     main_queue->pop_front();
