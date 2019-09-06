@@ -198,10 +198,24 @@ extern "C" void KernelMainNewStack(
 
   // #@@range_begin(init_taskb)
   std::vector<uint64_t> task_b_stack(1024);
-  task_b.rsp = reinterpret_cast<uint64_t>(&task_b_stack[1023]);
+  task_b.rsp = reinterpret_cast<uint64_t>(&task_b_stack[1008]);
   task_b_stack[1023] = reinterpret_cast<uint64_t>(TaskB);
-  task_b.rdi = 1;
-  task_b.rsi = 42;
+
+  task_b_stack[1022] = 0; // rax
+  task_b_stack[1021] = 0; // rbx
+  task_b_stack[1020] = 0; // rcx
+  task_b_stack[1019] = 0; // rdx
+  task_b_stack[1018] = 3; // rdi
+  task_b_stack[1017] = 45; // rsi
+  task_b_stack[1016] = 0; // rbp
+  task_b_stack[1015] = 0; // r8
+  task_b_stack[1014] = 0; // r9
+  task_b_stack[1013] = 0; // r10
+  task_b_stack[1012] = 0; // r11
+  task_b_stack[1011] = 0; // r12
+  task_b_stack[1010] = 0; // r13
+  task_b_stack[1009] = 0; // r14
+  task_b_stack[1008] = 0; // r15
   // #@@range_end(init_taskb)
 
   char str[128];
