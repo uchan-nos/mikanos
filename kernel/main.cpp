@@ -33,7 +33,6 @@
 #include "timer.hpp"
 #include "acpi.hpp"
 #include "keyboard.hpp"
-#include "task.hpp"
 
 int printk(const char* format, ...) {
   va_list ap;
@@ -134,7 +133,7 @@ void InitializeTaskBWindow() {
 // #@@range_end(taskb_window)
 
 // #@@range_begin(taskb_func)
-CPURegisters task_a, task_b;
+uint64_t task_b_rsp, task_a_rsp;
 
 void TaskB(int task_id, int data) {
   printk("TaskB: task_id=%d, data=%d\n", task_id, data);
@@ -147,7 +146,7 @@ void TaskB(int task_id, int data) {
     WriteString(*task_b_window->Writer(), {24, 28}, str, {0, 0, 0});
     layer_manager->Draw(task_b_window_layer_id);
 
-    SwitchContext(&task_a, &task_b);
+    SwitchContext(&task_a_rsp, &task_b_rsp);
   }
 }
 // #@@range_end(taskb_func)
@@ -198,18 +197,18 @@ extern "C" void KernelMainNewStack(
 
   // #@@range_begin(init_taskb)
   std::vector<uint64_t> task_b_stack(1024);
+  uint64_t task_b_stack_addr = reinterpret_cast<uint64_t>(&task_b_stack[0]);
   uint64_t* task_b_stack_aligned =
-    reinterpret_cast<uint64_t*>(
-      reinterpret_cast<uint64_t>(task_b_stack.data()) & ~0xflu);
-  task_b.rsp = reinterpret_cast<uint64_t>(&task_b_stack_aligned[1007]);
+    reinterpret_cast<uint64_t*>(task_b_stack_addr & ~0xflu);
 
+  task_b_stack_aligned[1023] = 0; // not-used
   task_b_stack_aligned[1022] = reinterpret_cast<uint64_t>(TaskB);
   task_b_stack_aligned[1021] = 0; // rax
   task_b_stack_aligned[1020] = 0; // rbx
   task_b_stack_aligned[1019] = 0; // rcx
   task_b_stack_aligned[1018] = 0; // rdx
-  task_b_stack_aligned[1017] = 3; // rdi
-  task_b_stack_aligned[1016] = 45; // rsi
+  task_b_stack_aligned[1017] = 1; // rdi
+  task_b_stack_aligned[1016] = 42; // rsi
   task_b_stack_aligned[1015] = 0; // rbp
   task_b_stack_aligned[1014] = 0; // r8
   task_b_stack_aligned[1013] = 0; // r9
@@ -219,6 +218,8 @@ extern "C" void KernelMainNewStack(
   task_b_stack_aligned[1009] = 0; // r13
   task_b_stack_aligned[1008] = 0; // r14
   task_b_stack_aligned[1007] = 0; // r15
+
+  task_b_rsp = reinterpret_cast<uint64_t>(&task_b_stack_aligned[1007]);
   // #@@range_end(init_taskb)
 
   char str[128];
@@ -237,7 +238,7 @@ extern "C" void KernelMainNewStack(
     __asm__("cli");
     if (main_queue->size() == 0) {
       __asm__("sti");
-      SwitchContext(&task_b, &task_a);
+      SwitchContext(&task_b_rsp, &task_a_rsp);
       continue;
     }
     // #@@range_end(switch_to_taskb)
