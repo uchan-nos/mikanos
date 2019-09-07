@@ -89,7 +89,7 @@ KernelMain:
 
 ; #@@range_begin(switch_context)
 global SwitchContext
-SwitchContext:  ; void SwitchContext(CPURegisters* to, CPURegisters* current);
+SwitchContext:  ; void SwitchContext(uint64_t* to_rsp, uint64_t* current_rsp);
     push rax
     push rbx
     push rcx
@@ -106,8 +106,8 @@ SwitchContext:  ; void SwitchContext(CPURegisters* to, CPURegisters* current);
     push r14
     push r15
 
-    mov [rsi +  9*8], rsp
-    mov rsp, [rdi +  9*8]
+    mov [rsi], rsp
+    mov rsp, [rdi]
 
     pop r15
     pop r14
