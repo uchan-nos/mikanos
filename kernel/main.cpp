@@ -33,6 +33,7 @@
 #include "timer.hpp"
 #include "acpi.hpp"
 #include "keyboard.hpp"
+#include "task.hpp"
 
 int printk(const char* format, ...) {
   va_list ap;
@@ -130,8 +131,6 @@ void InitializeTaskBWindow() {
   layer_manager->UpDown(task_b_window_layer_id, std::numeric_limits<int>::max());
 }
 
-uint64_t task_b_rsp, task_a_rsp;
-
 void TaskB(int task_id, int data) {
   printk("TaskB: task_id=%d, data=%d\n", task_id, data);
   char str[128];
@@ -142,8 +141,6 @@ void TaskB(int task_id, int data) {
     FillRectangle(*task_b_window->Writer(), {24, 28}, {8 * 10, 16}, {0xc6, 0xc6, 0xc6});
     WriteString(*task_b_window->Writer(), {24, 28}, str, {0, 0, 0});
     layer_manager->Draw(task_b_window_layer_id);
-
-    SwitchContext(&task_a_rsp, &task_b_rsp);
   }
 }
 
@@ -197,11 +194,11 @@ extern "C" void KernelMainNewStack(
     reinterpret_cast<uint64_t*>(task_b_stack_addr & ~0xflu);
 
   task_b_stack_aligned[1023] = 0; // not-used
-  task_b_stack_aligned[1022] = reinterpret_cast<uint64_t>(TaskB);
+  task_b_stack_aligned[1022] = reinterpret_cast<uint64_t>(StartTask);
   task_b_stack_aligned[1021] = 0; // rax
   task_b_stack_aligned[1020] = 0; // rbx
   task_b_stack_aligned[1019] = 0; // rcx
-  task_b_stack_aligned[1018] = 0; // rdx
+  task_b_stack_aligned[1018] = reinterpret_cast<uint64_t>(TaskB); // rdx
   task_b_stack_aligned[1017] = 1; // rdi
   task_b_stack_aligned[1016] = 42; // rsi
   task_b_stack_aligned[1015] = 0; // rbp
@@ -215,6 +212,8 @@ extern "C" void KernelMainNewStack(
   task_b_stack_aligned[1007] = 0; // r15
 
   task_b_rsp = reinterpret_cast<uint64_t>(&task_b_stack_aligned[1007]);
+
+  InitializeTask();
 
   char str[128];
 
@@ -230,8 +229,7 @@ extern "C" void KernelMainNewStack(
 
     __asm__("cli");
     if (main_queue->size() == 0) {
-      __asm__("sti");
-      SwitchContext(&task_b_rsp, &task_a_rsp);
+      __asm__("sti\n\thlt");
       continue;
     }
 
