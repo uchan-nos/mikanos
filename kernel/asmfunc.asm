@@ -87,7 +87,6 @@ KernelMain:
     hlt
     jmp .fin
 
-; #@@range_begin(switch_context)
 global SwitchContext
 SwitchContext:  ; void SwitchContext(uint64_t* to_rsp, uint64_t* current_rsp);
     push rax
@@ -126,4 +125,3 @@ SwitchContext:  ; void SwitchContext(uint64_t* to_rsp, uint64_t* current_rsp);
     pop rax
 
     ret
-; #@@range_end(switch_context)

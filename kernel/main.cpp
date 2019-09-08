@@ -114,7 +114,6 @@ void InputTextWindow(char c) {
   layer_manager->Draw(text_window_layer_id);
 }
 
-// #@@range_begin(taskb_window)
 std::shared_ptr<Window> task_b_window;
 unsigned int task_b_window_layer_id;
 void InitializeTaskBWindow() {
@@ -130,9 +129,7 @@ void InitializeTaskBWindow() {
 
   layer_manager->UpDown(task_b_window_layer_id, std::numeric_limits<int>::max());
 }
-// #@@range_end(taskb_window)
 
-// #@@range_begin(taskb_func)
 uint64_t task_b_rsp, task_a_rsp;
 
 void TaskB(int task_id, int data) {
@@ -149,7 +146,6 @@ void TaskB(int task_id, int data) {
     SwitchContext(&task_a_rsp, &task_b_rsp);
   }
 }
-// #@@range_end(taskb_func)
 
 std::deque<Message>* main_queue;
 
@@ -195,7 +191,6 @@ extern "C" void KernelMainNewStack(
   __asm__("sti");
   bool textbox_cursor_visible = false;
 
-  // #@@range_begin(init_taskb)
   std::vector<uint64_t> task_b_stack(1024);
   uint64_t task_b_stack_addr = reinterpret_cast<uint64_t>(&task_b_stack[0]);
   uint64_t* task_b_stack_aligned =
@@ -220,7 +215,6 @@ extern "C" void KernelMainNewStack(
   task_b_stack_aligned[1007] = 0; // r15
 
   task_b_rsp = reinterpret_cast<uint64_t>(&task_b_stack_aligned[1007]);
-  // #@@range_end(init_taskb)
 
   char str[128];
 
@@ -234,14 +228,12 @@ extern "C" void KernelMainNewStack(
     WriteString(*main_window->Writer(), {24, 28}, str, {0, 0, 0});
     layer_manager->Draw(main_window_layer_id);
 
-    // #@@range_begin(switch_to_taskb)
     __asm__("cli");
     if (main_queue->size() == 0) {
       __asm__("sti");
       SwitchContext(&task_b_rsp, &task_a_rsp);
       continue;
     }
-    // #@@range_end(switch_to_taskb)
 
     Message msg = main_queue->front();
     main_queue->pop_front();
