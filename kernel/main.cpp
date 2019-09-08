@@ -8,7 +8,6 @@
 #include <cstddef>
 #include <cstdio>
 
-#include <array>
 #include <deque>
 #include <limits>
 #include <numeric>
@@ -34,6 +33,7 @@
 #include "timer.hpp"
 #include "acpi.hpp"
 #include "keyboard.hpp"
+#include "task.hpp"
 
 int printk(const char* format, ...) {
   va_list ap;
@@ -131,16 +131,6 @@ void InitializeTaskBWindow() {
   layer_manager->UpDown(task_b_window_layer_id, std::numeric_limits<int>::max());
 }
 
-struct TaskContext {
-  uint64_t cr3, rip, rflags, reserved1; // offset 0x00
-  uint64_t cs, ss, fs, gs; // offset 0x20
-  uint64_t rax, rbx, rcx, rdx, rdi, rsi, rsp, rbp; // offset 0x40
-  uint64_t r8, r9, r10, r11, r12, r13, r14, r15; // offset 0x80
-  std::array<uint8_t, 512> fxsave_area; // offset 0xc0
-} __attribute__((packed));
-
-alignas(16) TaskContext task_b_ctx, task_a_ctx;
-
 void TaskB(int task_id, int data) {
   printk("TaskB: task_id=%d, data=%d\n", task_id, data);
   char str[128];
@@ -151,8 +141,6 @@ void TaskB(int task_id, int data) {
     FillRectangle(*task_b_window->Writer(), {24, 28}, {8 * 10, 16}, {0xc6, 0xc6, 0xc6});
     WriteString(*task_b_window->Writer(), {24, 28}, str, {0, 0, 0});
     layer_manager->Draw(task_b_window_layer_id);
-
-    SwitchContext(&task_a_ctx, &task_b_ctx);
   }
 }
 
@@ -217,6 +205,8 @@ extern "C" void KernelMainNewStack(
   // MXCSR のすべての例外をマスクする
   *reinterpret_cast<uint32_t*>(&task_b_ctx.fxsave_area[24]) = 0x1f80;
 
+  InitializeTask();
+
   char str[128];
 
   while (true) {
@@ -231,8 +221,7 @@ extern "C" void KernelMainNewStack(
 
     __asm__("cli");
     if (main_queue->size() == 0) {
-      __asm__("sti");
-      SwitchContext(&task_b_ctx, &task_a_ctx);
+      __asm__("sti\n\thlt");
       continue;
     }
 
