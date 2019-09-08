@@ -3,6 +3,7 @@
 #include "asmfunc.h"
 #include "timer.hpp"
 
+// #@@range_begin(switchtask)
 uint64_t task_b_rsp, task_a_rsp;
 
 namespace {
@@ -18,13 +19,17 @@ void SwitchTask() {
   }
   SwitchContext(current_task, old_current_task);
 }
+// #@@range_end(switchtask)
 
+// #@@range_begin(starttask)
 void StartTask(int task_id, int data, TaskFunc* f) {
   __asm__("sti");
   f(task_id, data);
   while (1) __asm__("hlt");
 }
+// #@@range_end(starttask)
 
+// #@@range_begin(inittask)
 void InitializeTask() {
   current_task = &task_a_rsp;
 
@@ -33,3 +38,4 @@ void InitializeTask() {
       Timer{timer_manager->CurrentTick() + kTaskTimerPeriod, kTaskTimerValue});
   __asm__("sti");
 }
+// #@@range_end(inittask)
