@@ -55,6 +55,7 @@ void TimerManager::AddTimer(const Timer& timer) {
   timers_.push(timer);
 }
 
+// #@@range_begin(tick)
 bool TimerManager::Tick() {
   ++tick_;
 
@@ -82,10 +83,12 @@ bool TimerManager::Tick() {
 
   return task_timer_timeout;
 }
+// #@@range_end(tick)
 
 TimerManager* timer_manager;
 unsigned long lapic_timer_freq;
 
+// #@@range_begin(call_switchtask)
 void LAPICTimerOnInterrupt() {
   const bool task_timer_timeout = timer_manager->Tick();
   NotifyEndOfInterrupt();
@@ -94,3 +97,4 @@ void LAPICTimerOnInterrupt() {
     SwitchTask();
   }
 }
+// #@@range_end(call_switchtask)
