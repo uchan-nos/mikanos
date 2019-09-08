@@ -157,7 +157,9 @@ extern "C" void KernelMainNewStack(
   // #@@range_begin(add_timer)
   const int kTextboxCursorTimer = 1;
   const int kTimer05Sec = static_cast<int>(kTimerFreq * 0.5);
+  __asm__("cli");
   timer_manager->AddTimer(Timer{kTimer05Sec, kTextboxCursorTimer});
+  __asm__("sti");
   bool textbox_cursor_visible = false;
   // #@@range_end(add_timer)
 
@@ -190,8 +192,10 @@ extern "C" void KernelMainNewStack(
     // #@@range_begin(timer_event)
     case Message::kTimerTimeout:
       if (msg.arg.timer.value == kTextboxCursorTimer) {
+        __asm__("cli");
         timer_manager->AddTimer(
             Timer{msg.arg.timer.timeout + kTimer05Sec, kTextboxCursorTimer});
+        __asm__("sti");
         textbox_cursor_visible = !textbox_cursor_visible;
         DrawTextCursor(textbox_cursor_visible);
         layer_manager->Draw(text_window_layer_id);
