@@ -193,10 +193,12 @@ extern "C" void KernelMainNewStack(
   std::vector<uint64_t> task_b_stack(1024);
   uint64_t task_b_stack_end = reinterpret_cast<uint64_t>(&task_b_stack[1024]);
 
+  // #@@range_begin(taskb_value_43)
   memset(&task_b_ctx, 0, sizeof(task_b_ctx));
   task_b_ctx.rip = reinterpret_cast<uint64_t>(TaskB);
   task_b_ctx.rdi = 1;
-  task_b_ctx.rsi = 42;
+  task_b_ctx.rsi = 43;
+  // #@@range_end(taskb_value_43)
 
   task_b_ctx.cr3 = GetCR3();
   task_b_ctx.rflags = 0x202;
