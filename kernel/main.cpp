@@ -203,7 +203,7 @@ extern "C" void KernelMainNewStack(
   task_b_stack_aligned[1019] = 0; // rcx
   task_b_stack_aligned[1018] = reinterpret_cast<uint64_t>(TaskB); // rdx
   task_b_stack_aligned[1017] = 1; // rdi
-  task_b_stack_aligned[1016] = 42; // rsi
+  task_b_stack_aligned[1016] = 43; // rsi
   // #@@range_end(set_starttask)
   task_b_stack_aligned[1015] = 0; // rbp
   task_b_stack_aligned[1014] = 0; // r8
