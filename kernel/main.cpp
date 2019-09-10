@@ -145,8 +145,8 @@ void TaskB(uint64_t task_id, int64_t data) {
 }
 
 // #@@range_begin(taskc)
-void TaskC(uint64_t task_id, int64_t data) {
-  printk("TaskC: task_id=%lu, data=%lx\n", task_id, data);
+void TaskIdle(uint64_t task_id, int64_t data) {
+  printk("TaskIdle: task_id=%lu, data=%lx\n", task_id, data);
   while (true) __asm__("hlt");
 }
 // #@@range_end(taskc)
@@ -198,8 +198,8 @@ extern "C" void KernelMainNewStack(
   // #@@range_begin(call_inittask)
   InitializeTask();
   task_manager->NewTask().InitContext(TaskB, 45);
-  task_manager->NewTask().InitContext(TaskC, 0xdeadbeef);
-  task_manager->NewTask().InitContext(TaskC, 0xcafebabe);
+  task_manager->NewTask().InitContext(TaskIdle, 0xdeadbeef);
+  task_manager->NewTask().InitContext(TaskIdle, 0xcafebabe);
   // #@@range_end(call_inittask)
 
   char str[128];
