@@ -131,8 +131,8 @@ void InitializeTaskBWindow() {
   layer_manager->UpDown(task_b_window_layer_id, std::numeric_limits<int>::max());
 }
 
-void TaskB(int task_id, int data) {
-  printk("TaskB: task_id=%d, data=%d\n", task_id, data);
+void TaskB(uint64_t task_id, int64_t data) {
+  printk("TaskB: task_id=%lu, data=%lu\n", task_id, data);
   char str[128];
   int count = 0;
   while (true) {
@@ -143,6 +143,13 @@ void TaskB(int task_id, int data) {
     layer_manager->Draw(task_b_window_layer_id);
   }
 }
+
+// #@@range_begin(taskc)
+void TaskC(uint64_t task_id, int64_t data) {
+  printk("TaskC: task_id=%lu, data=%lx\n", task_id, data);
+  while (true) __asm__("hlt");
+}
+// #@@range_end(taskc)
 
 std::deque<Message>* main_queue;
 
@@ -188,32 +195,12 @@ extern "C" void KernelMainNewStack(
   __asm__("sti");
   bool textbox_cursor_visible = false;
 
-  std::vector<uint64_t> task_b_stack(1024);
-  uint64_t task_b_stack_addr = reinterpret_cast<uint64_t>(&task_b_stack[0]);
-  uint64_t* task_b_stack_aligned =
-    reinterpret_cast<uint64_t*>(task_b_stack_addr & ~0xflu);
-
-  task_b_stack_aligned[1023] = 0; // not-used
-  task_b_stack_aligned[1022] = reinterpret_cast<uint64_t>(StartTask);
-  task_b_stack_aligned[1021] = 0; // rax
-  task_b_stack_aligned[1020] = 0; // rbx
-  task_b_stack_aligned[1019] = 0; // rcx
-  task_b_stack_aligned[1018] = reinterpret_cast<uint64_t>(TaskB); // rdx
-  task_b_stack_aligned[1017] = 1; // rdi
-  task_b_stack_aligned[1016] = 43; // rsi
-  task_b_stack_aligned[1015] = 0; // rbp
-  task_b_stack_aligned[1014] = 0; // r8
-  task_b_stack_aligned[1013] = 0; // r9
-  task_b_stack_aligned[1012] = 0; // r10
-  task_b_stack_aligned[1011] = 0; // r11
-  task_b_stack_aligned[1010] = 0; // r12
-  task_b_stack_aligned[1009] = 0; // r13
-  task_b_stack_aligned[1008] = 0; // r14
-  task_b_stack_aligned[1007] = 0; // r15
-
-  task_b_rsp = reinterpret_cast<uint64_t>(&task_b_stack_aligned[1007]);
-
+  // #@@range_begin(call_inittask)
   InitializeTask();
+  task_manager->NewTask().PushInitialStack(TaskB, 45);
+  task_manager->NewTask().PushInitialStack(TaskC, 0xdeadbeef);
+  task_manager->NewTask().PushInitialStack(TaskC, 0xcafebabe);
+  // #@@range_end(call_inittask)
 
   char str[128];
 
