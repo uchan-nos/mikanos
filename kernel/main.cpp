@@ -131,7 +131,6 @@ void InitializeTaskBWindow() {
   layer_manager->UpDown(task_b_window_layer_id, std::numeric_limits<int>::max());
 }
 
-// #@@range_begin(taskb)
 void TaskB(int task_id, int data) {
   printk("TaskB: task_id=%d, data=%d\n", task_id, data);
   char str[128];
@@ -144,7 +143,6 @@ void TaskB(int task_id, int data) {
     layer_manager->Draw(task_b_window_layer_id);
   }
 }
-// #@@range_end(taskb)
 
 std::deque<Message>* main_queue;
 
@@ -195,7 +193,6 @@ extern "C" void KernelMainNewStack(
   uint64_t* task_b_stack_aligned =
     reinterpret_cast<uint64_t*>(task_b_stack_addr & ~0xflu);
 
-  // #@@range_begin(set_starttask)
   task_b_stack_aligned[1023] = 0; // not-used
   task_b_stack_aligned[1022] = reinterpret_cast<uint64_t>(StartTask);
   task_b_stack_aligned[1021] = 0; // rax
@@ -204,7 +201,6 @@ extern "C" void KernelMainNewStack(
   task_b_stack_aligned[1018] = reinterpret_cast<uint64_t>(TaskB); // rdx
   task_b_stack_aligned[1017] = 1; // rdi
   task_b_stack_aligned[1016] = 43; // rsi
-  // #@@range_end(set_starttask)
   task_b_stack_aligned[1015] = 0; // rbp
   task_b_stack_aligned[1014] = 0; // r8
   task_b_stack_aligned[1013] = 0; // r9
@@ -217,9 +213,7 @@ extern "C" void KernelMainNewStack(
 
   task_b_rsp = reinterpret_cast<uint64_t>(&task_b_stack_aligned[1007]);
 
-  // #@@range_begin(call_inittask)
   InitializeTask();
-  // #@@range_end(call_inittask)
 
   char str[128];
 
@@ -233,13 +227,11 @@ extern "C" void KernelMainNewStack(
     WriteString(*main_window->Writer(), {24, 28}, str, {0, 0, 0});
     layer_manager->Draw(main_window_layer_id);
 
-    // #@@range_begin(mainloop)
     __asm__("cli");
     if (main_queue->size() == 0) {
       __asm__("sti\n\thlt");
       continue;
     }
-    // #@@range_end(mainloop)
 
     Message msg = main_queue->front();
     main_queue->pop_front();
