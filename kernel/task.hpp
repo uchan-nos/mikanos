@@ -36,7 +36,7 @@ class TaskManager {
  public:
   TaskManager();
   Task& NewTask();
-  void SwitchTask();
+  void SwitchTask(bool current_sleep = false);
 
   void Sleep(Task* task);
   Error Sleep(uint64_t id);
