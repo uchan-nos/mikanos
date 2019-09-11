@@ -23,8 +23,8 @@ class Task {
   Task& PushInitialStack(TaskFunc* f, int64_t data);
   uint64_t& StackPointer();
   uint64_t ID() const;
-  void Sleep();
-  void Wakeup();
+  Task& Sleep();
+  Task& Wakeup();
 
  private:
   uint64_t id_;
