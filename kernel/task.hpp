@@ -32,6 +32,7 @@ class Task {
   uint64_t stack_ptr_;
 };
 
+// #@@range_begin(taskmgr)
 class TaskManager {
  public:
   TaskManager();
@@ -48,6 +49,7 @@ class TaskManager {
   uint64_t latest_id_{0};
   std::deque<Task*> running_{};
 };
+// #@@range_end(taskmgr)
 
 extern TaskManager* task_manager;
 
