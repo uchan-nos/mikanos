@@ -10,7 +10,6 @@
 #include <cstddef>
 #include <vector>
 
-// #@@range_begin(task)
 using TaskFunc = void (uint64_t, int64_t);
 
 class Task {
@@ -26,9 +25,7 @@ class Task {
   std::vector<uint64_t> stack_;
   uint64_t stack_ptr_;
 };
-// #@@range_end(task)
 
-// #@@range_begin(taskmgr)
 class TaskManager {
  public:
   TaskManager();
@@ -42,7 +39,6 @@ class TaskManager {
 };
 
 extern TaskManager* task_manager;
-// #@@range_end(taskmgr)
 
 void StartTask(uint64_t task_id, int64_t data, TaskFunc* f);
 void InitializeTask();

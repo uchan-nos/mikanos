@@ -3,7 +3,6 @@
 #include "asmfunc.h"
 #include "timer.hpp"
 
-// #@@range_begin(task_ctor)
 Task::Task(uint64_t id) : id_{id} {
   const size_t stack_size = kDefaultStackBytes / sizeof(stack_[0]);
   stack_.resize(stack_size);
@@ -13,9 +12,7 @@ Task::Task(uint64_t id) : id_{id} {
     stack_ptr_ -= 8;
   }
 }
-// #@@range_end(task_ctor)
 
-// #@@range_begin(task_pushstack)
 Task& Task::PushInitialStack(TaskFunc* f, int64_t data) {
   auto push = [this](uint64_t value) {
     stack_ptr_ -= 8;
@@ -45,28 +42,20 @@ Task& Task::PushInitialStack(TaskFunc* f, int64_t data) {
 
   return *this;
 }
-// #@@range_end(task_pushstack)
 
-// #@@range_begin(task_stackptr)
 uint64_t& Task::StackPointer() {
   return stack_ptr_;
 }
-// #@@range_end(task_stackptr)
 
-// #@@range_begin(taskmgr_ctor)
 TaskManager::TaskManager() {
   NewTask();
 }
-// #@@range_end(taskmgr_ctor)
 
-// #@@range_begin(taskmgr_newtask)
 Task& TaskManager::NewTask() {
   ++latest_id_;
   return *tasks_.emplace_back(new Task{latest_id_});
 }
-// #@@range_end(taskmgr_newtask)
 
-// #@@range_begin(taskmgr_switchtask)
 void TaskManager::SwitchTask() {
   size_t next_task_index = current_task_index_ + 1;
   if (next_task_index >= tasks_.size()) {
@@ -79,7 +68,6 @@ void TaskManager::SwitchTask() {
 
   SwitchContext(&next_task.StackPointer(), &current_task.StackPointer());
 }
-// #@@range_end(taskmgr_switchtask)
 
 TaskManager* task_manager;
 
@@ -89,7 +77,6 @@ void StartTask(uint64_t task_id, int64_t data, TaskFunc* f) {
   while (1) __asm__("hlt");
 }
 
-// #@@range_begin(inittask)
 void InitializeTask() {
   task_manager = new TaskManager;
 
@@ -98,4 +85,3 @@ void InitializeTask() {
       Timer{timer_manager->CurrentTick() + kTaskTimerPeriod, kTaskTimerValue});
   __asm__("sti");
 }
-// #@@range_end(inittask)
