@@ -32,8 +32,8 @@ class Task {
   Task& InitContext(TaskFunc* f, int64_t data);
   TaskContext& Context();
   uint64_t ID() const;
-  void Sleep();
-  void Wakeup();
+  Task& Sleep();
+  Task& Wakeup();
 
  private:
   uint64_t id_;
