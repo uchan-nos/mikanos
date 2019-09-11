@@ -193,6 +193,7 @@ extern "C" void KernelMainNewStack(
   __asm__("sti");
   bool textbox_cursor_visible = false;
 
+  // #@@range_begin(wakeup_tasks)
   InitializeTask();
   const uint64_t taskb_id = task_manager->NewTask()
     .InitContext(TaskB, 45)
@@ -200,6 +201,7 @@ extern "C" void KernelMainNewStack(
     .ID();
   task_manager->NewTask().InitContext(TaskIdle, 0xdeadbeef).Wakeup();
   task_manager->NewTask().InitContext(TaskIdle, 0xcafebabe).Wakeup();
+  // #@@range_end(wakeup_tasks)
 
   char str[128];
 
@@ -238,6 +240,7 @@ extern "C" void KernelMainNewStack(
         layer_manager->Draw(text_window_layer_id);
       }
       break;
+    // #@@range_begin(sleep_wakeup_taskb)
     case Message::kKeyPush:
       InputTextWindow(msg.arg.keyboard.ascii);
       if (msg.arg.keyboard.ascii == 's') {
@@ -246,6 +249,7 @@ extern "C" void KernelMainNewStack(
         printk("wakeup TaskB: %s\n", task_manager->Wakeup(taskb_id).Name());
       }
       break;
+    // #@@range_end(sleep_wakeup_taskb)
     default:
       Log(kError, "Unknown message type: %d\n", msg.type);
     }
