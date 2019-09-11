@@ -54,10 +54,12 @@ Task& TaskManager::NewTask() {
   return *tasks_.emplace_back(new Task{latest_id_});
 }
 
-void TaskManager::SwitchTask() {
+void TaskManager::SwitchTask(bool current_sleep) {
   Task* current_task = running_.front();
   running_.pop_front();
-  running_.push_back(current_task);
+  if (!current_sleep) {
+    running_.push_back(current_task);
+  }
   Task* next_task = running_.front();
 
   SwitchContext(&next_task->Context(), &current_task->Context());
@@ -67,8 +69,7 @@ void TaskManager::Sleep(Task* task) {
   auto it = std::find(running_.begin(), running_.end(), task);
 
   if (it == running_.begin()) {
-    running_.pop_front();
-    SwitchTask();
+    SwitchTask(true);
     return;
   }
 
