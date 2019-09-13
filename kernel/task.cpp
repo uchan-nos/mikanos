@@ -47,7 +47,6 @@ uint64_t& Task::StackPointer() {
   return stack_ptr_;
 }
 
-// #@@range_begin(task_methods)
 uint64_t Task::ID() const {
   return id_;
 }
@@ -61,20 +60,16 @@ Task& Task::Wakeup() {
   task_manager->Wakeup(this);
   return *this;
 }
-// #@@range_end(task_methods)
 
-// #@@range_begin(taskmgr_ctor)
 TaskManager::TaskManager() {
   running_.push_back(&NewTask());
 }
-// #@@range_end(taskmgr_ctor)
 
 Task& TaskManager::NewTask() {
   ++latest_id_;
   return *tasks_.emplace_back(new Task{latest_id_});
 }
 
-// #@@range_begin(taskmgr_swtask)
 void TaskManager::SwitchTask(bool current_sleep) {
   Task* current_task = running_.front();
   running_.pop_front();
@@ -85,9 +80,7 @@ void TaskManager::SwitchTask(bool current_sleep) {
 
   SwitchContext(&next_task->StackPointer(), &current_task->StackPointer());
 }
-// #@@range_end(taskmgr_swtask)
 
-// #@@range_begin(taskmgr_sleep)
 void TaskManager::Sleep(Task* task) {
   auto it = std::find(running_.begin(), running_.end(), task);
 
@@ -102,9 +95,7 @@ void TaskManager::Sleep(Task* task) {
 
   running_.erase(it);
 }
-// #@@range_end(taskmgr_sleep)
 
-// #@@range_begin(taskmgr_sleep_id)
 Error TaskManager::Sleep(uint64_t id) {
   auto it = std::find_if(tasks_.begin(), tasks_.end(),
                          [id](const auto& t){ return t->ID() == id; });
@@ -115,18 +106,14 @@ Error TaskManager::Sleep(uint64_t id) {
   Sleep(it->get());
   return MAKE_ERROR(Error::kSuccess);
 }
-// #@@range_end(taskmgr_sleep_id)
 
-// #@@range_begin(taskmgr_wakeup)
 void TaskManager::Wakeup(Task* task) {
   auto it = std::find(running_.begin(), running_.end(), task);
   if (it == running_.end()) {
     running_.push_back(task);
   }
 }
-// #@@range_end(taskmgr_wakeup)
 
-// #@@range_begin(taskmgr_wakeup_id)
 Error TaskManager::Wakeup(uint64_t id) {
   auto it = std::find_if(tasks_.begin(), tasks_.end(),
                          [id](const auto& t){ return t->ID() == id; });
@@ -137,7 +124,6 @@ Error TaskManager::Wakeup(uint64_t id) {
   Wakeup(it->get());
   return MAKE_ERROR(Error::kSuccess);
 }
-// #@@range_end(taskmgr_wakeup_id)
 
 TaskManager* task_manager;
 
