@@ -63,7 +63,10 @@ std::optional<Message> Task::ReceiveMessage() {
 }
 
 TaskManager::TaskManager() {
-  running_.push_back(&NewTask());
+  Task& task = NewTask()
+    .SetLevel(current_level_)
+    .SetRunning(true);
+  running_[current_level_].push_back(&task);
 }
 
 Task& TaskManager::NewTask() {
@@ -72,29 +75,47 @@ Task& TaskManager::NewTask() {
 }
 
 void TaskManager::SwitchTask(bool current_sleep) {
-  Task* current_task = running_.front();
-  running_.pop_front();
+  auto& level_queue = running_[current_level_];
+  Task* current_task = level_queue.front();
+  level_queue.pop_front();
   if (!current_sleep) {
-    running_.push_back(current_task);
+    running_[current_task->Level()].push_back(current_task);
   }
-  Task* next_task = running_.front();
+  if (level_queue.empty()) {
+    level_changed_ = true;
+  }
+
+  if (level_changed_) {
+    level_changed_ = false;
+    for (int lv = kMaxLevel; lv >= 0; --lv) {
+      if (!running_[lv].empty()) {
+        current_level_ = lv;
+        break;
+      }
+    }
+  }
+
+  Task* next_task = running_[current_level_].front();
 
   SwitchContext(&next_task->Context(), &current_task->Context());
 }
 
 void TaskManager::Sleep(Task* task) {
-  auto it = std::find(running_.begin(), running_.end(), task);
+  task->SetRunning(false);
 
-  if (it == running_.begin()) {
+  auto& level_queue = running_[task->Level()];
+  auto it = std::find(level_queue.begin(), level_queue.end(), task);
+
+  if (current_level_ == task->Level() && it == level_queue.begin()) {
     SwitchTask(true);
     return;
   }
 
-  if (it == running_.end()) {
+  if (it == level_queue.end()) {
     return;
   }
 
-  running_.erase(it);
+  level_queue.erase(it);
 }
 
 Error TaskManager::Sleep(uint64_t id) {
@@ -108,21 +129,38 @@ Error TaskManager::Sleep(uint64_t id) {
   return MAKE_ERROR(Error::kSuccess);
 }
 
-void TaskManager::Wakeup(Task* task) {
-  auto it = std::find(running_.begin(), running_.end(), task);
-  if (it == running_.end()) {
-    running_.push_back(task);
+void TaskManager::Wakeup(Task* task, int level) {
+  if (task->Running()) {
+    if (level >= 0 && level != task->Level()) {
+      level_changed_ = true;
+      task->SetLevel(level);
+    }
+    return;
   }
+
+  // task is not running
+  if (level < 0) {
+    level = task->Level();
+  }
+
+  task->SetLevel(level);
+  task->SetRunning(true);
+
+  if (running_[level].empty()) {
+    level_changed_ = true;
+  }
+  running_[level].push_back(task);
+  return;
 }
 
-Error TaskManager::Wakeup(uint64_t id) {
+Error TaskManager::Wakeup(uint64_t id, int level) {
   auto it = std::find_if(tasks_.begin(), tasks_.end(),
                          [id](const auto& t){ return t->ID() == id; });
   if (it == tasks_.end()) {
     return MAKE_ERROR(Error::kNoSuchTask);
   }
 
-  Wakeup(it->get());
+  Wakeup(it->get(), level);
   return MAKE_ERROR(Error::kSuccess);
 }
 
@@ -138,7 +176,7 @@ Error TaskManager::SendMessage(uint64_t id, const Message& msg) {
 }
 
 Task& TaskManager::CurrentTask() {
-  return *running_.front();
+  return *running_[current_level_].front();
 }
 
 TaskManager* task_manager;
