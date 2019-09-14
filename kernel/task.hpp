@@ -39,13 +39,11 @@ class Task {
   void SendMessage(const Message& msg);
   std::optional<Message> ReceiveMessage();
 
-  // #@@range_begin(task_fields)
  private:
   uint64_t id_;
   std::vector<uint64_t> stack_;
   alignas(16) TaskContext context_;
   std::deque<Message> msgs_;
-  // #@@range_end(task_fields)
 };
 
 class TaskManager {
