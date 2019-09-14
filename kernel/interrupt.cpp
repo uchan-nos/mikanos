@@ -30,13 +30,11 @@ void NotifyEndOfInterrupt() {
 }
 
 namespace {
-  // #@@range_begin(inthandler_xhci)
   __attribute__((interrupt))
   void IntHandlerXHCI(InterruptFrame* frame) {
     task_manager->SendMessage(1, Message{Message::kInterruptXHCI});
     NotifyEndOfInterrupt();
   }
-  // #@@range_end(inthandler_xhci)
 
   __attribute__((interrupt))
   void IntHandlerLAPICTimer(InterruptFrame* frame) {
@@ -44,9 +42,7 @@ namespace {
   }
 }
 
-// #@@range_begin(init_int)
 void InitializeInterrupt() {
-// #@@range_end(init_int)
   SetIDTEntry(idt[InterruptVector::kXHCI],
               MakeIDTAttr(DescriptorType::kInterruptGate, 0),
               reinterpret_cast<uint64_t>(IntHandlerXHCI),
