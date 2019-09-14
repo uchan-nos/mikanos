@@ -64,7 +64,6 @@ bool TimerManager::Tick() {
       break;
     }
 
-    // #@@range_begin(timer_tick)
     if (t.Value() == kTaskTimerValue) {
       task_timer_timeout = true;
       timers_.pop();
@@ -78,7 +77,6 @@ bool TimerManager::Tick() {
     task_manager->SendMessage(1, m);
 
     timers_.pop();
-    // #@@range_end(timer_tick)
   }
 
   return task_timer_timeout;
