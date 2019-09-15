@@ -36,6 +36,7 @@ class Task {
   int Level() const { return level_; }
   bool Running() const { return running_; }
 
+  // #@@range_begin(task_fields)
  private:
   uint64_t id_;
   std::vector<uint64_t> stack_;
@@ -48,8 +49,10 @@ class Task {
   Task& SetRunning(bool running) { running_ = running; return *this; }
 
   friend TaskManager;
+  // #@@range_end(task_fields)
 };
 
+// #@@range_begin(taskmgr)
 class TaskManager {
  public:
   // level: 0 = lowest, kMaxLevel = highest
@@ -75,6 +78,7 @@ class TaskManager {
 
   void ChangeLevelRunning(Task* task, int level);
 };
+// #@@range_end(taskmgr)
 
 extern TaskManager* task_manager;
 
