@@ -42,6 +42,9 @@ class Task {
   void SendMessage(const Message& msg);
   std::optional<Message> ReceiveMessage();
 
+  int Level() const { return level_; }
+  bool Running() const { return running_; }
+
  private:
   uint64_t id_;
   std::vector<uint64_t> stack_;
@@ -51,9 +54,7 @@ class Task {
   bool running_{false};
 
   Task& SetLevel(int level) { level_ = level; return *this; }
-  int Level() const { return level_; }
   Task& SetRunning(bool running) { running_ = running; return *this; }
-  bool Running() const { return running_; }
 
   friend TaskManager;
 };
@@ -80,6 +81,8 @@ class TaskManager {
   std::array<std::deque<Task*>, kMaxLevel + 1> running_{};
   int current_level_{kMaxLevel};
   bool level_changed_{false};
+
+  void ChangeLevelRunning(Task* task, int level);
 };
 
 extern TaskManager* task_manager;
