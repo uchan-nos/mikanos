@@ -79,7 +79,7 @@ void TaskManager::SwitchTask(bool current_sleep) {
   Task* current_task = level_queue.front();
   level_queue.pop_front();
   if (!current_sleep) {
-    running_[current_task->Level()].push_back(current_task);
+    level_queue.push_back(current_task);
   }
   if (level_queue.empty()) {
     level_changed_ = true;
@@ -101,21 +101,18 @@ void TaskManager::SwitchTask(bool current_sleep) {
 }
 
 void TaskManager::Sleep(Task* task) {
+  if (!task->Running()) {
+    return;
+  }
+
   task->SetRunning(false);
 
-  auto& level_queue = running_[task->Level()];
-  auto it = std::find(level_queue.begin(), level_queue.end(), task);
-
-  if (current_level_ == task->Level() && it == level_queue.begin()) {
+  if (task == running_[current_level_].front()) {
     SwitchTask(true);
     return;
   }
 
-  if (it == level_queue.end()) {
-    return;
-  }
-
-  level_queue.erase(it);
+  std::erase(running_[task->Level()], task);
 }
 
 Error TaskManager::Sleep(uint64_t id) {
@@ -131,14 +128,10 @@ Error TaskManager::Sleep(uint64_t id) {
 
 void TaskManager::Wakeup(Task* task, int level) {
   if (task->Running()) {
-    if (level >= 0 && level != task->Level()) {
-      level_changed_ = true;
-      task->SetLevel(level);
-    }
+    ChangeLevelRunning(task, level);
     return;
   }
 
-  // task is not running
   if (level < 0) {
     level = task->Level();
   }
@@ -146,10 +139,10 @@ void TaskManager::Wakeup(Task* task, int level) {
   task->SetLevel(level);
   task->SetRunning(true);
 
-  if (running_[level].empty()) {
+  running_[level].push_back(task);
+  if (level > current_level_) {
     level_changed_ = true;
   }
-  running_[level].push_back(task);
   return;
 }
 
@@ -177,6 +170,34 @@ Error TaskManager::SendMessage(uint64_t id, const Message& msg) {
 
 Task& TaskManager::CurrentTask() {
   return *running_[current_level_].front();
+}
+
+void TaskManager::ChangeLevelRunning(Task* task, int level) {
+  if (level < 0 || level == task->Level()) {
+    return;
+  }
+
+  if (task != running_[current_level_].front()) {
+    // change level of other task
+    std::erase(running_[task->Level()], task);
+    running_[level].push_back(task);
+    task->SetLevel(level);
+    if (level > current_level_) {
+      level_changed_ = true;
+    }
+    return;
+  }
+
+  // change level myself
+  running_[current_level_].pop_front();
+  running_[level].push_front(task);
+  task->SetLevel(level);
+  if (level >= current_level_) {
+    current_level_ = level;
+  } else {
+    current_level_ = level;
+    level_changed_ = true;
+  }
 }
 
 TaskManager* task_manager;
