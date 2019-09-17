@@ -209,7 +209,6 @@ void InitializeLayer() {
   layer_manager->UpDown(console->LayerID(), 1);
 }
 
-// #@@range_begin(proc_layermsg)
 void ProcessLayerMessage(const Message& msg) {
   const auto& arg = msg.arg.layer;
   switch (arg.op) {
@@ -224,4 +223,3 @@ void ProcessLayerMessage(const Message& msg) {
     break;
   }
 }
-// #@@range_end(proc_layermsg)
