@@ -4,6 +4,14 @@
 #include "segment.hpp"
 #include "timer.hpp"
 
+// #@@range_begin(task_idle)
+namespace {
+  void TaskIdle(uint64_t task_id, int64_t data) {
+    while (true) __asm__("hlt");
+  }
+}
+// #@@range_end(task_idle)
+
 Task::Task(uint64_t id) : id_{id}, msgs_{} {
 }
 
@@ -68,6 +76,12 @@ TaskManager::TaskManager() {
     .SetLevel(current_level_)
     .SetRunning(true);
   running_[current_level_].push_back(&task);
+
+  Task& idle = NewTask()
+    .InitContext(TaskIdle, 0)
+    .SetLevel(0)
+    .SetRunning(true);
+  running_[0].push_back(&idle);
 }
 // #@@range_end(taskmgr_ctor)
 
@@ -76,7 +90,6 @@ Task& TaskManager::NewTask() {
   return *tasks_.emplace_back(new Task{latest_id_});
 }
 
-// #@@range_begin(switchtask)
 void TaskManager::SwitchTask(bool current_sleep) {
   auto& level_queue = running_[current_level_];
   Task* current_task = level_queue.front();
@@ -102,9 +115,7 @@ void TaskManager::SwitchTask(bool current_sleep) {
 
   SwitchContext(&next_task->Context(), &current_task->Context());
 }
-// #@@range_end(switchtask)
 
-// #@@range_begin(sleep)
 void TaskManager::Sleep(Task* task) {
   if (!task->Running()) {
     return;
@@ -119,7 +130,6 @@ void TaskManager::Sleep(Task* task) {
 
   std::erase(running_[task->Level()], task);
 }
-// #@@range_end(sleep)
 
 Error TaskManager::Sleep(uint64_t id) {
   auto it = std::find_if(tasks_.begin(), tasks_.end(),
@@ -132,7 +142,6 @@ Error TaskManager::Sleep(uint64_t id) {
   return MAKE_ERROR(Error::kSuccess);
 }
 
-// #@@range_begin(wakeup)
 void TaskManager::Wakeup(Task* task, int level) {
   if (task->Running()) {
     ChangeLevelRunning(task, level);
@@ -152,7 +161,6 @@ void TaskManager::Wakeup(Task* task, int level) {
   }
   return;
 }
-// #@@range_end(wakeup)
 
 Error TaskManager::Wakeup(uint64_t id, int level) {
   auto it = std::find_if(tasks_.begin(), tasks_.end(),
@@ -180,7 +188,6 @@ Task& TaskManager::CurrentTask() {
   return *running_[current_level_].front();
 }
 
-// #@@range_begin(chlv_running)
 void TaskManager::ChangeLevelRunning(Task* task, int level) {
   if (level < 0 || level == task->Level()) {
     return;
@@ -208,7 +215,6 @@ void TaskManager::ChangeLevelRunning(Task* task, int level) {
     level_changed_ = true;
   }
 }
-// #@@range_end(chlv_running)
 
 TaskManager* task_manager;
 
