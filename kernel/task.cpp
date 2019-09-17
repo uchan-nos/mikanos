@@ -4,13 +4,11 @@
 #include "segment.hpp"
 #include "timer.hpp"
 
-// #@@range_begin(task_idle)
 namespace {
   void TaskIdle(uint64_t task_id, int64_t data) {
     while (true) __asm__("hlt");
   }
 }
-// #@@range_end(task_idle)
 
 Task::Task(uint64_t id) : id_{id}, msgs_{} {
 }
@@ -70,7 +68,6 @@ std::optional<Message> Task::ReceiveMessage() {
   return m;
 }
 
-// #@@range_begin(taskmgr_ctor)
 TaskManager::TaskManager() {
   Task& task = NewTask()
     .SetLevel(current_level_)
@@ -83,7 +80,6 @@ TaskManager::TaskManager() {
     .SetRunning(true);
   running_[0].push_back(&idle);
 }
-// #@@range_end(taskmgr_ctor)
 
 Task& TaskManager::NewTask() {
   ++latest_id_;
