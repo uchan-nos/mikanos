@@ -179,14 +179,12 @@ extern "C" void KernelMainNewStack(
   timer_manager->AddTimer(Timer{kTimer05Sec, kTextboxCursorTimer});
   bool textbox_cursor_visible = false;
 
-  // #@@range_begin(init_tasks)
   InitializeTask();
   Task& main_task = task_manager->CurrentTask();
   const uint64_t taskb_id = task_manager->NewTask()
     .InitContext(TaskB, 45)
     .Wakeup()
     .ID();
-  // #@@range_end(init_tasks)
 
   usb::xhci::Initialize();
   InitializeKeyboard();
