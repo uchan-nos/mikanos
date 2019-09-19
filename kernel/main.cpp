@@ -251,11 +251,18 @@ extern "C" void KernelMainNewStack(
       }
       break;
     case Message::kKeyPush:
-      InputTextWindow(msg->arg.keyboard.ascii);
-      if (msg->arg.keyboard.ascii == 's') {
-        printk("sleep TaskB: %s\n", task_manager->Sleep(taskb_id).Name());
-      } else if (msg->arg.keyboard.ascii == 'w') {
-        printk("wakeup TaskB: %s\n", task_manager->Wakeup(taskb_id).Name());
+      if (auto act = active_layer->GetActive(); act == text_window_layer_id) {
+        InputTextWindow(msg->arg.keyboard.ascii);
+      } else if (act == task_b_window_layer_id) {
+        if (msg->arg.keyboard.ascii == 's') {
+          printk("sleep TaskB: %s\n", task_manager->Sleep(taskb_id).Name());
+        } else if (msg->arg.keyboard.ascii == 'w') {
+          printk("wakeup TaskB: %s\n", task_manager->Wakeup(taskb_id).Name());
+        }
+      } else {
+        printk("key push not handled: keycode %02x, ascii %02x\n",
+            msg->arg.keyboard.keycode,
+            msg->arg.keyboard.ascii);
       }
       break;
     case Message::kLayer:
