@@ -51,9 +51,8 @@ int printk(const char* format, ...) {
 std::shared_ptr<Window> main_window;
 unsigned int main_window_layer_id;
 void InitializeMainWindow() {
-  main_window = std::make_shared<Window>(
-      160, 52, screen_config.pixel_format);
-  DrawWindow(*main_window->Writer(), "Hello Window");
+  main_window = std::make_shared<ToplevelWindow>(
+      160, 52, screen_config.pixel_format, "Hello Window");
 
   main_window_layer_id = layer_manager->NewLayer()
     .SetWindow(main_window)
@@ -70,9 +69,8 @@ void InitializeTextWindow() {
   const int win_w = 160;
   const int win_h = 52;
 
-  text_window = std::make_shared<Window>(
-      win_w, win_h, screen_config.pixel_format);
-  DrawWindow(*text_window->Writer(), "Text Box Test");
+  text_window = std::make_shared<ToplevelWindow>(
+      win_w, win_h, screen_config.pixel_format, "Text Box Test");
   DrawTextbox(*text_window->Writer(), {4, 24}, {win_w - 8, win_h - 24 - 4});
 
   text_window_layer_id = layer_manager->NewLayer()
@@ -118,9 +116,8 @@ void InputTextWindow(char c) {
 std::shared_ptr<Window> task_b_window;
 unsigned int task_b_window_layer_id;
 void InitializeTaskBWindow() {
-  task_b_window = std::make_shared<Window>(
-      160, 52, screen_config.pixel_format);
-  DrawWindow(*task_b_window->Writer(), "TaskB Window");
+  task_b_window = std::make_shared<ToplevelWindow>(
+      160, 52, screen_config.pixel_format, "TaskB Window");
 
   task_b_window_layer_id = layer_manager->NewLayer()
     .SetWindow(task_b_window)
