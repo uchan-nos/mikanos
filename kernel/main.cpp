@@ -194,20 +194,6 @@ extern "C" void KernelMainNewStack(
   InitializeMainWindow();
   InitializeTextWindow();
   InitializeTaskBWindow();
-
-  auto tlw = std::make_shared<ToplevelWindow>(
-      8 * 18 + 8 * 2, 24 + 8 + 16 + 4, screen_config.pixel_format, "TOPL Window");
-
-  auto tlw_layer_id = layer_manager->NewLayer()
-    .SetWindow(tlw)
-    .SetDraggable(true)
-    .Move({400, 300})
-    .ID();
-
-  layer_manager->UpDown(tlw_layer_id, std::numeric_limits<int>::max());
-
-  WriteString(*tlw->InnerWriter(), {0, 0}, "hogera", {255, 0, 0});
-
   layer_manager->Draw({{0, 0}, ScreenSize()});
 
   acpi::Initialize(acpi_table);
