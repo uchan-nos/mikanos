@@ -94,6 +94,9 @@ void ToplevelWindow::Deactivate() {
   DrawWindowTitle(*Writer(), title_, false);
 }
 
+Vector2D<int> ToplevelWindow::InnerSize() const {
+  return Size() - kTopLeftMargin - kBottomRightMargin;
+}
 
 namespace {
   const int kCloseButtonWidth = 16;

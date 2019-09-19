@@ -87,7 +87,7 @@ class Window {
 
 class ToplevelWindow : public Window {
  public:
-  static constexpr Vector2D<int> kTopLeftMargin{4, 28};
+  static constexpr Vector2D<int> kTopLeftMargin{4, 24};
   static constexpr Vector2D<int> kBottomRightMargin{4, 4};
 
   class InnerAreaWriter : public PixelWriter {
@@ -111,6 +111,7 @@ class ToplevelWindow : public Window {
   virtual void Deactivate() override;
 
   InnerAreaWriter* InnerWriter() { return &inner_writer_; }
+  Vector2D<int> InnerSize() const;
 
  private:
   const char* title_;
