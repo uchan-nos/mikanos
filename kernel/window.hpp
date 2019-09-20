@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <optional>
+#include <string>
 #include "graphics.hpp"
 #include "frame_buffer.hpp"
 
@@ -110,7 +111,8 @@ class ToplevelWindow : public Window {
     ToplevelWindow& window_;
   };
 
-  ToplevelWindow(int width, int height, PixelFormat shadow_format, const char* title);
+  ToplevelWindow(int width, int height, PixelFormat shadow_format,
+                 const std::string& title);
 
   virtual void Activate() override;
   virtual void Deactivate() override;
@@ -119,7 +121,7 @@ class ToplevelWindow : public Window {
   Vector2D<int> InnerSize() const;
 
  private:
-  const char* title_;
+  std::string title_;
   InnerAreaWriter inner_writer_{*this};
 };
 // #@@range_end(tlw)
