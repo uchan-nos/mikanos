@@ -78,7 +78,6 @@ void Window::Move(Vector2D<int> dst_pos, const Rectangle<int>& src) {
   shadow_buffer_.Move(dst_pos, src);
 }
 
-// #@@range_begin(tlw_methods)
 ToplevelWindow::ToplevelWindow(int width, int height, PixelFormat shadow_format,
                                const std::string& title)
     : Window{width, height, shadow_format}, title_{title} {
@@ -98,7 +97,6 @@ void ToplevelWindow::Deactivate() {
 Vector2D<int> ToplevelWindow::InnerSize() const {
   return Size() - kTopLeftMargin - kBottomRightMargin;
 }
-// #@@range_end(tlw_methods)
 
 namespace {
   const int kCloseButtonWidth = 16;
@@ -157,7 +155,6 @@ void DrawTextbox(PixelWriter& writer, Vector2D<int> pos, Vector2D<int> size) {
   fill_rect(pos + Vector2D<int>{size.x, 0}, {1, size.y}, 0xc6c6c6);
 }
 
-// #@@range_begin(draw_wintitle)
 void DrawWindowTitle(PixelWriter& writer, const char* title, bool active) {
   const auto win_w = writer.Width();
   uint32_t bgcolor = 0x848484;
@@ -182,4 +179,3 @@ void DrawWindowTitle(PixelWriter& writer, const char* title, bool active) {
     }
   }
 }
-// #@@range_end(draw_wintitle)
