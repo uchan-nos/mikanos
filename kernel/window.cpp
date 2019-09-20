@@ -159,18 +159,13 @@ void DrawTextbox(PixelWriter& writer, Vector2D<int> pos, Vector2D<int> size) {
 
 // #@@range_begin(draw_wintitle)
 void DrawWindowTitle(PixelWriter& writer, const char* title, bool active) {
-  auto fill_rect = [&writer](Vector2D<int> pos, Vector2D<int> size, uint32_t c) {
-    FillRectangle(writer, pos, size, ToColor(c));
-  };
   const auto win_w = writer.Width();
-  const auto win_h = writer.Height();
-
   uint32_t bgcolor = 0x848484;
   if (active) {
     bgcolor = 0x000084;
   }
 
-  fill_rect({3, 3},         {win_w - 6, 18},        bgcolor);
+  FillRectangle(writer, {3, 3}, {win_w - 6, 18}, ToColor(bgcolor));
   WriteString(writer, {24, 4}, title, ToColor(0xffffff));
 
   for (int y = 0; y < kCloseButtonHeight; ++y) {
