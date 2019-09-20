@@ -100,7 +100,6 @@ class LayerManager {
 
 extern LayerManager* layer_manager;
 
-// #@@range_begin(active_layer)
 class ActiveLayer {
  public:
   ActiveLayer(LayerManager& manager);
@@ -115,7 +114,6 @@ class ActiveLayer {
 };
 
 extern ActiveLayer* active_layer;
-// #@@range_end(active_layer)
 
 void InitializeLayer();
 void ProcessLayerMessage(const Message& msg);
