@@ -67,7 +67,6 @@ void Mouse::OnInterrupt(uint8_t buttons, int8_t displacement_x, int8_t displacem
 
   layer_manager->Move(layer_id_, position_);
 
-  // #@@range_begin(mouse_handler)
   const bool previous_left_pressed = (previous_buttons_ & 0x01);
   const bool left_pressed = (buttons & 0x01);
   if (!previous_left_pressed && left_pressed) {
@@ -79,7 +78,6 @@ void Mouse::OnInterrupt(uint8_t buttons, int8_t displacement_x, int8_t displacem
       active_layer->Activate(0);
     }
   } else if (previous_left_pressed && left_pressed) {
-  // #@@range_end(mouse_handler)
     if (drag_layer_id_ > 0) {
       layer_manager->MoveRelative(drag_layer_id_, posdiff);
     }
@@ -109,7 +107,5 @@ void InitializeMouse() {
       mouse->OnInterrupt(buttons, displacement_x, displacement_y);
     };
 
-  // #@@range_begin(set_mouse_layer)
   active_layer->SetMouseLayer(mouse_layer_id);
-  // #@@range_end(set_mouse_layer)
 }
