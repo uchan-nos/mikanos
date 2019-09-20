@@ -254,6 +254,7 @@ extern "C" void KernelMainNewStack(
         layer_manager->Draw(text_window_layer_id);
       }
       break;
+    // #@@range_begin(sendkey_to_active)
     case Message::kKeyPush:
       if (auto act = active_layer->GetActive(); act == text_window_layer_id) {
         InputTextWindow(msg->arg.keyboard.ascii);
@@ -269,6 +270,7 @@ extern "C" void KernelMainNewStack(
             msg->arg.keyboard.ascii);
       }
       break;
+    // #@@range_end(sendkey_to_active)
     case Message::kLayer:
       ProcessLayerMessage(*msg);
       __asm__("cli");
