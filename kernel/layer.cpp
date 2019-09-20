@@ -184,16 +184,13 @@ namespace {
 
 LayerManager* layer_manager;
 
-// #@@range_begin(al_ctor)
 ActiveLayer::ActiveLayer(LayerManager& manager) : manager_{manager} {
 }
 
 void ActiveLayer::SetMouseLayer(unsigned int mouse_layer) {
   mouse_layer_ = mouse_layer;
 }
-// #@@range_end(al_ctor)
 
-// #@@range_begin(al_activate)
 void ActiveLayer::Activate(unsigned int layer_id) {
   if (active_layer_ == layer_id) {
     return;
@@ -213,7 +210,6 @@ void ActiveLayer::Activate(unsigned int layer_id) {
     manager_.Draw(active_layer_);
   }
 }
-// #@@range_end(al_activate)
 
 ActiveLayer* active_layer;
 
@@ -250,9 +246,7 @@ void InitializeLayer() {
   layer_manager->UpDown(bglayer_id, 0);
   layer_manager->UpDown(console->LayerID(), 1);
 
-  // #@@range_begin(new_al)
   active_layer = new ActiveLayer{*layer_manager};
-  // #@@range_end(new_al)
 }
 
 void ProcessLayerMessage(const Message& msg) {
