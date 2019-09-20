@@ -80,19 +80,19 @@ void Window::Move(Vector2D<int> dst_pos, const Rectangle<int>& src) {
 
 // #@@range_begin(tlw_methods)
 ToplevelWindow::ToplevelWindow(int width, int height, PixelFormat shadow_format,
-                               const char* title)
+                               const std::string& title)
     : Window{width, height, shadow_format}, title_{title} {
-  DrawWindow(*Writer(), title_);
+  DrawWindow(*Writer(), title_.c_str());
 }
 
 void ToplevelWindow::Activate() {
   Window::Activate();
-  DrawWindowTitle(*Writer(), title_, true);
+  DrawWindowTitle(*Writer(), title_.c_str(), true);
 }
 
 void ToplevelWindow::Deactivate() {
   Window::Deactivate();
-  DrawWindowTitle(*Writer(), title_, false);
+  DrawWindowTitle(*Writer(), title_.c_str(), false);
 }
 
 Vector2D<int> ToplevelWindow::InnerSize() const {
