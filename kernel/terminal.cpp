@@ -26,8 +26,8 @@ Rectangle<int> Terminal::BlinkCursor() {
   cursor_visible_ = !cursor_visible_;
   DrawCursor(cursor_visible_);
 
-  return {{ToplevelWindow::kTopLeftMargin.x + 4 + 8 * cursor_.x,
-           ToplevelWindow::kTopLeftMargin.y + 4 + 16 * cursor_.y},
+  return {ToplevelWindow::kTopLeftMargin +
+            Vector2D<int>{4 + 8*cursor_.x, 5 + 16*cursor_.y},
           {7, 15}};
 }
 // #@@range_end(term_blink)
