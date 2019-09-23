@@ -19,7 +19,7 @@ class Terminal {
 
   Terminal();
   unsigned int LayerID() const { return layer_id_; }
-  void BlinkCursor();
+  Rectangle<int> BlinkCursor();
 
  private:
   std::shared_ptr<ToplevelWindow> window_;
