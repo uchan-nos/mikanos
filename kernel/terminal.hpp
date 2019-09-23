@@ -12,7 +12,6 @@
 #include "task.hpp"
 #include "layer.hpp"
 
-// #@@range_begin(term)
 class Terminal {
  public:
   static const int kRows = 15, kColumns = 60;
@@ -31,4 +30,3 @@ class Terminal {
 };
 
 void TaskTerminal(uint64_t task_id, int64_t data);
-// #@@range_end(term)

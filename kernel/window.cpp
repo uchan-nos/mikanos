@@ -3,7 +3,6 @@
 #include "logger.hpp"
 #include "font.hpp"
 
-// #@@range_begin(draw_tbox)
 namespace {
   void DrawTextbox(PixelWriter& writer, Vector2D<int> pos, Vector2D<int> size,
                    const PixelColor& background,
@@ -16,7 +15,6 @@ namespace {
 
     // fill main box
     fill_rect(pos + Vector2D<int>{1, 1}, size - Vector2D<int>{2, 2}, background);
-// #@@range_end(draw_tbox)
 
     // draw border lines
     fill_rect(pos,                            {size.x, 1}, border_dark);
@@ -162,7 +160,6 @@ void DrawWindow(PixelWriter& writer, const char* title) {
   DrawWindowTitle(writer, title, false);
 }
 
-// #@@range_begin(draw_term)
 void DrawTextbox(PixelWriter& writer, Vector2D<int> pos, Vector2D<int> size) {
   DrawTextbox(writer, pos, size,
               ToColor(0xffffff), ToColor(0xc6c6c6), ToColor(0x848484));
@@ -172,7 +169,6 @@ void DrawTerminal(PixelWriter& writer, Vector2D<int> pos, Vector2D<int> size) {
   DrawTextbox(writer, pos, size,
               ToColor(0x000000), ToColor(0xc6c6c6), ToColor(0x848484));
 }
-// #@@range_end(draw_term)
 
 void DrawWindowTitle(PixelWriter& writer, const char* title, bool active) {
   const auto win_w = writer.Width();
