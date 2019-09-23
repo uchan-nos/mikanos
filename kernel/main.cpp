@@ -209,12 +209,10 @@ extern "C" void KernelMainNewStack(
     .InitContext(TaskB, 45)
     .Wakeup()
     .ID();
-  // #@@range_begin(start_taskterm)
   const uint64_t task_terminal_id = task_manager->NewTask()
     .InitContext(TaskTerminal, 0)
     .Wakeup()
     .ID();
-  // #@@range_end(start_taskterm)
 
   usb::xhci::Initialize();
   InitializeKeyboard();
@@ -246,7 +244,6 @@ extern "C" void KernelMainNewStack(
     case Message::kInterruptXHCI:
       usb::xhci::ProcessEvents();
       break;
-    // #@@range_begin(send_timermsg)
     case Message::kTimerTimeout:
       if (msg->arg.timer.value == kTextboxCursorTimer) {
         __asm__("cli");
@@ -262,7 +259,6 @@ extern "C" void KernelMainNewStack(
         __asm__("sti");
       }
       break;
-    // #@@range_end(send_timermsg)
     case Message::kKeyPush:
       if (auto act = active_layer->GetActive(); act == text_window_layer_id) {
         InputTextWindow(msg->arg.keyboard.ascii);
