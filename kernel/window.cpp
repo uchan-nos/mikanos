@@ -16,6 +16,7 @@ namespace {
 
     // fill main box
     fill_rect(pos + Vector2D<int>{1, 1}, size - Vector2D<int>{2, 2}, background);
+// #@@range_end(draw_tbox)
 
     // draw border lines
     fill_rect(pos,                            {size.x, 1}, border_dark);
@@ -24,7 +25,6 @@ namespace {
     fill_rect(pos + Vector2D<int>{size.x, 0}, {1, size.y}, border_light);
   }
 }
-// #@@range_end(draw_tbox)
 
 Window::Window(int width, int height, PixelFormat shadow_format) : width_{width}, height_{height} {
   data_.resize(height);
