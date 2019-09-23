@@ -5,7 +5,6 @@
 
 #include "logger.hpp"
 
-// #@@range_begin(term_ctor)
 Terminal::Terminal() {
   window_ = std::make_shared<ToplevelWindow>(
       kColumns * 8 + 8 + ToplevelWindow::kMarginX,
@@ -19,9 +18,7 @@ Terminal::Terminal() {
     .SetDraggable(true)
     .ID();
 }
-// #@@range_end(term_ctor)
 
-// #@@range_begin(term_blink)
 Rectangle<int> Terminal::BlinkCursor() {
   cursor_visible_ = !cursor_visible_;
   DrawCursor(cursor_visible_);
@@ -30,7 +27,6 @@ Rectangle<int> Terminal::BlinkCursor() {
             Vector2D<int>{4 + 8*cursor_.x, 5 + 16*cursor_.y},
           {7, 15}};
 }
-// #@@range_end(term_blink)
 
 void Terminal::DrawCursor(bool visible) {
   const auto color = visible ? ToColor(0xffffff) : ToColor(0);
@@ -38,7 +34,6 @@ void Terminal::DrawCursor(bool visible) {
   FillRectangle(*window_->InnerWriter(), pos, {7, 15}, color);
 }
 
-// #@@range_begin(termtask)
 void TaskTerminal(uint64_t task_id, int64_t data) {
   __asm__("cli");
   Task& task = task_manager->CurrentTask();
@@ -57,7 +52,6 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
     }
 
     switch (msg->type) {
-    // #@@range_begin(send_draw_request)
     case Message::kTimerTimeout:
       {
         const auto area = terminal->BlinkCursor();
@@ -68,10 +62,8 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
         __asm__("sti");
       }
       break;
-    // #@@range_end(send_draw_request)
     default:
       break;
     }
   }
 }
-// #@@range_end(termtask)
