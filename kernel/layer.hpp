@@ -67,6 +67,8 @@ class LayerManager {
   void Draw(const Rectangle<int>& area) const;
   /** @brief 指定したレイヤーに設定されているウィンドウの描画領域内を再描画する。 */
   void Draw(unsigned int id) const;
+  /** @brief 指定したレイヤーに設定されているウィンドウ内の指定された範囲を再描画する。 */
+  void Draw(unsigned int id, Rectangle<int> area) const;
 
   /** @brief レイヤーの位置情報を指定された絶対座標へと更新する。再描画する。 */
   void Move(unsigned int id, Vector2D<int> new_pos);
