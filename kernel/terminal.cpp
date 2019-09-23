@@ -60,13 +60,8 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
     case Message::kTimerTimeout:
       {
         const auto area = terminal->BlinkCursor();
-        Message msg{Message::kLayer, task_id};
-        msg.arg.layer.layer_id = terminal->LayerID();
-        msg.arg.layer.op = LayerOperation::DrawArea;
-        msg.arg.layer.x = area.pos.x;
-        msg.arg.layer.y = area.pos.y;
-        msg.arg.layer.w = area.size.x;
-        msg.arg.layer.h = area.size.y;
+        Message msg = MakeLayerMessage(
+            task_id, terminal->LayerID(), LayerOperation::DrawArea, area);
         __asm__("cli");
         task_manager->SendMessage(1, msg);
         __asm__("sti");
