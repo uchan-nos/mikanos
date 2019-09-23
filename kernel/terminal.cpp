@@ -31,7 +31,6 @@ void Terminal::DrawCursor(bool visible) {
   const auto color = visible ? ToColor(0xffffff) : ToColor(0);
   const auto pos = Vector2D<int>{4 + 8*cursor_.x, 5 + 16*cursor_.y};
   FillRectangle(*window_->InnerWriter(), pos, {7, 15}, color);
-  layer_manager->Draw(layer_id_);
 }
 // #@@range_end(term_blink)
 
@@ -56,6 +55,15 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
     switch (msg->type) {
     case Message::kTimerTimeout:
       terminal->BlinkCursor();
+
+      {
+        Message msg{Message::kLayer, task_id};
+        msg.arg.layer.layer_id = terminal->LayerID();
+        msg.arg.layer.op = LayerOperation::Draw;
+        __asm__("cli");
+        task_manager->SendMessage(1, msg);
+        __asm__("sti");
+      }
       break;
     default:
       break;
