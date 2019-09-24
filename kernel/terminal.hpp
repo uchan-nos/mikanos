@@ -19,7 +19,7 @@ class Terminal {
   Terminal();
   unsigned int LayerID() const { return layer_id_; }
   Rectangle<int> BlinkCursor();
-  void InputKey(uint8_t modifier, uint8_t keycode, char ascii);
+  Rectangle<int> InputKey(uint8_t modifier, uint8_t keycode, char ascii);
 
   // #@@range_begin(term_fields)
  private:
