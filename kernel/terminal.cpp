@@ -23,16 +23,20 @@ Rectangle<int> Terminal::BlinkCursor() {
   cursor_visible_ = !cursor_visible_;
   DrawCursor(cursor_visible_);
 
-  return {ToplevelWindow::kTopLeftMargin +
-            Vector2D<int>{4 + 8*cursor_.x, 5 + 16*cursor_.y},
-          {7, 15}};
+  return {CalcCursorPos(), {7, 15}};
 }
 
 void Terminal::DrawCursor(bool visible) {
   const auto color = visible ? ToColor(0xffffff) : ToColor(0);
-  const auto pos = Vector2D<int>{4 + 8*cursor_.x, 5 + 16*cursor_.y};
-  FillRectangle(*window_->InnerWriter(), pos, {7, 15}, color);
+  FillRectangle(*window_->Writer(), CalcCursorPos(), {7, 15}, color);
 }
+
+// #@@range_begin(calc_cursor_pos)
+Vector2D<int> Terminal::CalcCursorPos() const {
+  return ToplevelWindow::kTopLeftMargin +
+      Vector2D<int>{4 + 8 * cursor_.x, 4 + 16 * cursor_.y};
+}
+// #@@range_end(calc_cursor_pos)
 
 // #@@range_begin(input_key)
 void Terminal::InputKey(uint8_t modifier, uint8_t keycode, char ascii) {
@@ -51,12 +55,12 @@ void Terminal::InputKey(uint8_t modifier, uint8_t keycode, char ascii) {
   } else if (ascii == '\b') {
     if (cursor_.x > 0) {
       --cursor_.x;
-      FillRectangle(*window_->InnerWriter(), {4 + 8 * cursor_.x, 4 + 16 * cursor_.y}, {8, 16}, {0, 0, 0});
+      FillRectangle(*window_->Writer(), CalcCursorPos(), {8, 16}, {0, 0, 0});
     }
   } else if (ascii != 0) {
     if (cursor_.x < kColumns - 1) {
       linebuf_[cursor_.x] = ascii;
-      WriteAscii(*window_->InnerWriter(), {4 + 8 * cursor_.x, 4 + 16 * cursor_.y}, ascii, {255, 255, 255});
+      WriteAscii(*window_->Writer(), CalcCursorPos(), ascii, {255, 255, 255});
       ++cursor_.x;
     }
   }
