@@ -39,8 +39,11 @@ Vector2D<int> Terminal::CalcCursorPos() const {
 // #@@range_end(calc_cursor_pos)
 
 // #@@range_begin(input_key)
-void Terminal::InputKey(uint8_t modifier, uint8_t keycode, char ascii) {
+Rectangle<int> Terminal::InputKey(
+    uint8_t modifier, uint8_t keycode, char ascii) {
   DrawCursor(false);
+
+  Rectangle<int> draw_area{CalcCursorPos(), {8*2, 16}};
 
   if (ascii == '\n') {
     linebuf_[cursor_.x] = ascii;
@@ -52,10 +55,13 @@ void Terminal::InputKey(uint8_t modifier, uint8_t keycode, char ascii) {
     } else {
       Scroll1();
     }
+    draw_area.pos = ToplevelWindow::kTopLeftMargin;
+    draw_area.size = window_->InnerSize();
   } else if (ascii == '\b') {
     if (cursor_.x > 0) {
       --cursor_.x;
       FillRectangle(*window_->Writer(), CalcCursorPos(), {8, 16}, {0, 0, 0});
+      draw_area.pos = CalcCursorPos();
     }
   } else if (ascii != 0) {
     if (cursor_.x < kColumns - 1) {
@@ -66,6 +72,8 @@ void Terminal::InputKey(uint8_t modifier, uint8_t keycode, char ascii) {
   }
 
   DrawCursor(true);
+
+  return draw_area;
 }
 // #@@range_end(input_key)
 
@@ -114,12 +122,12 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
       break;
     // #@@range_begin(handle_keypush)
     case Message::kKeyPush:
-      terminal->InputKey(msg->arg.keyboard.modifier,
-                         msg->arg.keyboard.keycode,
-                         msg->arg.keyboard.ascii);
       {
+        const auto area = terminal->InputKey(msg->arg.keyboard.modifier,
+                                             msg->arg.keyboard.keycode,
+                                             msg->arg.keyboard.ascii);
         Message msg = MakeLayerMessage(
-            task_id, terminal->LayerID(), LayerOperation::Draw, {});
+            task_id, terminal->LayerID(), LayerOperation::DrawArea, area);
         __asm__("cli");
         task_manager->SendMessage(1, msg);
         __asm__("sti");
