@@ -35,7 +35,7 @@ void Terminal::DrawCursor(bool visible) {
 }
 
 // #@@range_begin(input_key)
-void Terminal::InputKey(uint8_t keycode, char ascii) {
+void Terminal::InputKey(uint8_t modifier, uint8_t keycode, char ascii) {
   DrawCursor(false);
 
   if (ascii == '\n') {
@@ -110,7 +110,9 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
       break;
     // #@@range_begin(handle_keypush)
     case Message::kKeyPush:
-      terminal->InputKey(msg->arg.keyboard.keycode, msg->arg.keyboard.ascii);
+      terminal->InputKey(msg->arg.keyboard.modifier,
+                         msg->arg.keyboard.keycode,
+                         msg->arg.keyboard.ascii);
       {
         Message msg = MakeLayerMessage(
             task_id, terminal->LayerID(), LayerOperation::Draw, {});
