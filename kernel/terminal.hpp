@@ -19,7 +19,9 @@ class Terminal {
   Terminal();
   unsigned int LayerID() const { return layer_id_; }
   Rectangle<int> BlinkCursor();
+  void InputKey(uint8_t keycode, char ascii);
 
+  // #@@range_begin(term_fields)
  private:
   std::shared_ptr<ToplevelWindow> window_;
   unsigned int layer_id_;
@@ -27,6 +29,10 @@ class Terminal {
   Vector2D<int> cursor_{0, 0};
   bool cursor_visible_{false};
   void DrawCursor(bool visible);
+
+  std::array<char, kColumns + 1> linebuf_{};
+  void Scroll1();
+  // #@@range_end(term_fields)
 };
 
 void TaskTerminal(uint64_t task_id, int64_t data);
