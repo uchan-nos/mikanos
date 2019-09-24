@@ -34,13 +34,59 @@ void Terminal::DrawCursor(bool visible) {
   FillRectangle(*window_->InnerWriter(), pos, {7, 15}, color);
 }
 
+// #@@range_begin(input_key)
+void Terminal::InputKey(uint8_t keycode, char ascii) {
+  DrawCursor(false);
+
+  if (ascii == '\n') {
+    linebuf_[cursor_.x] = ascii;
+    linebuf_[cursor_.x + 1] = 0;
+    cursor_.x = 0;
+    Log(kWarn, "line: %s", &linebuf_[0]);
+    if (cursor_.y < kRows - 1) {
+      ++cursor_.y;
+    } else {
+      Scroll1();
+    }
+  } else if (ascii == '\b') {
+    if (cursor_.x > 0) {
+      --cursor_.x;
+      FillRectangle(*window_->InnerWriter(), {4 + 8 * cursor_.x, 4 + 16 * cursor_.y}, {8, 16}, {0, 0, 0});
+    }
+  } else if (ascii != 0) {
+    if (cursor_.x < kColumns - 1) {
+      linebuf_[cursor_.x] = ascii;
+      WriteAscii(*window_->InnerWriter(), {4 + 8 * cursor_.x, 4 + 16 * cursor_.y}, ascii, {255, 255, 255});
+      ++cursor_.x;
+    }
+  }
+
+  DrawCursor(true);
+}
+// #@@range_end(input_key)
+
+// #@@range_begin(scroll)
+void Terminal::Scroll1() {
+  Rectangle<int> move_src{
+    ToplevelWindow::kTopLeftMargin + Vector2D<int>{4, 4 + 16},
+    {8*kColumns, 16*(kRows - 1)}
+  };
+  window_->Move(ToplevelWindow::kTopLeftMargin + Vector2D<int>{4, 4}, move_src);
+  FillRectangle(*window_->InnerWriter(),
+                {4, 4 + 16*cursor_.y}, {8*kColumns, 16}, {0, 0, 0});
+}
+// #@@range_end(scroll)
+
 void TaskTerminal(uint64_t task_id, int64_t data) {
   __asm__("cli");
   Task& task = task_manager->CurrentTask();
   Terminal* terminal = new Terminal;
   layer_manager->Move(terminal->LayerID(), {100, 200});
   active_layer->Activate(terminal->LayerID());
+  // #@@range_begin(register_taskmap)
+  layer_task_map->insert(std::make_pair(terminal->LayerID(), task_id));
   __asm__("sti");
+  // #@@range_end(register_taskmap)
 
   while (true) {
     __asm__("cli");
@@ -62,6 +108,18 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
         __asm__("sti");
       }
       break;
+    // #@@range_begin(handle_keypush)
+    case Message::kKeyPush:
+      terminal->InputKey(msg->arg.keyboard.keycode, msg->arg.keyboard.ascii);
+      {
+        Message msg = MakeLayerMessage(
+            task_id, terminal->LayerID(), LayerOperation::Draw, {});
+        __asm__("cli");
+        task_manager->SendMessage(1, msg);
+        __asm__("sti");
+      }
+      break;
+    // #@@range_end(handle_keypush)
     default:
       break;
     }
