@@ -15,6 +15,9 @@
 class Terminal {
  public:
   static const int kRows = 15, kColumns = 60;
+  // #@@range_begin(linemax)
+  static const int kLineMax = 128;
+  // #@@range_end(linemax)
 
   Terminal();
   unsigned int LayerID() const { return layer_id_; }
@@ -32,6 +35,7 @@ class Terminal {
   Vector2D<int> CalcCursorPos() const;
 
   std::array<char, kColumns + 1> linebuf_{};
+  int linebuf_index_{0};
   void Scroll1();
   // #@@range_end(term_fields)
 };
