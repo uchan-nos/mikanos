@@ -97,8 +97,19 @@ void Terminal::Scroll1() {
 
 // #@@range_begin(execute_line)
 void Terminal::ExecuteLine() {
-  if (strncmp(&linebuf_[0], "echo ", 5) == 0) {
-    Print(&linebuf_[5]);
+  char* command = &linebuf_[0];
+  char* first_arg = strchr(&linebuf_[0], ' ');
+  if (first_arg) {
+    *first_arg = 0;
+    ++first_arg;
+  }
+
+  if (strcmp(command, "echo") == 0) {
+    Print(first_arg);
+  } else {
+    Print("no such command: ");
+    Print(command);
+    Print("\n");
   }
 }
 // #@@range_end(execute_line)
