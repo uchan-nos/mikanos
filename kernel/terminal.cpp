@@ -46,11 +46,10 @@ Rectangle<int> Terminal::InputKey(
   Rectangle<int> draw_area{CalcCursorPos(), {8*2, 16}};
 
   if (ascii == '\n') {
-    linebuf_[linebuf_index_] = ascii;
-    linebuf_[linebuf_index_ + 1] = 0;
+    linebuf_[linebuf_index_] = 0;
     linebuf_index_ = 0;
     cursor_.x = 0;
-    Log(kWarn, "line: %s", &linebuf_[0]);
+    Log(kWarn, "line: %s\n", &linebuf_[0]);
     if (cursor_.y < kRows - 1) {
       ++cursor_.y;
     } else {
@@ -69,7 +68,7 @@ Rectangle<int> Terminal::InputKey(
       }
     }
   } else if (ascii != 0) {
-    if (cursor_.x < kColumns - 1 && linebuf_index_ < kLineMax - 2) {
+    if (cursor_.x < kColumns - 1 && linebuf_index_ < kLineMax - 1) {
       linebuf_[linebuf_index_] = ascii;
       ++linebuf_index_;
       WriteAscii(*window_->Writer(), CalcCursorPos(), ascii, {255, 255, 255});
