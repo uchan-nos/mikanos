@@ -1,10 +1,11 @@
 #include "terminal.hpp"
 
+#include <cstring>
+
 #include "font.hpp"
 #include "layer.hpp"
 
-#include "logger.hpp"
-
+// #@@range_begin(term_ctor)
 Terminal::Terminal() {
   window_ = std::make_shared<ToplevelWindow>(
       kColumns * 8 + 8 + ToplevelWindow::kMarginX,
@@ -17,7 +18,10 @@ Terminal::Terminal() {
     .SetWindow(window_)
     .SetDraggable(true)
     .ID();
+
+  Print(">");
 }
+// #@@range_end(term_ctor)
 
 Rectangle<int> Terminal::BlinkCursor() {
   cursor_visible_ = !cursor_visible_;
@@ -42,16 +46,18 @@ Rectangle<int> Terminal::InputKey(
 
   Rectangle<int> draw_area{CalcCursorPos(), {8*2, 16}};
 
+  // #@@range_begin(input_key)
   if (ascii == '\n') {
     linebuf_[linebuf_index_] = 0;
     linebuf_index_ = 0;
     cursor_.x = 0;
-    Log(kWarn, "line: %s\n", &linebuf_[0]);
     if (cursor_.y < kRows - 1) {
       ++cursor_.y;
     } else {
       Scroll1();
     }
+    ExecuteLine();
+    Print(">");
     draw_area.pos = ToplevelWindow::kTopLeftMargin;
     draw_area.size = window_->InnerSize();
   } else if (ascii == '\b') {
@@ -72,6 +78,7 @@ Rectangle<int> Terminal::InputKey(
       ++cursor_.x;
     }
   }
+  // #@@range_end(input_key)
 
   DrawCursor(true);
 
@@ -87,6 +94,46 @@ void Terminal::Scroll1() {
   FillRectangle(*window_->InnerWriter(),
                 {4, 4 + 16*cursor_.y}, {8*kColumns, 16}, {0, 0, 0});
 }
+
+// #@@range_begin(execute_line)
+void Terminal::ExecuteLine() {
+  if (strncmp(&linebuf_[0], "echo ", 5) == 0) {
+    Print(&linebuf_[5]);
+  }
+}
+// #@@range_end(execute_line)
+
+// #@@range_begin(print)
+void Terminal::Print(const char* s) {
+  DrawCursor(false);
+
+  auto newline = [this]() {
+    cursor_.x = 0;
+    if (cursor_.y < kRows - 1) {
+      ++cursor_.y;
+    } else {
+      Scroll1();
+    }
+  };
+
+  while (*s) {
+    if (*s == '\n') {
+      newline();
+    } else {
+      WriteAscii(*window_->Writer(), CalcCursorPos(), *s, {255, 255, 255});
+      if (cursor_.x == kColumns - 1) {
+        newline();
+      } else {
+        ++cursor_.x;
+      }
+    }
+
+    ++s;
+  }
+
+  DrawCursor(true);
+}
+// #@@range_end(print)
 
 void TaskTerminal(uint64_t task_id, int64_t data) {
   __asm__("cli");
