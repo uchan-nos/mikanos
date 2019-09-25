@@ -259,7 +259,6 @@ extern "C" void KernelMainNewStack(
         __asm__("sti");
       }
       break;
-    // #@@range_begin(main_keypush)
     case Message::kKeyPush:
       if (auto act = active_layer->GetActive(); act == text_window_layer_id) {
         InputTextWindow(msg->arg.keyboard.ascii);
@@ -284,7 +283,6 @@ extern "C" void KernelMainNewStack(
         }
       }
       break;
-    // #@@range_end(main_keypush)
     case Message::kLayer:
       ProcessLayerMessage(*msg);
       __asm__("cli");
