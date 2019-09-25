@@ -34,8 +34,8 @@ class Terminal {
   void DrawCursor(bool visible);
   Vector2D<int> CalcCursorPos() const;
 
-  std::array<char, kColumns + 1> linebuf_{};
   int linebuf_index_{0};
+  std::array<char, kLineMax> linebuf_{};
   void Scroll1();
   // #@@range_end(term_fields)
 };
