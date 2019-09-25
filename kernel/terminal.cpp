@@ -31,14 +31,11 @@ void Terminal::DrawCursor(bool visible) {
   FillRectangle(*window_->Writer(), CalcCursorPos(), {7, 15}, color);
 }
 
-// #@@range_begin(calc_cursor_pos)
 Vector2D<int> Terminal::CalcCursorPos() const {
   return ToplevelWindow::kTopLeftMargin +
       Vector2D<int>{4 + 8 * cursor_.x, 4 + 16 * cursor_.y};
 }
-// #@@range_end(calc_cursor_pos)
 
-// #@@range_begin(input_key)
 Rectangle<int> Terminal::InputKey(
     uint8_t modifier, uint8_t keycode, char ascii) {
   DrawCursor(false);
@@ -80,9 +77,7 @@ Rectangle<int> Terminal::InputKey(
 
   return draw_area;
 }
-// #@@range_end(input_key)
 
-// #@@range_begin(scroll)
 void Terminal::Scroll1() {
   Rectangle<int> move_src{
     ToplevelWindow::kTopLeftMargin + Vector2D<int>{4, 4 + 16},
@@ -92,7 +87,6 @@ void Terminal::Scroll1() {
   FillRectangle(*window_->InnerWriter(),
                 {4, 4 + 16*cursor_.y}, {8*kColumns, 16}, {0, 0, 0});
 }
-// #@@range_end(scroll)
 
 void TaskTerminal(uint64_t task_id, int64_t data) {
   __asm__("cli");
@@ -100,10 +94,8 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
   Terminal* terminal = new Terminal;
   layer_manager->Move(terminal->LayerID(), {100, 200});
   active_layer->Activate(terminal->LayerID());
-  // #@@range_begin(register_taskmap)
   layer_task_map->insert(std::make_pair(terminal->LayerID(), task_id));
   __asm__("sti");
-  // #@@range_end(register_taskmap)
 
   while (true) {
     __asm__("cli");
@@ -125,7 +117,6 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
         __asm__("sti");
       }
       break;
-    // #@@range_begin(handle_keypush)
     case Message::kKeyPush:
       {
         const auto area = terminal->InputKey(msg->arg.keyboard.modifier,
@@ -138,7 +129,6 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
         __asm__("sti");
       }
       break;
-    // #@@range_end(handle_keypush)
     default:
       break;
     }

@@ -219,10 +219,8 @@ void ActiveLayer::Activate(unsigned int layer_id) {
   }
 }
 
-// #@@range_begin(layer_task_map)
 ActiveLayer* active_layer;
 std::map<unsigned int, uint64_t>* layer_task_map;
-// #@@range_end(layer_task_map)
 
 void InitializeLayer() {
   const auto screen_size = ScreenSize();
