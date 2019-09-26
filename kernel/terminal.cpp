@@ -105,7 +105,9 @@ void Terminal::ExecuteLine() {
   }
 
   if (strcmp(command, "echo") == 0) {
-    Print(first_arg);
+    if (first_arg) {
+      Print(first_arg);
+    }
     Print("\n");
   } else if (command[0] != 0) {
     Print("no such command: ");
