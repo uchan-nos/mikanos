@@ -61,6 +61,7 @@ Rectangle<int> Terminal::InputKey(
     draw_area.pos = ToplevelWindow::kTopLeftMargin;
     draw_area.size = window_->InnerSize();
   } else if (ascii == '\b') {
+  // #@@range_end(input_key)
     if (cursor_.x > 0) {
       --cursor_.x;
       FillRectangle(*window_->Writer(), CalcCursorPos(), {8, 16}, {0, 0, 0});
@@ -78,7 +79,6 @@ Rectangle<int> Terminal::InputKey(
       ++cursor_.x;
     }
   }
-  // #@@range_end(input_key)
 
   DrawCursor(true);
 
