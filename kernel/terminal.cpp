@@ -99,12 +99,18 @@ void Terminal::ExecuteLine() {
     ++first_arg;
   }
 
+  // #@@range_begin(clear_command)
   if (strcmp(command, "echo") == 0) {
     if (first_arg) {
       Print(first_arg);
     }
     Print("\n");
+  } else if (strcmp(command, "clear") == 0) {
+    FillRectangle(*window_->InnerWriter(),
+                  {4, 4}, {8*kColumns, 16*kRows}, {0, 0, 0});
+    cursor_.y = 0;
   } else if (command[0] != 0) {
+  // #@@range_end(clear_command)
     Print("no such command: ");
     Print(command);
     Print("\n");
