@@ -109,7 +109,6 @@ void Terminal::ExecuteLine() {
     FillRectangle(*window_->InnerWriter(),
                   {4, 4}, {8*kColumns, 16*kRows}, {0, 0, 0});
     cursor_.y = 0;
-  // #@@range_begin(lspci_command)
   } else if (strcmp(command, "lspci") == 0) {
     char s[64];
     for (int i = 0; i < pci::num_device; ++i) {
@@ -121,7 +120,6 @@ void Terminal::ExecuteLine() {
       Print(s);
     }
   } else if (command[0] != 0) {
-  // #@@range_end(lspci_command)
     Print("no such command: ");
     Print(command);
     Print("\n");
