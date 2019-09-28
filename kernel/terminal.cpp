@@ -5,7 +5,6 @@
 #include "font.hpp"
 #include "layer.hpp"
 
-// #@@range_begin(term_ctor)
 Terminal::Terminal() {
   window_ = std::make_shared<ToplevelWindow>(
       kColumns * 8 + 8 + ToplevelWindow::kMarginX,
@@ -21,7 +20,6 @@ Terminal::Terminal() {
 
   Print(">");
 }
-// #@@range_end(term_ctor)
 
 Rectangle<int> Terminal::BlinkCursor() {
   cursor_visible_ = !cursor_visible_;
@@ -46,7 +44,6 @@ Rectangle<int> Terminal::InputKey(
 
   Rectangle<int> draw_area{CalcCursorPos(), {8*2, 16}};
 
-  // #@@range_begin(input_key)
   if (ascii == '\n') {
     linebuf_[linebuf_index_] = 0;
     linebuf_index_ = 0;
@@ -61,7 +58,6 @@ Rectangle<int> Terminal::InputKey(
     draw_area.pos = ToplevelWindow::kTopLeftMargin;
     draw_area.size = window_->InnerSize();
   } else if (ascii == '\b') {
-  // #@@range_end(input_key)
     if (cursor_.x > 0) {
       --cursor_.x;
       FillRectangle(*window_->Writer(), CalcCursorPos(), {8, 16}, {0, 0, 0});
@@ -95,7 +91,6 @@ void Terminal::Scroll1() {
                 {4, 4 + 16*cursor_.y}, {8*kColumns, 16}, {0, 0, 0});
 }
 
-// #@@range_begin(execute_line)
 void Terminal::ExecuteLine() {
   char* command = &linebuf_[0];
   char* first_arg = strchr(&linebuf_[0], ' ');
@@ -115,9 +110,7 @@ void Terminal::ExecuteLine() {
     Print("\n");
   }
 }
-// #@@range_end(execute_line)
 
-// #@@range_begin(print)
 void Terminal::Print(const char* s) {
   DrawCursor(false);
 
@@ -147,7 +140,6 @@ void Terminal::Print(const char* s) {
 
   DrawCursor(true);
 }
-// #@@range_end(print)
 
 void TaskTerminal(uint64_t task_id, int64_t data) {
   __asm__("cli");
