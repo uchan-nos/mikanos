@@ -114,59 +114,6 @@ void InputTextWindow(char c) {
   layer_manager->Draw(text_window_layer_id);
 }
 
-std::shared_ptr<ToplevelWindow> task_b_window;
-unsigned int task_b_window_layer_id;
-void InitializeTaskBWindow() {
-  task_b_window = std::make_shared<ToplevelWindow>(
-      160, 52, screen_config.pixel_format, "TaskB Window");
-
-  task_b_window_layer_id = layer_manager->NewLayer()
-    .SetWindow(task_b_window)
-    .SetDraggable(true)
-    .Move({100, 100})
-    .ID();
-
-  layer_manager->UpDown(task_b_window_layer_id, std::numeric_limits<int>::max());
-}
-
-void TaskB(uint64_t task_id, int64_t data) {
-  printk("TaskB: task_id=%lu, data=%lu\n", task_id, data);
-  char str[128];
-  int count = 0;
-
-  __asm__("cli");
-  Task& task = task_manager->CurrentTask();
-  __asm__("sti");
-
-  while (true) {
-    ++count;
-    sprintf(str, "%010d", count);
-    FillRectangle(*task_b_window->InnerWriter(), {20, 4}, {8 * 10, 16}, {0xc6, 0xc6, 0xc6});
-    WriteString(*task_b_window->InnerWriter(), {20, 4}, str, {0, 0, 0});
-
-    Message msg{Message::kLayer, task_id};
-    msg.arg.layer.layer_id = task_b_window_layer_id;
-    msg.arg.layer.op = LayerOperation::Draw;
-    __asm__("cli");
-    task_manager->SendMessage(1, msg);
-    __asm__("sti");
-
-    while (true) {
-      __asm__("cli");
-      auto msg = task.ReceiveMessage();
-      if (!msg) {
-        task.Sleep();
-        __asm__("sti");
-        continue;
-      }
-
-      if (msg->type == Message::kLayerFinish) {
-        break;
-      }
-    }
-  }
-}
-
 alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 
 extern "C" void KernelMainNewStack(
@@ -191,9 +138,7 @@ extern "C" void KernelMainNewStack(
   InitializeLayer();
   InitializeMainWindow();
   InitializeTextWindow();
-  InitializeTaskBWindow();
   layer_manager->Draw({{0, 0}, ScreenSize()});
-  active_layer->Activate(task_b_window_layer_id);
 
   acpi::Initialize(acpi_table);
   InitializeLAPICTimer();
@@ -205,10 +150,6 @@ extern "C" void KernelMainNewStack(
 
   InitializeTask();
   Task& main_task = task_manager->CurrentTask();
-  const uint64_t taskb_id = task_manager->NewTask()
-    .InitContext(TaskB, 45)
-    .Wakeup()
-    .ID();
   const uint64_t task_terminal_id = task_manager->NewTask()
     .InitContext(TaskTerminal, 0)
     .Wakeup()
@@ -262,12 +203,6 @@ extern "C" void KernelMainNewStack(
     case Message::kKeyPush:
       if (auto act = active_layer->GetActive(); act == text_window_layer_id) {
         InputTextWindow(msg->arg.keyboard.ascii);
-      } else if (act == task_b_window_layer_id) {
-        if (msg->arg.keyboard.ascii == 's') {
-          printk("sleep TaskB: %s\n", task_manager->Sleep(taskb_id).Name());
-        } else if (msg->arg.keyboard.ascii == 'w') {
-          printk("wakeup TaskB: %s\n", task_manager->Wakeup(taskb_id).Name());
-        }
       } else {
         __asm__("cli");
         auto task_it = layer_task_map->find(act);
