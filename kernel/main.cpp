@@ -169,19 +169,15 @@ extern "C" void KernelMainNewStack(
   InitializeInterrupt();
 
   InitializePCI();
-  usb::xhci::Initialize();
 
   InitializeLayer();
   InitializeMainWindow();
   InitializeTextWindow();
   InitializeTaskBWindow();
-  InitializeMouse();
   layer_manager->Draw({{0, 0}, ScreenSize()});
 
   acpi::Initialize(acpi_table);
   InitializeLAPICTimer();
-
-  InitializeKeyboard();
 
   const int kTextboxCursorTimer = 1;
   const int kTimer05Sec = static_cast<int>(kTimerFreq * 0.5);
@@ -200,6 +196,10 @@ extern "C" void KernelMainNewStack(
   task_manager->NewTask().InitContext(TaskIdle, 0xcafebabe).Wakeup();
 
   // #@@range_begin(sti_last)
+  usb::xhci::Initialize();
+  InitializeKeyboard();
+  InitializeMouse();
+
   __asm__("sti");
 
   char str[128];
