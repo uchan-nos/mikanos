@@ -196,7 +196,6 @@ extern "C" void KernelMainNewStack(
   task_manager->NewTask().InitContext(TaskIdle, 0xcafebabe).Wakeup();
 
   // #@@range_begin(sti_last)
-  __asm__("sti");
   usb::xhci::Initialize();
   InitializeKeyboard();
   InitializeMouse();
