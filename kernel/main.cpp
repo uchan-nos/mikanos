@@ -116,10 +116,13 @@ void InputTextWindow(char c) {
 
 alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 
+// #@@range_begin(volume_arg)
 extern "C" void KernelMainNewStack(
     const FrameBufferConfig& frame_buffer_config_ref,
     const MemoryMap& memory_map_ref,
-    const acpi::RSDP& acpi_table) {
+    const acpi::RSDP& acpi_table,
+    void* volume_image) {
+// #@@range_end(volume_arg)
   MemoryMap memory_map{memory_map_ref};
 
   InitializeGraphics(frame_buffer_config_ref);
