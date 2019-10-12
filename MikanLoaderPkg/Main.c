@@ -193,7 +193,6 @@ void CopyLoadSegments(Elf64_Ehdr* ehdr) {
   }
 }
 
-// #@@range_begin(read_file)
 EFI_STATUS ReadFile(EFI_FILE_PROTOCOL* file, VOID** buffer) {
   EFI_STATUS status;
 
@@ -216,9 +215,7 @@ EFI_STATUS ReadFile(EFI_FILE_PROTOCOL* file, VOID** buffer) {
 
   return file->Read(file, &file_size, *buffer);
 }
-// #@@range_end(read_file)
 
-// #@@range_begin(open_blockio)
 EFI_STATUS OpenBlockIoProtocolForLoadedImage(
     EFI_HANDLE image_handle, EFI_BLOCK_IO_PROTOCOL** block_io) {
   EFI_STATUS status;
@@ -245,9 +242,7 @@ EFI_STATUS OpenBlockIoProtocolForLoadedImage(
 
   return status;
 }
-// #@@range_end(open_blockio)
 
-// #@@range_begin(read_blocks)
 EFI_STATUS ReadBlocks(
       EFI_BLOCK_IO_PROTOCOL* block_io, UINT32 media_id,
       UINTN read_bytes, VOID** buffer) {
@@ -267,7 +262,6 @@ EFI_STATUS ReadBlocks(
 
   return status;
 }
-// #@@range_end(read_blocks)
 
 EFI_STATUS EFIAPI UefiMain(
     EFI_HANDLE image_handle,
@@ -333,7 +327,6 @@ EFI_STATUS EFIAPI UefiMain(
     frame_buffer[i] = 255;
   }
 
-  // #@@range_begin(read_kernel)
   EFI_FILE_PROTOCOL* kernel_file;
   status = root_dir->Open(
       root_dir, &kernel_file, L"\\kernel.elf",
@@ -349,7 +342,6 @@ EFI_STATUS EFIAPI UefiMain(
     Print(L"error: %r", status);
     Halt();
   }
-  // #@@range_end(read_kernel)
 
   Elf64_Ehdr* kernel_ehdr = (Elf64_Ehdr*)kernel_buffer;
   UINT64 kernel_first_addr, kernel_last_addr;
@@ -372,7 +364,6 @@ EFI_STATUS EFIAPI UefiMain(
     Halt();
   }
 
-  // #@@range_begin(read_volume)
   VOID* volume_image;
 
   EFI_FILE_PROTOCOL* volume_file;
@@ -408,7 +399,6 @@ EFI_STATUS EFIAPI UefiMain(
       Halt();
     }
   }
-  // #@@range_end(read_volume)
 
   status = gBS->ExitBootServices(image_handle, memmap.map_key);
   if (EFI_ERROR(status)) {
@@ -454,14 +444,12 @@ EFI_STATUS EFIAPI UefiMain(
     }
   }
 
-  // #@@range_begin(pass_volume_kernel)
   typedef void EntryPointType(const struct FrameBufferConfig*,
                               const struct MemoryMap*,
                               const VOID*,
                               VOID*);
   EntryPointType* entry_point = (EntryPointType*)entry_addr;
   entry_point(&config, &memmap, acpi_table, volume_image);
-  // #@@range_end(pass_volume_kernel)
 
   Print(L"All done\n");
 

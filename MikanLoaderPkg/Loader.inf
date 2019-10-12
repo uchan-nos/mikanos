@@ -22,10 +22,8 @@
   gEfiFileInfoGuid
   gEfiAcpiTableGuid
 
-#@range_begin(blockio_guid)
 [Protocols]
   gEfiLoadedImageProtocolGuid
   gEfiLoadFileProtocolGuid
   gEfiSimpleFileSystemProtocolGuid
   gEfiBlockIoProtocolGuid
-#@range_end(blockio_guid)
