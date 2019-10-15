@@ -133,8 +133,8 @@ void Terminal::ExecuteLine() {
     }
   // #@@range_begin(ls_command)
   } else if (strcmp(command, "ls") == 0) {
-    auto root_dir_entries = reinterpret_cast<fat::DirectoryEntry*>(
-        fat::GetSectorByCluster(fat::boot_volume_image->root_cluster));
+    auto root_dir_entries = fat::GetSectorByCluster<fat::DirectoryEntry>(
+        fat::boot_volume_image->root_cluster);
     auto entries_per_cluster =
        fat::boot_volume_image->bytes_per_sector / sizeof(fat::DirectoryEntry)
        * fat::boot_volume_image->sectors_per_cluster;
