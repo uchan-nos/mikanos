@@ -131,7 +131,6 @@ void Terminal::ExecuteLine() {
           dev.class_code.base, dev.class_code.sub, dev.class_code.interface);
       Print(s);
     }
-  // #@@range_begin(ls_command)
   } else if (strcmp(command, "ls") == 0) {
     auto root_dir_entries = fat::GetSectorByCluster<fat::DirectoryEntry>(
         fat::boot_volume_image->root_cluster);
@@ -158,7 +157,6 @@ void Terminal::ExecuteLine() {
       Print(s);
     }
   } else if (command[0] != 0) {
-  // #@@range_end(ls_command)
     Print("no such command: ");
     Print(command);
     Print("\n");
