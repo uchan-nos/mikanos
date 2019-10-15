@@ -12,17 +12,16 @@ void Initialize(void* volume_image) {
 }
 // #@@range_end(init_fat)
 
-// #@@range_begin(get_sector)
-void* GetSectorByCluster(unsigned long cluster) {
+// #@@range_begin(get_cluster_addr)
+uintptr_t GetClusterAddr(unsigned long cluster) {
   unsigned long sector_num =
     boot_volume_image->reserved_sector_count +
     boot_volume_image->num_fats * boot_volume_image->fat_size_32 +
     (cluster - 2) * boot_volume_image->sectors_per_cluster;
   uintptr_t offset = sector_num * boot_volume_image->bytes_per_sector;
-  return reinterpret_cast<void*>(
-      reinterpret_cast<uintptr_t>(boot_volume_image) + offset);
+  return reinterpret_cast<uintptr_t>(boot_volume_image) + offset;
 }
-// #@@range_end(get_sector)
+// #@@range_end(get_cluster_addr)
 
 // #@@range_begin(read_name)
 void ReadName(const DirectoryEntry& entry, char* base, char* ext) {
