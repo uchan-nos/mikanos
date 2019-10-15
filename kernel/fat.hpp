@@ -73,12 +73,24 @@ struct DirectoryEntry {
 extern BPB* boot_volume_image;
 void Initialize(void* volume_image);
 
+/** @brief 指定されたクラスタの先頭セクタが置いてあるメモリアドレスを返す。
+ *
+ * @param cluster  クラスタ番号（2 始まり）
+ * @return クラスタの先頭セクタが置いてあるメモリ領域のアドレス
+ */
+uintptr_t GetClusterAddr(unsigned long cluster);
+
 /** @brief 指定されたクラスタの先頭セクタが置いてあるメモリ領域を返す。
  *
  * @param cluster  クラスタ番号（2 始まり）
  * @return クラスタの先頭セクタが置いてあるメモリ領域へのポインタ
  */
-void* GetSectorByCluster(unsigned long cluster);
+// #@@range_begin(get_sector)
+template <class T>
+T* GetSectorByCluster(unsigned long cluster) {
+  return reinterpret_cast<T*>(GetClusterAddr(cluster));
+}
+// #@@range_end(get_sector)
 
 /** @brief ディレクトリエントリの短名を基本名と拡張子名に分割して取得する。
  * パディングされた空白文字（0x20）は取り除かれ，ヌル終端される。
