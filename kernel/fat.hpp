@@ -85,12 +85,10 @@ uintptr_t GetClusterAddr(unsigned long cluster);
  * @param cluster  クラスタ番号（2 始まり）
  * @return クラスタの先頭セクタが置いてあるメモリ領域へのポインタ
  */
-// #@@range_begin(get_sector)
 template <class T>
 T* GetSectorByCluster(unsigned long cluster) {
   return reinterpret_cast<T*>(GetClusterAddr(cluster));
 }
-// #@@range_end(get_sector)
 
 /** @brief ディレクトリエントリの短名を基本名と拡張子名に分割して取得する。
  * パディングされた空白文字（0x20）は取り除かれ，ヌル終端される。
