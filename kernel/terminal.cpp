@@ -155,7 +155,6 @@ void Terminal::ExecuteLine() {
       }
       Print(s);
     }
-  // #@@range_begin(cat_command)
   } else if (strcmp(command, "cat") == 0) {
     char s[64];
 
@@ -182,14 +181,12 @@ void Terminal::ExecuteLine() {
       DrawCursor(true);
     }
   } else if (command[0] != 0) {
-  // #@@range_end(cat_command)
     Print("no such command: ");
     Print(command);
     Print("\n");
   }
 }
 
-// #@@range_begin(print_c)
 void Terminal::Print(char c) {
   auto newline = [this]() {
     cursor_.x = 0;
@@ -211,9 +208,7 @@ void Terminal::Print(char c) {
     }
   }
 }
-// #@@range_end(print_c)
 
-// #@@range_begin(print_s)
 void Terminal::Print(const char* s) {
   DrawCursor(false);
 
@@ -224,7 +219,6 @@ void Terminal::Print(const char* s) {
 
   DrawCursor(true);
 }
-// #@@range_end(print_s)
 
 Rectangle<int> Terminal::HistoryUpDown(int direction) {
   if (direction == -1 && cmd_history_index_ >= 0) {
