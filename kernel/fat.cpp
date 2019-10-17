@@ -5,7 +5,6 @@
 
 namespace fat {
 
-// #@@range_begin(init_fat)
 BPB* boot_volume_image;
 unsigned long bytes_per_cluster;
 
@@ -15,7 +14,6 @@ void Initialize(void* volume_image) {
     static_cast<unsigned long>(boot_volume_image->bytes_per_sector) *
     boot_volume_image->sectors_per_cluster;
 }
-// #@@range_end(init_fat)
 
 uintptr_t GetClusterAddr(unsigned long cluster) {
   unsigned long sector_num =
@@ -40,7 +38,6 @@ void ReadName(const DirectoryEntry& entry, char* base, char* ext) {
   }
 }
 
-// #@@range_begin(next_cluster)
 unsigned long NextCluster(unsigned long cluster) {
   uintptr_t fat_offset =
     boot_volume_image->reserved_sector_count *
@@ -53,9 +50,7 @@ unsigned long NextCluster(unsigned long cluster) {
   }
   return next;
 }
-// #@@range_end(next_cluster)
 
-// #@@range_begin(find_file)
 DirectoryEntry* FindFile(const char* name, unsigned long directory_cluster) {
   if (directory_cluster == 0) {
     directory_cluster = boot_volume_image->root_cluster;
@@ -74,9 +69,7 @@ DirectoryEntry* FindFile(const char* name, unsigned long directory_cluster) {
 
   return nullptr;
 }
-// #@@range_end(find_file)
 
-// #@@range_begin(name_isequal)
 bool NameIsEqual(const DirectoryEntry& entry, const char* name) {
   unsigned char name83[11];
   memset(name83, 0x20, sizeof(name83));
@@ -93,6 +86,5 @@ bool NameIsEqual(const DirectoryEntry& entry, const char* name) {
 
   return memcmp(entry.name, name83, sizeof(name83)) == 0;
 }
-// #@@range_end(name_isequal)
 
 } // namespace fat
