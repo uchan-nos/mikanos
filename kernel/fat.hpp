@@ -50,6 +50,7 @@ enum class Attribute : uint8_t {
   kLongName  = 0x0f,
 };
 
+// #@@range_begin(directory_entry)
 struct DirectoryEntry {
   unsigned char name[11];
   Attribute attr;
@@ -69,6 +70,7 @@ struct DirectoryEntry {
       (static_cast<uint32_t>(first_cluster_high) << 16);
   }
 } __attribute__((packed));
+// #@@range_end(directory_entry)
 
 extern BPB* boot_volume_image;
 extern unsigned long bytes_per_cluster;
