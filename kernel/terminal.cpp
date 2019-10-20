@@ -5,7 +5,7 @@
 #include "font.hpp"
 #include "layer.hpp"
 #include "pci.hpp"
-#include "fat.hpp"
+#include "asmfunc.h"
 
 Terminal::Terminal() {
   window_ = std::make_shared<ToplevelWindow>(
@@ -180,12 +180,43 @@ void Terminal::ExecuteLine() {
       }
       DrawCursor(true);
     }
+  // #@@range_begin(find_file)
   } else if (command[0] != 0) {
-    Print("no such command: ");
-    Print(command);
-    Print("\n");
+    auto file_entry = fat::FindFile(command);
+    if (!file_entry) {
+      Print("no such command: ");
+      Print(command);
+      Print("\n");
+    } else {
+      ExecuteFile(*file_entry);
+    }
   }
+  // #@@range_end(find_file)
 }
+
+// #@@range_begin(execute_file)
+void Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry) {
+  auto cluster = file_entry.FirstCluster();
+  auto remain_bytes = file_entry.file_size;
+
+  std::vector<uint8_t> file_buf(remain_bytes);
+  auto p = &file_buf[0];
+
+  while (cluster != 0 && cluster != fat::kEndOfClusterchain) {
+    const auto copy_bytes = fat::bytes_per_cluster < remain_bytes ?
+      fat::bytes_per_cluster : remain_bytes;
+    memcpy(p, fat::GetSectorByCluster<uint8_t>(cluster), copy_bytes);
+
+    remain_bytes -= copy_bytes;
+    p += copy_bytes;
+    cluster = fat::NextCluster(cluster);
+  }
+
+  using Func = void ();
+  auto f = reinterpret_cast<Func*>(&file_buf[0]);
+  f();
+}
+// #@@range_end(execute_file)
 
 void Terminal::Print(char c) {
   auto newline = [this]() {
@@ -256,6 +287,7 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
   __asm__("sti");
 
   while (true) {
+    // #@@range_begin(sti_after_getmsg)
     __asm__("cli");
     auto msg = task.ReceiveMessage();
     if (!msg) {
@@ -263,6 +295,8 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
       __asm__("sti");
       continue;
     }
+    __asm__("sti");
+    // #@@range_end(sti_after_getmsg)
 
     switch (msg->type) {
     case Message::kTimerTimeout:
