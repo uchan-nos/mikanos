@@ -180,7 +180,6 @@ void Terminal::ExecuteLine() {
       }
       DrawCursor(true);
     }
-  // #@@range_begin(find_file)
   } else if (command[0] != 0) {
     auto file_entry = fat::FindFile(command);
     if (!file_entry) {
@@ -191,10 +190,8 @@ void Terminal::ExecuteLine() {
       ExecuteFile(*file_entry);
     }
   }
-  // #@@range_end(find_file)
 }
 
-// #@@range_begin(execute_file)
 void Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry) {
   auto cluster = file_entry.FirstCluster();
   auto remain_bytes = file_entry.file_size;
@@ -216,7 +213,6 @@ void Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry) {
   auto f = reinterpret_cast<Func*>(&file_buf[0]);
   f();
 }
-// #@@range_end(execute_file)
 
 void Terminal::Print(char c) {
   auto newline = [this]() {
@@ -287,7 +283,6 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
   __asm__("sti");
 
   while (true) {
-    // #@@range_begin(sti_after_getmsg)
     __asm__("cli");
     auto msg = task.ReceiveMessage();
     if (!msg) {
@@ -296,7 +291,6 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
       continue;
     }
     __asm__("sti");
-    // #@@range_end(sti_after_getmsg)
 
     switch (msg->type) {
     case Message::kTimerTimeout:
