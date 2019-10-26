@@ -1,6 +1,3 @@
-int stack_ptr;
-long stack[100];
-
 int strcmp(const char* a, const char* b) {
   int i = 0;
   for (; a[i] != 0 && b[i] != 0; ++i) {
@@ -18,6 +15,9 @@ long atol(const char* s) {
   }
   return v;
 }
+
+int stack_ptr;
+long stack[100];
 
 long Pop() {
   long value = stack[stack_ptr];
