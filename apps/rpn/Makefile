@@ -9,7 +9,7 @@ LDFLAGS += --entry main -z norelro --image-base 0x100000 --static
 all: $(TARGET)
 
 rpn: rpn.o Makefile
-	ld.lld $(LDFLAGS) -o rpn rpn.o -lc -lc++
+	ld.lld $(LDFLAGS) -o rpn rpn.o
 
 %.o: %.cpp Makefile
 	clang++ $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
