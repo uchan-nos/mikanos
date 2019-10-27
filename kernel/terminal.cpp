@@ -51,11 +51,11 @@ Rectangle<int> Terminal::InputKey(
   // #@@range_begin(handle_enter)
   if (ascii == '\n') {
     linebuf_[linebuf_index_] = 0;
-    linebuf_index_ = 0;
     if (linebuf_index_ > 0) {
       cmd_history_.pop_back();
       cmd_history_.push_front(linebuf_);
     }
+    linebuf_index_ = 0;
     cmd_history_index_ = -1;
   // #@@range_end(handle_enter)
 
