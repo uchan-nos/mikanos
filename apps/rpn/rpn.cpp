@@ -1,10 +1,8 @@
-// #@@range_begin(include_stdlib)
 #include <cstring>
 #include <cstdlib>
 
 int stack_ptr;
 long stack[100];
-// #@@range_end(include_stdlib)
 
 long Pop() {
   long value = stack[stack_ptr];
