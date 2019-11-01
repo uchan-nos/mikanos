@@ -7,6 +7,7 @@
 #include "pci.hpp"
 #include "asmfunc.h"
 #include "elf.hpp"
+#include "memory_manager.hpp"
 
 namespace {
 
@@ -221,18 +222,26 @@ void Terminal::ExecuteLine() {
       Print("no such command: ");
       Print(command);
       Print("\n");
-    } else {
-      ExecuteFile(*file_entry, command, first_arg);
+    } else if (auto err = ExecuteFile(*file_entry, command, first_arg)) {
+      Print("failed to exec file: ");
+      Print(err.Name());
+      Print("\n");
     }
   }
 }
 
-void Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command, char* first_arg) {
+Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command, char* first_arg) {
   auto cluster = file_entry.FirstCluster();
   auto remain_bytes = file_entry.file_size;
 
-  std::vector<uint8_t> file_buf(remain_bytes);
-  auto p = &file_buf[0];
+  auto num_frames = (remain_bytes + kBytesPerFrame - 1) / kBytesPerFrame;
+  auto file_buf_frame = memory_manager->Allocate(num_frames);
+  if (file_buf_frame.error) {
+    return file_buf_frame.error;
+  }
+
+  auto file_buf = file_buf_frame.value.Frame();
+  auto p = reinterpret_cast<uint8_t*>(file_buf);
 
   while (cluster != 0 && cluster != fat::kEndOfClusterchain) {
     const auto copy_bytes = fat::bytes_per_cluster < remain_bytes ?
@@ -244,18 +253,39 @@ void Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command,
     cluster = fat::NextCluster(cluster);
   }
 
-  auto elf_header = reinterpret_cast<Elf64_Ehdr*>(&file_buf[0]);
+  auto elf_header = reinterpret_cast<Elf64_Ehdr*>(file_buf);
   if (memcmp(elf_header->e_ident, "\x7f" "ELF", 4) != 0) {
     using Func = void ();
-    auto f = reinterpret_cast<Func*>(&file_buf[0]);
+    auto f = reinterpret_cast<Func*>(file_buf);
     f();
-    return;
+    return memory_manager->Free(file_buf_frame.value, num_frames);
   }
 
   auto argv = MakeArgVector(command, first_arg);
 
+  auto page_table_frame = memory_manager->Allocate(3);
+  uintptr_t linear_addr = 0xffff'8000'0000'0000;
+  int pml4_index = (linear_addr >> 39) & 0x1ff;
+  int pdp_index = (linear_addr >> 30) & 0x1ff;
+  int pd_index = (linear_addr >> 21) & 0x1ff;
+  int pt_index = (linear_addr >> 12) & 0x1ff;
+  int offset = linear_addr & 0xfff;
+
+  volatile uint64_t* pml4_table = reinterpret_cast<uint64_t*>(GetCR3());
+
+  uint64_t* pdp_table = reinterpret_cast<uint64_t*>(FrameID(page_table_frame.value.ID() + 0).Frame());
+  uint64_t* pd_table = reinterpret_cast<uint64_t*>(FrameID(page_table_frame.value.ID() + 1).Frame());
+  uint64_t* page_table = reinterpret_cast<uint64_t*>(FrameID(page_table_frame.value.ID() + 2).Frame());
+
+  for (int i = 0; i < (file_entry.file_size + 4095) / 4096; ++i) {
+    page_table[pt_index + i] = reinterpret_cast<uint64_t>(file_buf) + 4096 * i | 3;
+  }
+
+  pd_table[pd_index] = reinterpret_cast<uint64_t>(page_table) | 3;
+  pdp_table[pdp_index] = reinterpret_cast<uint64_t>(pd_table) | 3;
+  pml4_table[pml4_index] = reinterpret_cast<uint64_t>(pdp_table) | 3;
+
   auto entry_addr = elf_header->e_entry;
-  entry_addr += reinterpret_cast<uintptr_t>(&file_buf[0]);
   using Func = int (int, char**);
   auto f = reinterpret_cast<Func*>(entry_addr);
   auto ret = f(argv.size(), &argv[0]);
@@ -263,6 +293,11 @@ void Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command,
   char s[64];
   sprintf(s, "app exited. ret = %d\n", ret);
   Print(s);
+
+  pdp_table[pdp_index] = 0;
+  memory_manager->Free(page_table_frame.value, 3);
+
+  return memory_manager->Free(file_buf_frame.value, num_frames);
 }
 
 void Terminal::Print(char c) {
