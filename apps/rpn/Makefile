@@ -2,8 +2,8 @@ TARGET = rpn
 
 CPPFLAGS += -I.
 CFLAGS += -O2 -Wall -g --target=x86_64-elf -ffreestanding
-CXXFLAGS += -O2 -Wall -g --target=x86_64-elf -fno-exceptions -ffreestanding -fno-rtti -std=c++2a
-LDFLAGS += --entry main -z norelro --image-base 0x100000 --static
+CXXFLAGS += -O2 -Wall -g --target=x86_64-elf -fno-exceptions -ffreestanding -fno-rtti -std=c++2a -mcmodel=large
+LDFLAGS += --entry main -z norelro --image-base 0xffff800000000000 --static
 
 .PHONY: all
 all: $(TARGET)

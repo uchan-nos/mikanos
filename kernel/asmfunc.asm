@@ -76,6 +76,11 @@ SetCR3:
     mov cr3, rdi
     ret
 
+global GetCR3  ; uint64_t GetCR3();
+GetCR3:
+    mov rax, cr3
+    ret
+
 extern kernel_main_stack
 extern KernelMainNewStack
 
