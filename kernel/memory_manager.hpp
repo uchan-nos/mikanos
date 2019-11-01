@@ -87,4 +87,5 @@ class BitmapMemoryManager {
   void SetBit(FrameID frame, bool allocated);
 };
 
+extern BitmapMemoryManager* memory_manager;
 void InitializeMemoryManager(const MemoryMap& memory_map);
