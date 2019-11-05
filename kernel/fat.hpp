@@ -7,6 +7,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstddef>
 
 namespace fat {
 
@@ -118,5 +119,15 @@ unsigned long NextCluster(unsigned long cluster);
 DirectoryEntry* FindFile(const char* name, unsigned long directory_cluster = 0);
 
 bool NameIsEqual(const DirectoryEntry& entry, const char* name);
+
+/** @brief 指定されたファイルの内容をバッファへコピーする。
+ *
+ * @param buf  ファイル内容の格納先
+ * @param len  バッファの大きさ（バイト単位）
+ * @param entry  ファイルを表すディレクトリエントリ
+ * @param offset コピーを開始するファイル先頭からのバイト位置
+ * @return  読み込んだバイト数
+ */
+size_t LoadFile(void* buf, size_t len, const DirectoryEntry& entry, size_t offset = 0);
 
 } // namespace fat
