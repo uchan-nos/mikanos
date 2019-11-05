@@ -29,6 +29,8 @@ class Error {
     kNoPCIMSI,
     kUnknownPixelFormat,
     kNoSuchTask,
+    kInvalidFormat,
+    kFrameTooSmall,
     kLastOfCode,  // この列挙子は常に最後に配置する
   };
 
@@ -57,6 +59,8 @@ class Error {
     "kNoPCIMSI",
     "kUnknownPixelFormat",
     "kNoSuchTask",
+    "kInvalidFormat",
+    "kFrameTooSmall",
   };
   static_assert(Error::Code::kLastOfCode == code_names_.size());
 

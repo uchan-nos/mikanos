@@ -7,6 +7,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 
 /** @brief 静的に確保するページディレクトリの個数
  *
@@ -22,3 +23,16 @@ const size_t kPageDirectoryCount = 64;
 void SetupIdentityPageTable();
 
 void InitializePaging();
+
+union LinearAddress4Level {
+  uint64_t value;
+
+  struct {
+    uint64_t offset : 12;
+    uint64_t page : 9;
+    uint64_t dir : 9;
+    uint64_t pdp : 9;
+    uint64_t pml4 : 9;
+    uint64_t : 16;
+  } parts __attribute__((packed));
+};
