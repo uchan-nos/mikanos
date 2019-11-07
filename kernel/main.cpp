@@ -165,6 +165,12 @@ extern "C" void KernelMainNewStack(
        iter < memory_map_base + memory_map.map_size;
        iter += memory_map.descriptor_size) {
     auto desc = reinterpret_cast<const MemoryDescriptor*>(iter);
+    if (available_end < desc->physical_start) {
+      memory_manager->MarkAllocated(
+          FrameID{available_end / kBytesPerFrame},
+          (desc->physical_start - available_end) / kBytesPerFrame);
+    }
+
     const auto physical_end =
       desc->physical_start + desc->number_of_pages * kUEFIPageSize;
     if (IsAvailable(static_cast<MemoryType>(desc->type))) {
