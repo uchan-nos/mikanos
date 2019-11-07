@@ -11,8 +11,6 @@
 #include "memory_manager.hpp"
 #include "paging.hpp"
 
-#include "logger.hpp"
-
 namespace {
 
 std::vector<char*> MakeArgVector(char* command, char* first_arg) {
@@ -64,113 +62,71 @@ std::pair<uint64_t, uint64_t> CalcLoadAddressRange(Elf64_Ehdr* ehdr) {
 
 static_assert(kBytesPerFrame >= 4096);
 
-WithError<FrameID> NewFrame(size_t num_frames) {
-  auto frame = memory_manager->Allocate(num_frames);
-  if (!frame.error) {
-    memset(frame.value.Frame(), 0, num_frames * kBytesPerFrame);
+WithError<PageMapEntry*> NewPageMap() {
+  auto frame = memory_manager->Allocate(1);
+  if (frame.error) {
+    return { nullptr, frame.error };
   }
-  return frame;
+
+  auto e = reinterpret_cast<PageMapEntry*>(frame.value.Frame());
+  memset(e, 0, sizeof(uint64_t) * 512);
+  return { e, MAKE_ERROR(Error::kSuccess) };
 }
 
-WithError<size_t> SetupPageTable(
-    uint64_t* table, LinearAddress4Level addr, size_t num_4kpages) {
-  while (num_4kpages > 0) {
-    uint64_t page_entry = table[addr.parts.page];
-    if ((page_entry & 1) == 0) { // not present
-      auto frame = NewFrame(1);
-      if (frame.error) {
-        return { num_4kpages, frame.error };
-      }
-      page_entry = reinterpret_cast<uint64_t>(frame.value.Frame()) | 3;
-      table[addr.parts.page] = page_entry;
-      Log(kWarn, "page entry allocated: %016lx --> %016lx\n", addr.value, page_entry);
-    }
-    --num_4kpages;
-    if (addr.parts.page == 511) {
-      break;
-    }
-    ++addr.parts.page;
+WithError<PageMapEntry*> SetNewPageMapIfNotPresent(PageMapEntry& entry) {
+  if (entry.bits.present) {
+    return { entry.Pointer(), MAKE_ERROR(Error::kSuccess) };
   }
-  return { num_4kpages, MAKE_ERROR(Error::kSuccess) };
+
+  auto [ child_map, err ] = NewPageMap();
+  if (err) {
+    return { nullptr, err };
+  }
+
+  entry.SetPointer(child_map);
+  entry.bits.present = 1;
+
+  return { child_map, MAKE_ERROR(Error::kSuccess) };
 }
 
-WithError<size_t> SetupPageDirectory(
-    uint64_t* dir, LinearAddress4Level addr, size_t num_4kpages) {
+WithError<size_t> SetupPageMap(
+    PageMapEntry* page_map, int page_map_level, LinearAddress4Level addr, size_t num_4kpages) {
   while (num_4kpages > 0) {
-    uint64_t dir_entry = dir[addr.parts.dir];
-    if ((dir_entry & 1) == 0) { // not present
-      auto frame = NewFrame(1);
-      if (frame.error) {
-        return { num_4kpages, frame.error };
-      }
-      dir_entry = reinterpret_cast<uint64_t>(frame.value.Frame()) | 3;
-      dir[addr.parts.dir] = dir_entry;
-      Log(kWarn, "dir entry allocated: %016lx\n", dir_entry);
-    }
-    uint64_t* page_table = reinterpret_cast<uint64_t*>(
-        dir_entry & ~static_cast<uint64_t>(0xfff));
-    const auto [ num_remain_pages, err ] =
-      SetupPageTable(page_table, addr, num_4kpages);
+    const auto entry_index = addr.Part(page_map_level);
+
+    auto [ child_map, err ] = SetNewPageMapIfNotPresent(page_map[entry_index]);
     if (err) {
       return { num_4kpages, err };
     }
-    num_4kpages = num_remain_pages;
-    if (addr.parts.dir == 511) {
+    page_map[entry_index].bits.writable = 1;
+
+    if (page_map_level == 1) {
+      --num_4kpages;
+    } else {
+      auto [ num_remain_pages, err ] =
+        SetupPageMap(child_map, page_map_level - 1, addr, num_4kpages);
+      if (err) {
+        return { num_4kpages, err };
+      }
+      num_4kpages = num_remain_pages;
+    }
+
+    if (entry_index == 511) {
       break;
     }
-    ++addr.parts.dir;
-    addr.parts.page = 0;
+
+    addr.SetPart(page_map_level, entry_index + 1);
+    for (int level = page_map_level - 1; level >= 1; --level) {
+      addr.SetPart(level, 0);
+    }
   }
+
   return { num_4kpages, MAKE_ERROR(Error::kSuccess) };
 }
 
-Error SetupPDPTable(uint64_t* pdp_table,
-                    LinearAddress4Level addr, size_t num_4kpages) {
-  while (num_4kpages > 0) {
-    uint64_t pdp_entry = pdp_table[addr.parts.pdp];
-    if ((pdp_entry & 1) == 0) { // not present
-      auto frame = NewFrame(1);
-      if (frame.error) {
-        return frame.error;
-      }
-      pdp_entry = reinterpret_cast<uint64_t>(frame.value.Frame()) | 3;
-      pdp_table[addr.parts.pdp] = pdp_entry;
-      Log(kWarn, "PDP entry allocated: %016lx\n", pdp_entry);
-    }
-    uint64_t* page_dir = reinterpret_cast<uint64_t*>(
-        pdp_entry & ~static_cast<uint64_t>(0xfff));
-    const auto [ num_remain_pages, err ] =
-      SetupPageDirectory(page_dir, addr, num_4kpages);
-    if (err) {
-      return err;
-    }
-    num_4kpages = num_remain_pages;
-    if (addr.parts.pdp == 511) {
-      return MAKE_ERROR(Error::kIndexOutOfRange);
-    }
-    ++addr.parts.pdp;
-    addr.parts.dir = 0;
-    addr.parts.page = 0;
-  }
-  return MAKE_ERROR(Error::kSuccess);
-}
-
 Error SetupPageTables(LinearAddress4Level addr, size_t num_4kpages) {
-  uint64_t* pml4_table = reinterpret_cast<uint64_t*>(GetCR3());
-  uint64_t pml4_entry = pml4_table[addr.parts.pml4];
-  if ((pml4_entry & 1) == 0) { // not present
-    auto frame = NewFrame(1);
-    if (frame.error) {
-      return frame.error;
-    }
-    pml4_entry = reinterpret_cast<uint64_t>(frame.value.Frame()) | 3;
-    pml4_table[addr.parts.pml4] = pml4_entry;
-    Log(kWarn, "PML4 entry allocated: %016lx\n", pml4_entry);
-  }
-
-  uint64_t* pdp_table = reinterpret_cast<uint64_t*>(
-      pml4_entry & ~static_cast<uint64_t>(0xfff));
-  return SetupPDPTable(pdp_table, addr, num_4kpages);
+  auto pml4_table = reinterpret_cast<PageMapEntry*>(GetCR3());
+  return SetupPageMap(pml4_table, 4, addr, num_4kpages).error;
 }
 
 Error CopyLoadSegments(Elf64_Ehdr* ehdr) {
@@ -190,8 +146,6 @@ Error CopyLoadSegments(Elf64_Ehdr* ehdr) {
     const auto dst = reinterpret_cast<uint8_t*>(phdr[i].p_vaddr);
     memcpy(dst, src, phdr[i].p_filesz);
     memset(dst + phdr[i].p_filesz, 0, phdr[i].p_memsz - phdr[i].p_filesz);
-    Log(kWarn, "segment %d copied to %016lx (%d pages)\n",
-        i, phdr[i].p_vaddr, num_4kpages);
   }
   return MAKE_ERROR(Error::kSuccess);
 }
@@ -288,9 +242,7 @@ Error CleanPageTables(LinearAddress4Level addr) {
     return err;
   }
 
-  pml4_table[addr.parts.pml4] = pml4_entry & ~static_cast<uint64_t>(1);
-
-  Log(kWarn, "freed: %016lx\n", pml4_entry);
+  pml4_table[addr.parts.pml4] = 0;
 
   return MAKE_ERROR(Error::kSuccess);
 }
