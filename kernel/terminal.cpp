@@ -48,16 +48,13 @@ Elf64_Phdr* GetProgramHeader(Elf64_Ehdr* ehdr) {
       reinterpret_cast<uintptr_t>(ehdr) + ehdr->e_phoff);
 }
 
-std::pair<uint64_t, uint64_t> CalcLoadAddressRange(Elf64_Ehdr* ehdr) {
+uintptr_t GetFirstLoadAddress(Elf64_Ehdr* ehdr) {
   auto phdr = GetProgramHeader(ehdr);
-  uint64_t first = std::numeric_limits<uint64_t>::max();
-  uint64_t last = 0;
   for (int i = 0; i < ehdr->e_phnum; ++i) {
     if (phdr[i].p_type != PT_LOAD) continue;
-    first = std::min(first, phdr[i].p_vaddr);
-    last = std::max(last, phdr[i].p_vaddr + phdr[i].p_memsz);
+    return phdr[i].p_vaddr;
   }
-  return {first, last};
+  return 0;
 }
 
 static_assert(kBytesPerFrame >= 4096);
@@ -155,7 +152,7 @@ Error LoadELF(Elf64_Ehdr* ehdr) {
     return MAKE_ERROR(Error::kInvalidFormat);
   }
 
-  const auto [ addr_first, addr_last ] = CalcLoadAddressRange(ehdr);
+  const auto addr_first = GetFirstLoadAddress(ehdr);
   if (addr_first < 0xffff'8000'0000'0000) {
     return MAKE_ERROR(Error::kInvalidFormat);
   }
@@ -463,7 +460,7 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
   sprintf(s, "app exited. ret = %d\n", ret);
   Print(s);
 
-  const auto [ addr_first, addr_last ] = CalcLoadAddressRange(elf_header);
+  const auto addr_first = GetFirstLoadAddress(elf_header);
   if (auto err = CleanPageTables(LinearAddress4Level{addr_first})) {
     return err;
   }
