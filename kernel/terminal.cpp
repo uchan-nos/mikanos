@@ -59,6 +59,7 @@ uintptr_t GetFirstLoadAddress(Elf64_Ehdr* ehdr) {
 
 static_assert(kBytesPerFrame >= 4096);
 
+// #@@range_begin(new_pagemap)
 WithError<PageMapEntry*> NewPageMap() {
   auto frame = memory_manager->Allocate(1);
   if (frame.error) {
@@ -69,7 +70,9 @@ WithError<PageMapEntry*> NewPageMap() {
   memset(e, 0, sizeof(uint64_t) * 512);
   return { e, MAKE_ERROR(Error::kSuccess) };
 }
+// #@@range_end(new_pagemap)
 
+// #@@range_begin(set_newpagemap)
 WithError<PageMapEntry*> SetNewPageMapIfNotPresent(PageMapEntry& entry) {
   if (entry.bits.present) {
     return { entry.Pointer(), MAKE_ERROR(Error::kSuccess) };
@@ -85,7 +88,9 @@ WithError<PageMapEntry*> SetNewPageMapIfNotPresent(PageMapEntry& entry) {
 
   return { child_map, MAKE_ERROR(Error::kSuccess) };
 }
+// #@@range_end(set_newpagemap)
 
+// #@@range_begin(setup_pagemap)
 WithError<size_t> SetupPageMap(
     PageMapEntry* page_map, int page_map_level, LinearAddress4Level addr, size_t num_4kpages) {
   while (num_4kpages > 0) {
@@ -120,12 +125,16 @@ WithError<size_t> SetupPageMap(
 
   return { num_4kpages, MAKE_ERROR(Error::kSuccess) };
 }
+// #@@range_end(setup_pagemap)
 
-Error SetupPageTables(LinearAddress4Level addr, size_t num_4kpages) {
+// #@@range_begin(setup_pagemaps)
+Error SetupPageMaps(LinearAddress4Level addr, size_t num_4kpages) {
   auto pml4_table = reinterpret_cast<PageMapEntry*>(GetCR3());
   return SetupPageMap(pml4_table, 4, addr, num_4kpages).error;
 }
+// #@@range_end(setup_pagemaps)
 
+// #@@range_begin(copy_loadsegms)
 Error CopyLoadSegments(Elf64_Ehdr* ehdr) {
   auto phdr = GetProgramHeader(ehdr);
   for (int i = 0; i < ehdr->e_phnum; ++i) {
@@ -135,7 +144,7 @@ Error CopyLoadSegments(Elf64_Ehdr* ehdr) {
     dest_addr.value = phdr[i].p_vaddr;
     const auto num_4kpages = (phdr[i].p_memsz + 4095) / 4096;
 
-    if (auto err = SetupPageTables(dest_addr, num_4kpages)) {
+    if (auto err = SetupPageMaps(dest_addr, num_4kpages)) {
       return err;
     }
 
@@ -146,7 +155,9 @@ Error CopyLoadSegments(Elf64_Ehdr* ehdr) {
   }
   return MAKE_ERROR(Error::kSuccess);
 }
+// #@@range_end(copy_loadsegms)
 
+// #@@range_begin(load_elf)
 Error LoadELF(Elf64_Ehdr* ehdr) {
   if (ehdr->e_type != ET_EXEC) {
     return MAKE_ERROR(Error::kInvalidFormat);
@@ -163,86 +174,48 @@ Error LoadELF(Elf64_Ehdr* ehdr) {
 
   return MAKE_ERROR(Error::kSuccess);
 }
+// #@@range_end(load_elf)
 
-Error CleanPageTable(uint64_t* page_table) {
+// #@@range_begin(clean_pagemap)
+Error CleanPageMap(PageMapEntry* page_map, int page_map_level) {
   for (int i = 0; i < 512; ++i) {
-    uint64_t page_entry = page_table[i];
-    if ((page_entry & 1) == 0) {
+    auto entry = page_map[i];
+    if (!entry.bits.present) {
       continue;
     }
 
-    const FrameID table_frame{page_entry / kBytesPerFrame};
-    if (auto err = memory_manager->Free(table_frame, 1)) {
+    if (page_map_level > 1) {
+      if (auto err = CleanPageMap(entry.Pointer(), page_map_level - 1)) {
+        return err;
+      }
+    }
+
+    const auto entry_addr = reinterpret_cast<uintptr_t>(entry.Pointer());
+    const FrameID map_frame{entry_addr / kBytesPerFrame};
+    if (auto err = memory_manager->Free(map_frame, 1)) {
       return err;
     }
+    page_map[i].data = 0;
   }
+
   return MAKE_ERROR(Error::kSuccess);
 }
+// #@@range_end(clean_pagemap)
 
-Error CleanPageDirectory(uint64_t* page_dir) {
-  for (int i = 0; i < 512; ++i) {
-    uint64_t dir_entry = page_dir[i];
-    if ((dir_entry & 1) == 0) {
-      continue;
-    }
-
-    uint64_t* page_table = reinterpret_cast<uint64_t*>(
-        dir_entry & ~static_cast<uint64_t>(0xfff));
-    if (auto err = CleanPageTable(page_table)) {
-      return err;
-    }
-
-    const FrameID table_frame{dir_entry / kBytesPerFrame};
-    if (auto err = memory_manager->Free(table_frame, 1)) {
-      return err;
-    }
-  }
-  return MAKE_ERROR(Error::kSuccess);
-}
-
-Error CleanPDPTable(uint64_t* pdp_table) {
-  for (int i = 0; i < 512; ++i) {
-    uint64_t pdp_entry = pdp_table[i];
-    if ((pdp_entry & 1) == 0) {
-      continue;
-    }
-
-    uint64_t* page_dir = reinterpret_cast<uint64_t*>(
-        pdp_entry & ~static_cast<uint64_t>(0xfff));
-    if (auto err = CleanPageDirectory(page_dir)) {
-      return err;
-    }
-
-    const FrameID dir_frame{pdp_entry / kBytesPerFrame};
-    if (auto err = memory_manager->Free(dir_frame, 1)) {
-      return err;
-    }
-  }
-  return MAKE_ERROR(Error::kSuccess);
-}
-
-Error CleanPageTables(LinearAddress4Level addr) {
-  uint64_t* pml4_table = reinterpret_cast<uint64_t*>(GetCR3());
-  uint64_t pml4_entry = pml4_table[addr.parts.pml4];
-  if ((pml4_entry & 1) == 0) { // not present
-    return MAKE_ERROR(Error::kSuccess);
-  }
-
-  uint64_t* pdp_table = reinterpret_cast<uint64_t*>(
-      pml4_entry & ~static_cast<uint64_t>(0xfff));
-  if (auto err = CleanPDPTable(pdp_table)) {
+// #@@range_begin(clean_pagemaps)
+Error CleanPageMaps(LinearAddress4Level addr) {
+  auto pml4_table = reinterpret_cast<PageMapEntry*>(GetCR3());
+  auto pdp_table = pml4_table[addr.parts.pml4].Pointer();
+  pml4_table[addr.parts.pml4].data = 0;
+  if (auto err = CleanPageMap(pdp_table, 3)) {
     return err;
   }
 
-  const FrameID pdp_frame{pml4_entry / kBytesPerFrame};
-  if (auto err = memory_manager->Free(pdp_frame, 1)) {
-    return err;
-  }
-
-  pml4_table[addr.parts.pml4] = 0;
-
-  return MAKE_ERROR(Error::kSuccess);
+  const auto pdp_addr = reinterpret_cast<uintptr_t>(pdp_table);
+  const FrameID pdp_frame{pdp_addr / kBytesPerFrame};
+  return memory_manager->Free(pdp_frame, 1);
 }
+// #@@range_end(clean_pagemaps)
 
 } // namespace
 
@@ -442,10 +415,10 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
     using Func = void ();
     auto f = reinterpret_cast<Func*>(&file_buf[0]);
     f();
-    //return memory_manager->Free(file_buf_frame.value, num_frames);
     return MAKE_ERROR(Error::kSuccess);
   }
 
+  // #@@range_begin(load_app)
   auto argv = MakeArgVector(command, first_arg);
   if (auto err = LoadELF(elf_header)) {
     return err;
@@ -461,15 +434,11 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
   Print(s);
 
   const auto addr_first = GetFirstLoadAddress(elf_header);
-  if (auto err = CleanPageTables(LinearAddress4Level{addr_first})) {
+  if (auto err = CleanPageMaps(LinearAddress4Level{addr_first})) {
     return err;
   }
+  // #@@range_end(load_app)
 
-  //pdp_table[pdp_index] = 0;
-  //memory_manager->Free(page_table_frame.value, 3);
-
-  //return memory_manager->Free(file_buf_frame.value, num_frames);
-  //
   return MAKE_ERROR(Error::kSuccess);
 }
 
