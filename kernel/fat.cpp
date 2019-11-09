@@ -87,17 +87,20 @@ bool NameIsEqual(const DirectoryEntry& entry, const char* name) {
   return memcmp(entry.name, name83, sizeof(name83)) == 0;
 }
 
+// #@@range_begin(load_file)
 size_t LoadFile(void* buf, size_t len,
                 const DirectoryEntry& entry, size_t offset) {
   if (offset >= entry.file_size) {
     return 0;
+  }
+  if (offset + len > entry.file_size) {
+    len = entry.file_size - offset;
   }
 
   auto is_valid_cluster = [](uint32_t c) {
     return c != 0 && c != fat::kEndOfClusterchain;
   };
   auto cluster = entry.FirstCluster();
-  auto p = reinterpret_cast<uint8_t*>(buf);
 
   while (is_valid_cluster(cluster) && offset >= bytes_per_cluster) {
     offset -= bytes_per_cluster;
@@ -107,6 +110,7 @@ size_t LoadFile(void* buf, size_t len,
     return 0;
   }
 
+  auto p = reinterpret_cast<uint8_t*>(buf);
   if (offset > 0) {
     const auto copy_bytes = bytes_per_cluster - offset;
     if (copy_bytes >= len) {
@@ -115,6 +119,7 @@ size_t LoadFile(void* buf, size_t len,
     }
     memcpy(p, fat::GetSectorByCluster<uint8_t>(cluster) + offset, copy_bytes);
     p += copy_bytes;
+    cluster = fat::NextCluster(cluster);
   }
 
   const auto buf_end = reinterpret_cast<uint8_t*>(buf) + len;
@@ -127,6 +132,8 @@ size_t LoadFile(void* buf, size_t len,
     p += bytes_per_cluster;
     cluster = fat::NextCluster(cluster);
   }
+  return p - reinterpret_cast<uint8_t*>(buf);
 }
+// #@@range_end(load_file)
 
 } // namespace fat
