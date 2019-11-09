@@ -43,11 +43,14 @@ std::vector<char*> MakeArgVector(char* command, char* first_arg) {
   return argv;
 }
 
+// #@@range_begin(get_phdr)
 Elf64_Phdr* GetProgramHeader(Elf64_Ehdr* ehdr) {
   return reinterpret_cast<Elf64_Phdr*>(
       reinterpret_cast<uintptr_t>(ehdr) + ehdr->e_phoff);
 }
+// #@@range_end(get_phdr)
 
+// #@@range_begin(get_first_addr)
 uintptr_t GetFirstLoadAddress(Elf64_Ehdr* ehdr) {
   auto phdr = GetProgramHeader(ehdr);
   for (int i = 0; i < ehdr->e_phnum; ++i) {
@@ -56,6 +59,7 @@ uintptr_t GetFirstLoadAddress(Elf64_Ehdr* ehdr) {
   }
   return 0;
 }
+// #@@range_end(get_first_addr)
 
 static_assert(kBytesPerFrame >= 4096);
 
@@ -407,8 +411,10 @@ void Terminal::ExecuteLine() {
 }
 
 Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command, char* first_arg) {
+  // #@@range_begin(load_file)
   std::vector<uint8_t> file_buf(file_entry.file_size);
   fat::LoadFile(&file_buf[0], file_buf.size(), file_entry);
+  // #@@range_end(load_file)
 
   auto elf_header = reinterpret_cast<Elf64_Ehdr*>(&file_buf[0]);
   if (memcmp(elf_header->e_ident, "\x7f" "ELF", 4) != 0) {

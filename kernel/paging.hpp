@@ -24,6 +24,7 @@ void SetupIdentityPageTable();
 
 void InitializePaging();
 
+// #@@range_begin(linear_addr)
 union LinearAddress4Level {
   uint64_t value;
 
@@ -38,42 +39,28 @@ union LinearAddress4Level {
 
   int Part(int page_map_level) const {
     switch (page_map_level) {
-    case 0:
-      return parts.offset;
-    case 1:
-      return parts.page;
-    case 2:
-      return parts.dir;
-    case 3:
-      return parts.pdp;
-    case 4:
-      return parts.pml4;
-    default:
-      return 0;
+    case 0: return parts.offset;
+    case 1: return parts.page;
+    case 2: return parts.dir;
+    case 3: return parts.pdp;
+    case 4: return parts.pml4;
+    default: return 0;
     }
   }
 
   void SetPart(int page_map_level, int value) {
     switch (page_map_level) {
-    case 0:
-      parts.offset = value;
-      break;
-    case 1:
-      parts.page = value;
-      break;
-    case 2:
-      parts.dir = value;
-      break;
-    case 3:
-      parts.pdp = value;
-      break;
-    case 4:
-      parts.pml4 = value;
-      break;
+    case 0: parts.offset = value; break;
+    case 1: parts.page = value; break;
+    case 2: parts.dir = value; break;
+    case 3: parts.pdp = value; break;
+    case 4: parts.pml4 = value; break;
     }
   }
 };
+// #@@range_end(linear_addr)
 
+// #@@range_begin(pagemap_entry)
 union PageMapEntry {
   uint64_t data;
 
@@ -101,3 +88,4 @@ union PageMapEntry {
     bits.addr = reinterpret_cast<uint64_t>(p) >> 12;
   }
 };
+// #@@range_end(pagemap_entry)
