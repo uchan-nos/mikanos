@@ -24,7 +24,6 @@ void SetupIdentityPageTable();
 
 void InitializePaging();
 
-// #@@range_begin(linear_addr)
 union LinearAddress4Level {
   uint64_t value;
 
@@ -58,9 +57,7 @@ union LinearAddress4Level {
     }
   }
 };
-// #@@range_end(linear_addr)
 
-// #@@range_begin(pagemap_entry)
 union PageMapEntry {
   uint64_t data;
 
@@ -88,4 +85,3 @@ union PageMapEntry {
     bits.addr = reinterpret_cast<uint64_t>(p) >> 12;
   }
 };
-// #@@range_end(pagemap_entry)
