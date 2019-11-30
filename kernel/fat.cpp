@@ -87,7 +87,6 @@ bool NameIsEqual(const DirectoryEntry& entry, const char* name) {
   return memcmp(entry.name, name83, sizeof(name83)) == 0;
 }
 
-// #@@range_begin(load_file)
 size_t LoadFile(void* buf, size_t len, const DirectoryEntry& entry) {
   auto is_valid_cluster = [](uint32_t c) {
     return c != 0 && c != fat::kEndOfClusterchain;
@@ -109,6 +108,5 @@ size_t LoadFile(void* buf, size_t len, const DirectoryEntry& entry) {
   }
   return p - buf_uint8;
 }
-// #@@range_end(load_file)
 
 } // namespace fat
