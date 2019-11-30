@@ -40,14 +40,11 @@ std::vector<char*> MakeArgVector(char* command, char* first_arg) {
   return argv;
 }
 
-// #@@range_begin(get_phdr)
 Elf64_Phdr* GetProgramHeader(Elf64_Ehdr* ehdr) {
   return reinterpret_cast<Elf64_Phdr*>(
       reinterpret_cast<uintptr_t>(ehdr) + ehdr->e_phoff);
 }
-// #@@range_end(get_phdr)
 
-// #@@range_begin(get_first_addr)
 uintptr_t GetFirstLoadAddress(Elf64_Ehdr* ehdr) {
   auto phdr = GetProgramHeader(ehdr);
   for (int i = 0; i < ehdr->e_phnum; ++i) {
@@ -56,11 +53,9 @@ uintptr_t GetFirstLoadAddress(Elf64_Ehdr* ehdr) {
   }
   return 0;
 }
-// #@@range_end(get_first_addr)
 
 static_assert(kBytesPerFrame >= 4096);
 
-// #@@range_begin(new_pagemap)
 WithError<PageMapEntry*> NewPageMap() {
   auto frame = memory_manager->Allocate(1);
   if (frame.error) {
@@ -71,9 +66,7 @@ WithError<PageMapEntry*> NewPageMap() {
   memset(e, 0, sizeof(uint64_t) * 512);
   return { e, MAKE_ERROR(Error::kSuccess) };
 }
-// #@@range_end(new_pagemap)
 
-// #@@range_begin(set_newpagemap)
 WithError<PageMapEntry*> SetNewPageMapIfNotPresent(PageMapEntry& entry) {
   if (entry.bits.present) {
     return { entry.Pointer(), MAKE_ERROR(Error::kSuccess) };
@@ -89,9 +82,7 @@ WithError<PageMapEntry*> SetNewPageMapIfNotPresent(PageMapEntry& entry) {
 
   return { child_map, MAKE_ERROR(Error::kSuccess) };
 }
-// #@@range_end(set_newpagemap)
 
-// #@@range_begin(setup_pagemap)
 WithError<size_t> SetupPageMap(
     PageMapEntry* page_map, int page_map_level, LinearAddress4Level addr, size_t num_4kpages) {
   while (num_4kpages > 0) {
@@ -126,16 +117,12 @@ WithError<size_t> SetupPageMap(
 
   return { num_4kpages, MAKE_ERROR(Error::kSuccess) };
 }
-// #@@range_end(setup_pagemap)
 
-// #@@range_begin(setup_pagemaps)
 Error SetupPageMaps(LinearAddress4Level addr, size_t num_4kpages) {
   auto pml4_table = reinterpret_cast<PageMapEntry*>(GetCR3());
   return SetupPageMap(pml4_table, 4, addr, num_4kpages).error;
 }
-// #@@range_end(setup_pagemaps)
 
-// #@@range_begin(copy_loadsegms)
 Error CopyLoadSegments(Elf64_Ehdr* ehdr) {
   auto phdr = GetProgramHeader(ehdr);
   for (int i = 0; i < ehdr->e_phnum; ++i) {
@@ -156,9 +143,7 @@ Error CopyLoadSegments(Elf64_Ehdr* ehdr) {
   }
   return MAKE_ERROR(Error::kSuccess);
 }
-// #@@range_end(copy_loadsegms)
 
-// #@@range_begin(load_elf)
 Error LoadELF(Elf64_Ehdr* ehdr) {
   if (ehdr->e_type != ET_EXEC) {
     return MAKE_ERROR(Error::kInvalidFormat);
@@ -175,9 +160,7 @@ Error LoadELF(Elf64_Ehdr* ehdr) {
 
   return MAKE_ERROR(Error::kSuccess);
 }
-// #@@range_end(load_elf)
 
-// #@@range_begin(clean_pagemap)
 Error CleanPageMap(PageMapEntry* page_map, int page_map_level) {
   for (int i = 0; i < 512; ++i) {
     auto entry = page_map[i];
@@ -201,9 +184,7 @@ Error CleanPageMap(PageMapEntry* page_map, int page_map_level) {
 
   return MAKE_ERROR(Error::kSuccess);
 }
-// #@@range_end(clean_pagemap)
 
-// #@@range_begin(clean_pagemaps)
 Error CleanPageMaps(LinearAddress4Level addr) {
   auto pml4_table = reinterpret_cast<PageMapEntry*>(GetCR3());
   auto pdp_table = pml4_table[addr.parts.pml4].Pointer();
@@ -216,7 +197,6 @@ Error CleanPageMaps(LinearAddress4Level addr) {
   const FrameID pdp_frame{pdp_addr / kBytesPerFrame};
   return memory_manager->Free(pdp_frame, 1);
 }
-// #@@range_end(clean_pagemaps)
 
 } // namespace
 
@@ -408,10 +388,8 @@ void Terminal::ExecuteLine() {
 }
 
 Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command, char* first_arg) {
-  // #@@range_begin(load_file)
   std::vector<uint8_t> file_buf(file_entry.file_size);
   fat::LoadFile(&file_buf[0], file_buf.size(), file_entry);
-  // #@@range_end(load_file)
 
   auto elf_header = reinterpret_cast<Elf64_Ehdr*>(&file_buf[0]);
   if (memcmp(elf_header->e_ident, "\x7f" "ELF", 4) != 0) {
@@ -421,7 +399,6 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
     return MAKE_ERROR(Error::kSuccess);
   }
 
-  // #@@range_begin(load_app)
   auto argv = MakeArgVector(command, first_arg);
   if (auto err = LoadELF(elf_header)) {
     return err;
@@ -440,7 +417,6 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
   if (auto err = CleanPageMaps(LinearAddress4Level{addr_first})) {
     return err;
   }
-  // #@@range_end(load_app)
 
   return MAKE_ERROR(Error::kSuccess);
 }
