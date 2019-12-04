@@ -252,3 +252,27 @@ global LoadTR
 LoadTR:  ; void LoadTR(uint16_t sel);
     ltr di
     ret
+
+global WriteMSR
+WriteMSR:  ; void WriteMSR(uint32_t msr, uint64_t value);
+    mov rdx, rsi
+    shr rdx, 32
+    mov eax, esi
+    mov ecx, edi
+    wrmsr
+    ret
+
+extern SyscallEntry
+global SyscallEntryAsm
+SyscallEntryAsm:  ; void SyscallEntryAsm();
+    push rbp
+    push rcx
+    push r11
+    mov rbp, rsp
+    and rsp, 0xfffffffffffffff0
+    call SyscallEntry
+    mov rsp, rbp
+    pop r11
+    pop rcx
+    pop rbp
+    sysret
