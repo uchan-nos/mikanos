@@ -130,3 +130,14 @@ SwitchContext:  ; void SwitchContext(uint64_t* to_rsp, uint64_t* current_rsp);
     pop rax
 
     ret
+
+global CallApp
+CallApp:  ; void CallApp(int argc, char** argv, uint16_t cs, uint16_t ss, uint64_t rip, uint64_t rsp);
+    push rbp
+    mov rbp, rsp
+    push rcx  ; SS
+    push r9   ; RSP
+    push rdx  ; CS
+    push r8   ; RIP
+    o64 retf
+    ; アプリケーションが終了してもここには来ない
