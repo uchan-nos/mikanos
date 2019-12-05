@@ -450,7 +450,7 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
   }
 
   auto entry_addr = elf_header->e_entry;
-  CallApp(argc.value, argv, 3 << 3 | 3, 4 << 3 | 3, entry_addr,
+  CallApp(argc.value, argv, 4 << 3 | 3, 3 << 3 | 3, entry_addr,
       stack_frame_addr.value + 4096 - 8);
 
   /*
@@ -574,6 +574,8 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
   }
 }
 
-extern "C" void SyscallEntry() {
-  Log(kWarn, "SyscallEntry()\n");
+extern "C" uint64_t SyscallEntry(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5) {
+  Log(kWarn, "SyscallEntry(%lu, %lu, %lu, %lu, %lu)\n",
+      arg1, arg2, arg3, arg4, arg5);
+  return 0;
 }
