@@ -13,7 +13,7 @@ class TimerManager {
   unsigned long CurrentTick() const { return tick_; }
 
  private:
-  unsigned long tick_{0};
+  volatile unsigned long tick_{0};
 };
 
 extern TimerManager* timer_manager;
