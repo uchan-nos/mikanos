@@ -45,17 +45,20 @@ WithError<int> MakeArgVector(char* command, char* first_arg,
     if (p[0] == 0) {
       break;
     }
-    if (auto err = push_to_argv(p)) {
-      return { argc, err };
-    }
+    const char* arg = p;
 
     while (p[0] != 0 && !isspace(p[0])) {
       ++p;
     }
-    if (p[0] == 0) {
+    // here: p[0] == 0 || isspace(p[0])
+    const bool is_end = p[0] == 0;
+    p[0] = 0;
+    if (auto err = push_to_argv(arg)) {
+      return { argc, err };
+    }
+    if (is_end) {
       break;
     }
-    p[0] = 0;
     ++p;
   }
 
