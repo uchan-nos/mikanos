@@ -40,6 +40,7 @@ void SetDataSegment(SegmentDescriptor& desc,
   desc.bits.default_operation_size = 1; // 32-bit stack segment
 }
 
+// #@@range_begin(setup_segm)
 void SetupSegments() {
   gdt[0].data = 0;
   SetCodeSegment(gdt[1], DescriptorType::kExecuteRead, 0, 0, 0xfffff);
@@ -48,6 +49,7 @@ void SetupSegments() {
   SetCodeSegment(gdt[4], DescriptorType::kExecuteRead, 3, 0, 0xfffff);
   LoadGDT(sizeof(gdt) - 1, reinterpret_cast<uintptr_t>(&gdt[0]));
 }
+// #@@range_end(setup_segm)
 
 void InitializeSegmentation() {
   SetupSegments();
