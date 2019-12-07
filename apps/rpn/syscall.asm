@@ -10,5 +10,4 @@ Syscall%1:
     ret
 %endmacro
 
-define_syscall PutChar, 0x80000000
-define_syscall PutString, 0x80000001
+define_syscall LogString, 0x80000000
