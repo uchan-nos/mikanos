@@ -5,17 +5,19 @@
 namespace syscall {
 
 #define SYSCALL(name) \
-  uint64_t name( \
+  int64_t name( \
       uint64_t arg1, uint64_t arg2, uint64_t arg3, \
       uint64_t arg4, uint64_t arg5, uint64_t arg6)
 
-SYSCALL(PutChar) {
-  Log(kWarn, "%c", arg1 & 0xff);
-  return 0;
-}
-
-SYSCALL(PutString) {
-  Log(kWarn, "%s", reinterpret_cast<char*>(arg1));
+SYSCALL(LogString) {
+  if (arg1 != kError && arg1 != kWarn && arg1 != kInfo && arg1 != kDebug) {
+    return -1;
+  }
+  const char* s = reinterpret_cast<const char*>(arg2);
+  if (strlen(s) > 1024) {
+    return -1;
+  }
+  Log(static_cast<LogLevel>(arg1), "%s", s);
   return 0;
 }
 
@@ -23,8 +25,7 @@ SYSCALL(PutString) {
 
 } // namespace syscall
 
-using SyscallFuncType = uint64_t (uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
-extern "C" std::array<SyscallFuncType*, 2> syscall_table{
-  /* 0x00 */ syscall::PutChar,
-  /* 0x01 */ syscall::PutString,
+using SyscallFuncType = int64_t (uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
+extern "C" std::array<SyscallFuncType*, 1> syscall_table{
+  /* 0x00 */ syscall::LogString,
 };

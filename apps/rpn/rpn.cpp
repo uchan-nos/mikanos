@@ -2,6 +2,8 @@
 #include <cstdlib>
 #include <cstdint>
 
+#include "../../kernel/logger.hpp"
+
 int stack_ptr;
 long stack[100];
 
@@ -16,8 +18,7 @@ void Push(long value) {
   stack[stack_ptr] = value;
 }
 
-extern "C" uint64_t SyscallPutChar(char c);
-extern "C" uint64_t SyscallPutString(const char* s);
+extern "C" int64_t SyscallLogString(LogLevel, const char*);
 
 extern "C" int main(int argc, char** argv) {
   stack_ptr = -1;
@@ -27,22 +28,22 @@ extern "C" int main(int argc, char** argv) {
       long b = Pop();
       long a = Pop();
       Push(a + b);
-      SyscallPutChar('+');
+      SyscallLogString(kWarn, "+");
     } else if (strcmp(argv[i], "-") == 0) {
       long b = Pop();
       long a = Pop();
       Push(a - b);
-      SyscallPutChar('-');
+      SyscallLogString(kWarn, "-");
     } else {
       long a = atol(argv[i]);
       Push(a);
-      SyscallPutChar('#');
+      SyscallLogString(kWarn, "#");
     }
   }
   if (stack_ptr < 0) {
     return 0;
   }
-  SyscallPutString("\nhello, this is rpn\n");
+  SyscallLogString(kWarn, "\nhello, this is rpn\n");
   while (1);
   //return static_cast<int>(Pop());
 }
