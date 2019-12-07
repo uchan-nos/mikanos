@@ -19,5 +19,5 @@ extern "C" {
   void LoadTR(uint16_t sel);
   void SetSyscallRegs(uint64_t lstar, uint64_t fmask);
   void WriteMSR(uint32_t msr, uint64_t value);
-  void SyscallEntryAsm();
+  void SyscallEntry(void);
 }
