@@ -18,6 +18,7 @@ void Push(long value) {
   stack[stack_ptr] = value;
 }
 
+// #@@range_begin(call_syscall)
 extern "C" int64_t SyscallLogString(LogLevel, const char*);
 
 extern "C" int main(int argc, char** argv) {
@@ -47,3 +48,4 @@ extern "C" int main(int argc, char** argv) {
   while (1);
   //return static_cast<int>(Pop());
 }
+// #@@range_end(call_syscall)
