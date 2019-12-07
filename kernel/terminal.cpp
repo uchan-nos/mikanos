@@ -11,8 +11,6 @@
 #include "memory_manager.hpp"
 #include "paging.hpp"
 
-#include "logger.hpp"
-
 namespace {
 
 WithError<int> MakeArgVector(char* command, char* first_arg,
@@ -572,10 +570,4 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
       break;
     }
   }
-}
-
-extern "C" uint64_t SyscallEntry(uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5) {
-  Log(kWarn, "SyscallEntry(%lu, %lu, %lu, %lu, %lu)\n",
-      arg1, arg2, arg3, arg4, arg5);
-  return 0;
 }

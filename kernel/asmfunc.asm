@@ -262,44 +262,31 @@ WriteMSR:  ; void WriteMSR(uint32_t msr, uint64_t value);
     wrmsr
     ret
 
-extern SyscallEntry
-global SyscallEntryAsm
-SyscallEntryAsm:  ; void SyscallEntryAsm();
-    push rax
+extern syscall_table
+global SyscallEntry
+SyscallEntry:  ; void SyscallEntry(void);
+    ; don't save rax
     push rbx
     push rcx
-    push rdx
-    push rdi
-    push rsi
     push rbp
-    push r8
-    push r9
-    push r10
-    push r11
     push r12
     push r13
     push r14
     push r15
 
+    mov rcx, r10
+    and eax, 0x7fffffff
+
     mov rbp, rsp
     and rsp, 0xfffffffffffffff0
-    mov rcx, r9
-    call SyscallEntry
+    call [syscall_table + 8 * rax]
     mov rsp, rbp
 
     pop r15
     pop r14
     pop r13
     pop r12
-    pop r11
-    pop r10
-    pop r9
-    pop r8
     pop rbp
-    pop rsi
-    pop rdi
-    pop rdx
     pop rcx
     pop rbx
-    pop rax
     o64 sysret
