@@ -36,7 +36,7 @@
 #include "task.hpp"
 #include "terminal.hpp"
 #include "fat.hpp"
-#include "msr.hpp"
+#include "syscall.hpp"
 
 int printk(const char* format, ...) {
   va_list ap;
@@ -153,10 +153,7 @@ extern "C" void KernelMainNewStack(
   timer_manager->AddTimer(Timer{kTimer05Sec, kTextboxCursorTimer});
   bool textbox_cursor_visible = false;
 
-  WriteMSR(kIA32_EFER, 0x0501u);
-  WriteMSR(kIA32_STAR, static_cast<uint64_t>(8) << 32 | static_cast<uint64_t>(16) << 48);
-  WriteMSR(kIA32_LSTAR, reinterpret_cast<uint64_t>(SyscallEntry));
-  WriteMSR(kIA32_FMASK, 0);
+  InitializeSyscall();
 
   InitializeTask();
   Task& main_task = task_manager->CurrentTask();
