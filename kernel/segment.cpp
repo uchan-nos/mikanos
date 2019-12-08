@@ -2,13 +2,10 @@
 
 #include "asmfunc.h"
 
-// #@@range_begin(gdt_definition)
 namespace {
   std::array<SegmentDescriptor, 3> gdt;
 }
-// #@@range_end(gdt_definition)
 
-// #@@range_begin(setup_segm_function)
 void SetCodeSegment(SegmentDescriptor& desc,
                     DescriptorType type,
                     unsigned int descriptor_privilege_level,
@@ -49,4 +46,3 @@ void SetupSegments() {
   SetDataSegment(gdt[2], DescriptorType::kReadWrite, 0, 0, 0xfffff);
   LoadGDT(sizeof(gdt) - 1, reinterpret_cast<uintptr_t>(&gdt[0]));
 }
-// #@@range_end(setup_segm_function)
