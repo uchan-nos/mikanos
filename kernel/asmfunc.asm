@@ -49,19 +49,15 @@ LoadGDT:
     pop rbp
     ret
 
-global SetCS  ; void SetCS(uint16_t value);
-SetCS:
+global SetCSSS  ; void SetCSSS(uint16_t cs, uint16_t ss);
+SetCSSS:
     push rbp
     mov rbp, rsp
-    xor eax, eax
-    mov ax, ss
-    mov rcx, .next
-    push rax    ; SS
-    push rbp    ; RSP
-    pushfq      ; RFLAGS
+    mov ss, si
+    mov rax, .next
     push rdi    ; CS
-    push rcx    ; RIP
-    iretq
+    push rax    ; RIP
+    o64 retf
 .next:
     mov rsp, rbp
     pop rbp
@@ -71,7 +67,6 @@ global SetDSAll  ; void SetDSAll(uint16_t value);
 SetDSAll:
     mov ds, di
     mov es, di
-    mov ss, di
     mov fs, di
     mov gs, di
     ret
