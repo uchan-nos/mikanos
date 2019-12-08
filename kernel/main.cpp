@@ -96,7 +96,6 @@ void IntHandlerXHCI(InterruptFrame* frame) {
   NotifyEndOfInterrupt();
 }
 
-// #@@range_begin(main_new_stack)
 alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 
 extern "C" void KernelMainNewStack(
@@ -104,7 +103,6 @@ extern "C" void KernelMainNewStack(
     const MemoryMap& memory_map_ref) {
   FrameBufferConfig frame_buffer_config{frame_buffer_config_ref};
   MemoryMap memory_map{memory_map_ref};
-// #@@range_end(main_new_stack)
 
   switch (frame_buffer_config.pixel_format) {
     case kPixelRGBResv8BitPerColor:
@@ -143,7 +141,6 @@ extern "C" void KernelMainNewStack(
   printk("Welcome to MikanOS!\n");
   SetLogLevel(kWarn);
 
-  // #@@range_begin(setup_segments_and_page)
   SetupSegments();
 
   const uint16_t kernel_cs = 1 << 3;
@@ -152,7 +149,6 @@ extern "C" void KernelMainNewStack(
   SetCSSS(kernel_cs, kernel_ss);
 
   SetupIdentityPageTable();
-  // #@@range_end(setup_segments_and_page)
 
   const auto memory_map_base = reinterpret_cast<uintptr_t>(memory_map.buffer);
   for (uintptr_t iter = memory_map_base;
