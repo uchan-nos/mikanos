@@ -4,7 +4,6 @@
 
 #include "asmfunc.h"
 
-// #@@range_begin(setup_page)
 namespace {
   const uint64_t kPageSize4K = 4096;
   const uint64_t kPageSize2M = 512 * kPageSize4K;
@@ -27,4 +26,3 @@ void SetupIdentityPageTable() {
 
   SetCR3(reinterpret_cast<uint64_t>(&pml4_table[0]));
 }
-// #@@range_end(setup_page)

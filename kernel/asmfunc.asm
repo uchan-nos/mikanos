@@ -37,7 +37,6 @@ LoadIDT:
     pop rbp
     ret
 
-; #@@range_begin(load_gdt)
 global LoadGDT  ; void LoadGDT(uint16_t limit, uint64_t offset);
 LoadGDT:
     push rbp
@@ -49,9 +48,7 @@ LoadGDT:
     mov rsp, rbp
     pop rbp
     ret
-; #@@range_end(load_gdt)
 
-; #@@range_begin(set_cs)
 global SetCSSS  ; void SetCSSS(uint16_t cs, uint16_t ss);
 SetCSSS:
     push rbp
@@ -65,9 +62,7 @@ SetCSSS:
     mov rsp, rbp
     pop rbp
     ret
-; #@@range_end(set_cs)
 
-; #@@range_begin(set_dsall)
 global SetDSAll  ; void SetDSAll(uint16_t value);
 SetDSAll:
     mov ds, di
@@ -75,16 +70,12 @@ SetDSAll:
     mov fs, di
     mov gs, di
     ret
-; #@@range_end(set_dsall)
 
-; #@@range_begin(set_cr3)
 global SetCR3  ; void SetCR3(uint64_t value);
 SetCR3:
     mov cr3, rdi
     ret
-; #@@range_end(set_cr3)
 
-; #@@range_begin(set_main_stack)
 extern kernel_main_stack
 extern KernelMainNewStack
 
@@ -95,4 +86,3 @@ KernelMain:
 .fin:
     hlt
     jmp .fin
-; #@@range_end(set_main_stack)
