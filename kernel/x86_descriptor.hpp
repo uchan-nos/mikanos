@@ -17,5 +17,6 @@ enum class DescriptorType {
   kTrapGate      = 15,
 
   // code & data segment types
+  kReadWrite     = 2,
   kExecuteRead   = 10,
 };
