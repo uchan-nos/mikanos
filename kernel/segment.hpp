@@ -11,7 +11,6 @@
 
 #include "x86_descriptor.hpp"
 
-// #@@range_begin(segment_desc_definition)
 union SegmentDescriptor {
   uint64_t data;
   struct {
@@ -30,7 +29,6 @@ union SegmentDescriptor {
     uint64_t base_high : 8;
   } __attribute__((packed)) bits;
 } __attribute__((packed));
-// #@@range_end(segment_desc_definition)
 
 void SetCodeSegment(SegmentDescriptor& desc,
                     DescriptorType type,
