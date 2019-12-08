@@ -35,5 +35,10 @@ void SetCodeSegment(SegmentDescriptor& desc,
                     unsigned int descriptor_privilege_level,
                     uint32_t base,
                     uint32_t limit);
+void SetDataSegment(SegmentDescriptor& desc,
+                    DescriptorType type,
+                    unsigned int descriptor_privilege_level,
+                    uint32_t base,
+                    uint32_t limit);
 
 void SetupSegments();

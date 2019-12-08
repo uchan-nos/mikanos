@@ -138,8 +138,9 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config,
   SetupSegments();
 
   const uint16_t kernel_cs = 1 << 3;
+  const uint16_t kernel_ss = 2 << 3;
   SetDSAll(0);
-  SetCS(kernel_cs);
+  SetCSSS(kernel_cs, kernel_ss);
 
   SetupIdentityPageTable();
 
