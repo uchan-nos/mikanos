@@ -265,28 +265,34 @@ WriteMSR:  ; void WriteMSR(uint32_t msr, uint64_t value);
 extern syscall_table
 global SyscallEntry
 SyscallEntry:  ; void SyscallEntry(void);
-    ; don't save rax
-    push rbx
-    push rcx
     push rbp
-    push r12
-    push r13
-    push r14
-    push r15
+    push rcx  ; original RIP
+    push r11  ; original RFLAGS
+    push rdi
+    push rsi
+    push rdx
+    push r10
+    push r8
+    push r9
 
     mov rcx, r10
     and eax, 0x7fffffff
-
     mov rbp, rsp
     and rsp, 0xfffffffffffffff0
-    call [syscall_table + 8 * rax]
+
+    call [syscall_table + 8 * eax]
+    ; rbx, r12-r15 は callee-saved なので呼び出し側で保存しない
+    ; rax は戻り値用なので呼び出し側で保存しない
+
     mov rsp, rbp
 
-    pop r15
-    pop r14
-    pop r13
-    pop r12
-    pop rbp
+    pop r9
+    pop r8
+    pop r10
+    pop rdx
+    pop rsi
+    pop rdi
+    pop r11
     pop rcx
-    pop rbx
+    pop rbp
     o64 sysret
