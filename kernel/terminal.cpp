@@ -101,7 +101,6 @@ WithError<PageMapEntry*> SetNewPageMapIfNotPresent(PageMapEntry& entry) {
 
   entry.SetPointer(child_map);
   entry.bits.present = 1;
-  entry.bits.user = 1;
 
   return { child_map, MAKE_ERROR(Error::kSuccess) };
 }
@@ -116,6 +115,7 @@ WithError<size_t> SetupPageMap(
       return { num_4kpages, err };
     }
     page_map[entry_index].bits.writable = 1;
+    page_map[entry_index].bits.user = 1;
 
     if (page_map_level == 1) {
       --num_4kpages;
