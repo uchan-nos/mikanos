@@ -30,6 +30,7 @@ void SetCodeSegment(SegmentDescriptor& desc,
   desc.bits.granularity = 1;
 }
 
+// #@@range_begin(set_data_segm)
 void SetDataSegment(SegmentDescriptor& desc,
                     DescriptorType type,
                     unsigned int descriptor_privilege_level,
@@ -48,6 +49,7 @@ void SetupSegments() {
   SetDataSegment(gdt[4], DescriptorType::kReadWrite, 3, 0, 0xfffff);
   LoadGDT(sizeof(gdt) - 1, reinterpret_cast<uintptr_t>(&gdt[0]));
 }
+// #@@range_end(set_data_segm)
 
 void InitializeSegmentation() {
   SetupSegments();
