@@ -131,6 +131,7 @@ SwitchContext:  ; void SwitchContext(uint64_t* to_rsp, uint64_t* current_rsp);
 
     ret
 
+; #@@range_begin(call_app_defn)
 global CallApp
 CallApp:  ; void CallApp(int argc, char** argv, uint16_t cs, uint16_t ss, uint64_t rip, uint64_t rsp);
     push rbp
@@ -141,3 +142,4 @@ CallApp:  ; void CallApp(int argc, char** argv, uint16_t cs, uint16_t ss, uint64
     push r8   ; RIP
     o64 retf
     ; アプリケーションが終了してもここには来ない
+; #@@range_end(call_app_defn)
