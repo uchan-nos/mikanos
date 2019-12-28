@@ -18,6 +18,29 @@ void Push(long value) {
   stack[stack_ptr] = value;
 }
 
+void FormatLong(char* s, long v) {
+  if (v == 0) {
+    s[0] = '0';
+    s[1] = '\n';
+    s[2] = '\0';
+    return;
+  }
+
+  int i = 0;
+  while (v) {
+    s[i] = (v % 10) + '0';
+    v /= 10;
+    ++i;
+  }
+  s[i] = '\n';
+  s[i + 1] = '\0';
+  for (int j = 0; j < i/2; ++j) {
+    char tmp = s[j];
+    s[j] = s[i - j - 1];
+    s[i - j - 1] = tmp;
+  }
+}
+
 extern "C" int64_t SyscallLogString(LogLevel, const char*);
 extern "C" int64_t SyscallPutString(const char*);
 
@@ -29,22 +52,23 @@ extern "C" int main(int argc, char** argv) {
       long b = Pop();
       long a = Pop();
       Push(a + b);
-      SyscallPutString("+");
     } else if (strcmp(argv[i], "-") == 0) {
       long b = Pop();
       long a = Pop();
       Push(a - b);
-      SyscallPutString("-");
     } else {
       long a = atol(argv[i]);
       Push(a);
-      SyscallPutString("#");
     }
   }
-  if (stack_ptr < 0) {
-    return 0;
+  long result = 0;
+  if (stack_ptr >= 0) {
+    result = Pop();
   }
-  SyscallPutString("\nhello, this is rpn\n");
+
+  char s[64];
+  FormatLong(s, result);
+  SyscallPutString(s);
   while (1);
   //return static_cast<int>(Pop());
 }
