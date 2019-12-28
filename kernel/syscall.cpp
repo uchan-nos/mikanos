@@ -7,7 +7,6 @@
 #include "msr.hpp"
 #include "logger.hpp"
 
-// #@@range_begin(define_syscall)
 namespace syscall {
 
 #define SYSCALL(name) \
@@ -36,9 +35,7 @@ using SyscallFuncType = int64_t (uint64_t, uint64_t, uint64_t,
 extern "C" std::array<SyscallFuncType*, 1> syscall_table{
   /* 0x00 */ syscall::LogString,
 };
-// #@@range_end(define_syscall)
 
-// #@@range_begin(init_syscall)
 void InitializeSyscall() {
   WriteMSR(kIA32_EFER, 0x0501u);
   WriteMSR(kIA32_LSTAR, reinterpret_cast<uint64_t>(SyscallEntry));
@@ -46,4 +43,3 @@ void InitializeSyscall() {
                        static_cast<uint64_t>(16 | 3) << 48);
   WriteMSR(kIA32_FMASK, 0);
 }
-// #@@range_end(init_syscall)
