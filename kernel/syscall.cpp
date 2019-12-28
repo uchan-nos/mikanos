@@ -6,6 +6,8 @@
 #include "asmfunc.h"
 #include "msr.hpp"
 #include "logger.hpp"
+#include "task.hpp"
+#include "terminal.hpp"
 
 namespace syscall {
 
@@ -26,14 +28,25 @@ SYSCALL(LogString) {
   return 0;
 }
 
+SYSCALL(PutString) {
+  const char* s = reinterpret_cast<const char*>(arg1);
+  if (strlen(s) > 1024) {
+    return -1;
+  }
+  const auto task_id = task_manager->CurrentTask().ID();
+  (*terminals)[task_id]->Print(s);
+  return 0;
+}
+
 #undef SYSCALL
 
 } // namespace syscall
 
 using SyscallFuncType = int64_t (uint64_t, uint64_t, uint64_t,
                                  uint64_t, uint64_t, uint64_t);
-extern "C" std::array<SyscallFuncType*, 1> syscall_table{
+extern "C" std::array<SyscallFuncType*, 2> syscall_table{
   /* 0x00 */ syscall::LogString,
+  /* 0x01 */ syscall::PutString,
 };
 
 void InitializeSyscall() {
