@@ -142,7 +142,6 @@ CallApp:  ; void CallApp(int argc, char** argv, uint16_t cs, uint16_t ss, uint64
     o64 retf
     ; アプリケーションが終了してもここには来ない
 
-; #@@range_begin(write_msr)
 global WriteMSR
 WriteMSR:  ; void WriteMSR(uint32_t msr, uint64_t value);
     mov rdx, rsi
@@ -151,9 +150,7 @@ WriteMSR:  ; void WriteMSR(uint32_t msr, uint64_t value);
     mov ecx, edi
     wrmsr
     ret
-; #@@range_end(write_msr)
 
-; #@@range_begin(syscall_entry)
 extern syscall_table
 global SyscallEntry
 SyscallEntry:  ; void SyscallEntry(void);
@@ -176,4 +173,3 @@ SyscallEntry:  ; void SyscallEntry(void);
     pop rcx
     pop rbp
     o64 sysret
-; #@@range_end(syscall_entry)
