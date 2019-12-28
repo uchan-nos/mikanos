@@ -7,3 +7,10 @@ SyscallLogString:
     mov r10, rcx
     syscall
     ret
+
+global SyscallPutString
+SyscallPutString:
+    mov rax, 0x80000001
+    mov r10, rcx
+    syscall
+    ret
