@@ -56,7 +56,6 @@ void SetSystemSegment(SegmentDescriptor& desc,
   desc.bits.long_mode = 0;
 }
 
-// #@@range_begin(setup_segm)
 void SetupSegments() {
   gdt[0].data = 0;
   SetCodeSegment(gdt[1], DescriptorType::kExecuteRead, 0, 0, 0xfffff);
@@ -65,7 +64,6 @@ void SetupSegments() {
   SetCodeSegment(gdt[4], DescriptorType::kExecuteRead, 3, 0, 0xfffff);
   LoadGDT(sizeof(gdt) - 1, reinterpret_cast<uintptr_t>(&gdt[0]));
 }
-// #@@range_end(setup_segm)
 
 void InitializeSegmentation() {
   SetupSegments();
