@@ -7,7 +7,7 @@
 unsigned char sbrk_buf[SBRK_BUF_SIZE];
 off_t sbrk_index;
 
-int64_t SyscallPutString(const char*);
+int64_t SyscallPutString(uint64_t, uint64_t, uint64_t);
 
 caddr_t sbrk(int incr) {
   if (sbrk_index + incr >= SBRK_BUF_SIZE) {
@@ -36,11 +36,11 @@ ssize_t read(int fd, void* buf, size_t count) {
 }
 
 ssize_t write(int fd, const void* buf, size_t count) {
-  if (fd == 1) {
-    SyscallPutString((const char*)buf);
-    return count;
+  int64_t n = SyscallPutString(fd, (uint64_t)buf, count);
+  if (n >= 0) {
+    return n;
   }
-  errno = EBADF;
+  errno = -n;
   return -1;
 }
 
