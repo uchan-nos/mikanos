@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstdint>
+#include <cerrno>
 
 #include "asmfunc.h"
 #include "msr.hpp"
@@ -29,13 +30,19 @@ SYSCALL(LogString) {
 }
 
 SYSCALL(PutString) {
-  const char* s = reinterpret_cast<const char*>(arg1);
-  if (strlen(s) > 1024) {
-    return -1;
+  const auto fd = arg1;
+  const char* s = reinterpret_cast<const char*>(arg2);
+  const auto len = arg3;
+  if (len > 1024) {
+    return -EIO;
   }
-  const auto task_id = task_manager->CurrentTask().ID();
-  (*terminals)[task_id]->Print(s);
-  return 0;
+
+  if (fd == 1) {
+    const auto task_id = task_manager->CurrentTask().ID();
+    (*terminals)[task_id]->Print(s);
+    return len;
+  }
+  return -EBADF;
 }
 
 #undef SYSCALL
