@@ -1,6 +1,5 @@
 #include <cstring>
 #include <cstdlib>
-#include <cstdint>
 #include <cstdio>
 
 int stack_ptr;
@@ -16,8 +15,6 @@ void Push(long value) {
   ++stack_ptr;
   stack[stack_ptr] = value;
 }
-
-extern "C" int64_t SyscallPutString(const char*);
 
 extern "C" int main(int argc, char** argv) {
   stack_ptr = -1;
