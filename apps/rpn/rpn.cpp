@@ -1,8 +1,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cstdint>
-
-#include "../../kernel/logger.hpp"
+#include <cstdio>
 
 int stack_ptr;
 long stack[100];
@@ -18,30 +17,6 @@ void Push(long value) {
   stack[stack_ptr] = value;
 }
 
-void FormatLong(char* s, long v) {
-  if (v == 0) {
-    s[0] = '0';
-    s[1] = '\n';
-    s[2] = '\0';
-    return;
-  }
-
-  int i = 0;
-  while (v) {
-    s[i] = (v % 10) + '0';
-    v /= 10;
-    ++i;
-  }
-  s[i] = '\n';
-  s[i + 1] = '\0';
-  for (int j = 0; j < i/2; ++j) {
-    char tmp = s[j];
-    s[j] = s[i - j - 1];
-    s[i - j - 1] = tmp;
-  }
-}
-
-extern "C" int64_t SyscallLogString(LogLevel, const char*);
 extern "C" int64_t SyscallPutString(const char*);
 
 extern "C" int main(int argc, char** argv) {
@@ -66,9 +41,7 @@ extern "C" int main(int argc, char** argv) {
     result = Pop();
   }
 
-  char s[64];
-  FormatLong(s, result);
-  SyscallPutString(s);
+  printf("%ld\n", result);
   while (1);
   //return static_cast<int>(Pop());
 }

@@ -10,6 +10,9 @@ all: $(TARGET)
 $(TARGET): $(OBJS) Makefile
 	ld.lld $(LDFLAGS) -o $@ $(OBJS) -lc -lc++ -lc++abi
 
+%.o: %.c Makefile
+	clang $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
 %.o: %.cpp Makefile
 	clang++ $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
