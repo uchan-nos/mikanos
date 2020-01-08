@@ -28,19 +28,9 @@ ssize_t read(int fd, void* buf, size_t count) {
   return -1;
 }
 
-#define SBRK_BUF_SIZE (2 * 1024)
-unsigned char sbrk_buf[SBRK_BUF_SIZE];
-off_t sbrk_index;
-
 caddr_t sbrk(int incr) {
-  if (sbrk_index + incr >= SBRK_BUF_SIZE) {
-    errno = ENOMEM;
-    return (caddr_t)-1;
-  }
-
-  off_t prev_index = sbrk_index;
-  sbrk_index += incr;
-  return (caddr_t)&sbrk_buf[prev_index];
+  errno = ENOMEM;
+  return (caddr_t)-1;
 }
 
 int64_t SyscallPutString(uint64_t, uint64_t, uint64_t);
