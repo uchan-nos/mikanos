@@ -33,6 +33,7 @@ extern "C" int main(int argc, char** argv) {
       Push(a);
     }
   }
+  // #@@range_begin(rpn_printf)
   long result = 0;
   if (stack_ptr >= 0) {
     result = Pop();
@@ -40,5 +41,6 @@ extern "C" int main(int argc, char** argv) {
 
   printf("%ld\n", result);
   while (1);
+  // #@@range_end(rpn_printf)
   //return static_cast<int>(Pop());
 }
