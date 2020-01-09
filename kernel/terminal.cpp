@@ -488,7 +488,7 @@ void Terminal::Print(char c) {
 }
 
 void Terminal::Print(const char* s) {
-  const auto cursor_pos_before = CalcCursorPos();
+  const auto cursor_before = CalcCursorPos();
   DrawCursor(false);
 
   while (*s) {
@@ -497,12 +497,13 @@ void Terminal::Print(const char* s) {
   }
 
   DrawCursor(true);
-  const auto cursor_pos_after = CalcCursorPos();
+  const auto cursor_after = CalcCursorPos();
 
-  Vector2D<int> draw_start_pos{ToplevelWindow::kTopLeftMargin.x, cursor_pos_before.y};
-  Vector2D<int> draw_size{window_->InnerSize().x, cursor_pos_after.y - cursor_pos_before.y + 16};
+  Vector2D<int> draw_pos{ToplevelWindow::kTopLeftMargin.x, cursor_before.y};
+  Vector2D<int> draw_size{window_->InnerSize().x,
+                          cursor_after.y - cursor_before.y + 16};
 
-  Rectangle<int> draw_area{draw_start_pos, draw_size};
+  Rectangle<int> draw_area{draw_pos, draw_size};
 
   Message msg = MakeLayerMessage(
       task_id_, LayerID(), LayerOperation::DrawArea, draw_area);
@@ -546,7 +547,7 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
   layer_manager->Move(terminal->LayerID(), {100, 200});
   active_layer->Activate(terminal->LayerID());
   layer_task_map->insert(std::make_pair(terminal->LayerID(), task_id));
-  (*terminals)[task.ID()] = terminal;
+  (*terminals)[task_id] = terminal;
   __asm__("sti");
 
   while (true) {
