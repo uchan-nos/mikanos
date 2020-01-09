@@ -8,6 +8,7 @@
 
 #include <deque>
 #include <map>
+#include <optional>
 #include "window.hpp"
 #include "task.hpp"
 #include "layer.hpp"
@@ -23,7 +24,7 @@ class Terminal {
   Rectangle<int> BlinkCursor();
   Rectangle<int> InputKey(uint8_t modifier, uint8_t keycode, char ascii);
 
-  void Print(const char* s);
+  void Print(const char* s, std::optional<size_t> len = std::nullopt);
 
  private:
   std::shared_ptr<ToplevelWindow> window_;
