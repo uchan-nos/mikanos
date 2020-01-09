@@ -33,13 +33,17 @@ caddr_t sbrk(int incr) {
   return (caddr_t)-1;
 }
 
-int64_t SyscallPutString(uint64_t, uint64_t, uint64_t);
+struct SyscallResult {
+  uint64_t value;
+  int error;
+};
+struct SyscallResult SyscallPutString(uint64_t, uint64_t, uint64_t);
 
 ssize_t write(int fd, const void* buf, size_t count) {
-  int64_t n = SyscallPutString(fd, (uint64_t)buf, count);
-  if (n >= 0) {
-    return n;
+  struct SyscallResult res = SyscallPutString(fd, (uint64_t)buf, count);
+  if (res.error == 0) {
+    return res.value;
   }
-  errno = -n;
+  errno = res.error;
   return -1;
 }
