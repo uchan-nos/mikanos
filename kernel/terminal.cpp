@@ -490,13 +490,20 @@ void Terminal::Print(char c) {
 }
 
 // #@@range_begin(print_redraw)
-void Terminal::Print(const char* s) {
+void Terminal::Print(const char* s, std::optional<size_t> len) {
   const auto cursor_before = CalcCursorPos();
   DrawCursor(false);
 
-  while (*s) {
-    Print(*s);
-    ++s;
+  if (len) {
+    for (size_t i = 0; i < *len; ++i) {
+      Print(*s);
+      ++s;
+    }
+  } else {
+    while (*s) {
+      Print(*s);
+      ++s;
+    }
   }
 
   DrawCursor(true);

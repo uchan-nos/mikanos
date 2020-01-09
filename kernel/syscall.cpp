@@ -49,7 +49,7 @@ SYSCALL(PutString) {
 
   if (fd == 1) {
     const auto task_id = task_manager->CurrentTask().ID();
-    (*terminals)[task_id]->Print(s);
+    (*terminals)[task_id]->Print(s, len);
     return { len, 0 };
   }
   return { 0, EBADF };
