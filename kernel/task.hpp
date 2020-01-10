@@ -19,6 +19,7 @@ using TaskFunc = void (uint64_t, int64_t);
 
 class TaskManager;
 
+// #@@range_begin(task_class)
 class Task {
  public:
   static const int kDefaultLevel = 1;
@@ -27,6 +28,8 @@ class Task {
   Task(uint64_t id);
   Task& PushInitialStack(TaskFunc* f, int64_t data);
   uint64_t& StackPointer();
+  uint64_t& OSStackPointer();
+// #@@range_end(task_class)
   uint64_t ID() const;
   Task& Sleep();
   Task& Wakeup();
@@ -39,7 +42,7 @@ class Task {
  private:
   uint64_t id_;
   std::vector<uint64_t> stack_;
-  uint64_t stack_ptr_;
+  uint64_t stack_ptr_, os_stack_ptr_;
   std::deque<Message> msgs_;
   unsigned int level_{kDefaultLevel};
   bool running_{false};

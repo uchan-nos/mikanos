@@ -13,7 +13,7 @@ extern "C" {
   uint64_t GetCR3();
   void SetCR3(uint64_t value);
   void SwitchContext(uint64_t* to_rsp, uint64_t* current_rsp);
-  void CallApp(int argc, char** argv, uint16_t cs, uint16_t ss, uint64_t rip, uint64_t rsp);
+  int CallApp(int argc, char** argv, uint16_t ss, uint64_t rip, uint64_t rsp, uint64_t* os_stack_ptr);
   void WriteMSR(uint32_t msr, uint64_t value);
   void SyscallEntry(void);
 }
