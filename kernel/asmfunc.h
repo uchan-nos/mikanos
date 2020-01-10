@@ -14,7 +14,7 @@ extern "C" {
   uint64_t GetCR3();
   void SwitchContext(void* next_ctx, void* current_ctx);
   void RestoreContext(void* ctx);
-  void CallApp(int argc, char** argv, uint16_t cs, uint16_t ss, uint64_t rip, uint64_t rsp);
+  int CallApp(int argc, char** argv, uint16_t ss, uint64_t rip, uint64_t rsp, uint64_t* os_stack_ptr);
   void IntHandlerLAPICTimer();
   void LoadTR(uint16_t sel);
   void WriteMSR(uint32_t msr, uint64_t value);
