@@ -33,7 +33,6 @@ caddr_t sbrk(int incr) {
   return (caddr_t)-1;
 }
 
-// #@@range_begin(newlib_write)
 struct SyscallResult {
   uint64_t value;
   int error;
@@ -48,4 +47,3 @@ ssize_t write(int fd, const void* buf, size_t count) {
   errno = res.error;
   return -1;
 }
-// #@@range_end(newlib_write)
