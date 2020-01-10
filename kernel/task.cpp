@@ -45,6 +45,12 @@ TaskContext& Task::Context() {
   return context_;
 }
 
+// #@@range_begin(task_os_stack_ptr)
+uint64_t& Task::OSStackPointer() {
+  return os_stack_ptr_;
+}
+// #@@range_end(task_os_stack_ptr)
+
 uint64_t Task::ID() const {
   return id_;
 }
