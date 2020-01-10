@@ -226,9 +226,7 @@ Error CleanPageMaps(LinearAddress4Level addr) {
 
 } // namespace
 
-// #@@range_begin(term_task_id)
 Terminal::Terminal(uint64_t task_id) : task_id_{task_id} {
-// #@@range_end(term_task_id)
   window_ = std::make_shared<ToplevelWindow>(
       kColumns * 8 + 8 + ToplevelWindow::kMarginX,
       kRows * 16 + 8 + ToplevelWindow::kMarginY,
@@ -489,7 +487,6 @@ void Terminal::Print(char c) {
   }
 }
 
-// #@@range_begin(print_redraw)
 void Terminal::Print(const char* s, std::optional<size_t> len) {
   const auto cursor_before = CalcCursorPos();
   DrawCursor(false);
@@ -521,7 +518,6 @@ void Terminal::Print(const char* s, std::optional<size_t> len) {
   task_manager->SendMessage(1, msg);
   __asm__("sti");
 }
-// #@@range_end(print_redraw)
 
 Rectangle<int> Terminal::HistoryUpDown(int direction) {
   if (direction == -1 && cmd_history_index_ >= 0) {
@@ -549,7 +545,6 @@ Rectangle<int> Terminal::HistoryUpDown(int direction) {
   return draw_area;
 }
 
-// #@@range_begin(task_term_map)
 std::map<uint64_t, Terminal*>* terminals;
 
 void TaskTerminal(uint64_t task_id, int64_t data) {
@@ -561,7 +556,6 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
   layer_task_map->insert(std::make_pair(terminal->LayerID(), task_id));
   (*terminals)[task_id] = terminal;
   __asm__("sti");
-// #@@range_end(task_term_map)
 
   while (true) {
     __asm__("cli");
