@@ -24,9 +24,7 @@ class Terminal {
   Rectangle<int> BlinkCursor();
   Rectangle<int> InputKey(uint8_t modifier, uint8_t keycode, char ascii);
 
-  // #@@range_begin(len_default_value)
   void Print(const char* s, std::optional<size_t> len = std::nullopt);
-  // #@@range_end(len_default_value)
 
  private:
   std::shared_ptr<ToplevelWindow> window_;
