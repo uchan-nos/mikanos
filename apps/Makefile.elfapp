@@ -1,7 +1,5 @@
 CPPFLAGS += -I.
-#@range_begin(cflags)
 CFLAGS += -O2 -Wall -g --target=x86_64-elf -ffreestanding -mcmodel=large
-#@range_end(cflags)
 CXXFLAGS += -O2 -Wall -g --target=x86_64-elf -fno-exceptions -ffreestanding \
             -fno-rtti -std=c++2a -mcmodel=large
 LDFLAGS += --entry main -z norelro --image-base 0xffff800000000000 --static
@@ -12,10 +10,8 @@ all: $(TARGET)
 $(TARGET): $(OBJS) Makefile
 	ld.lld $(LDFLAGS) -o $@ $(OBJS) -lc -lc++ -lc++abi
 
-#@range_begin(rule_c)
 %.o: %.c Makefile
 	clang $(CPPFLAGS) $(CFLAGS) -c $< -o $@
-#@range_end(rule_c)
 
 %.o: %.cpp Makefile
 	clang++ $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
