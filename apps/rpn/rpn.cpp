@@ -16,6 +16,8 @@ void Push(long value) {
   stack[stack_ptr] = value;
 }
 
+extern "C" void SyscallExit(int exit_code);
+
 extern "C" int main(int argc, char** argv) {
   stack_ptr = -1;
 
@@ -33,12 +35,14 @@ extern "C" int main(int argc, char** argv) {
       Push(a);
     }
   }
+  // #@@range_begin(call_exit)
   long result = 0;
   if (stack_ptr >= 0) {
     result = Pop();
   }
 
   printf("%ld\n", result);
-  while (1);
-  //return static_cast<int>(Pop());
+  SyscallExit(static_cast<int>(result));
+  return 0;
+  // #@@range_end(call_exit)
 }
