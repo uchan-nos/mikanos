@@ -131,7 +131,6 @@ SwitchContext:  ; void SwitchContext(uint64_t* to_rsp, uint64_t* current_rsp);
 
     ret
 
-; #@@range_begin(call_app)
 global CallApp
 CallApp:  ; int CallApp(int argc, char** argv, uint16_t ss, uint64_t rip, uint64_t rsp, uint64_t* os_stack_ptr);
     push rbx
@@ -149,7 +148,6 @@ CallApp:  ; int CallApp(int argc, char** argv, uint16_t ss, uint64_t rip, uint64
     push rcx  ; RIP
     o64 retf
     ; アプリケーションが終了してもここには来ない
-; #@@range_end(call_app)
 
 global WriteMSR
 WriteMSR:  ; void WriteMSR(uint32_t msr, uint64_t value);
@@ -167,7 +165,6 @@ SyscallEntry:  ; void SyscallEntry(void);
     push rcx  ; original RIP
     push r11  ; original RFLAGS
 
-    ; #@@range_begin(jump_exit_app)
     push rax  ; システムコール番号を保存
 
     mov rcx, r10
@@ -184,14 +181,12 @@ SyscallEntry:  ; void SyscallEntry(void);
     pop rsi  ; システムコール番号を復帰
     cmp esi, 0x80000002
     je  .exit
-    ; #@@range_end(jump_exit_app)
 
     pop r11
     pop rcx
     pop rbp
     o64 sysret
 
-    ; #@@range_begin(exit_app)
 .exit
     mov rsp, rax
     mov eax, edx
@@ -204,4 +199,3 @@ SyscallEntry:  ; void SyscallEntry(void);
     pop rbx
 
     ret  ; CallApp の次の行に飛ぶ
-    ; #@@range_end(exit_app)

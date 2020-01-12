@@ -35,7 +35,6 @@ extern "C" void main(int argc, char** argv) {
       Push(a);
     }
   }
-  // #@@range_begin(call_exit)
   long result = 0;
   if (stack_ptr >= 0) {
     result = Pop();
@@ -43,5 +42,4 @@ extern "C" void main(int argc, char** argv) {
 
   printf("%ld\n", result);
   SyscallExit(static_cast<int>(result));
-  // #@@range_end(call_exit)
 }

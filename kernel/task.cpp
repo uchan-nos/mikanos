@@ -53,11 +53,9 @@ uint64_t& Task::StackPointer() {
   return stack_ptr_;
 }
 
-// #@@range_begin(os_stack_ptr)
 uint64_t& Task::OSStackPointer() {
   return os_stack_ptr_;
 }
-// #@@range_end(os_stack_ptr)
 
 uint64_t Task::ID() const {
   return id_;

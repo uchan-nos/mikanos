@@ -19,7 +19,6 @@ using TaskFunc = void (uint64_t, int64_t);
 
 class TaskManager;
 
-// #@@range_begin(task_class)
 class Task {
  public:
   static const int kDefaultLevel = 1;
@@ -29,7 +28,6 @@ class Task {
   Task& PushInitialStack(TaskFunc* f, int64_t data);
   uint64_t& StackPointer();
   uint64_t& OSStackPointer();
-// #@@range_end(task_class)
   uint64_t ID() const;
   Task& Sleep();
   Task& Wakeup();
