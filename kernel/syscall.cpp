@@ -57,7 +57,6 @@ SYSCALL(Exit) {
   return { task.OSStackPointer(), static_cast<int>(arg1) };
 }
 
-// #@@range_begin(open_window)
 SYSCALL(OpenWindow) {
   const int w = arg1, h = arg2, x = arg3, y = arg4;
   const auto title = reinterpret_cast<const char*>(arg5);
@@ -75,7 +74,6 @@ SYSCALL(OpenWindow) {
 
   return { layer_id, 0 };
 }
-// #@@range_end(open_window)
 
 #undef SYSCALL
 
