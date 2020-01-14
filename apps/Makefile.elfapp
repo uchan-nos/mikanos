@@ -4,9 +4,7 @@ CXXFLAGS += -O2 -Wall -g --target=x86_64-elf -fno-exceptions -ffreestanding \
             -fno-rtti -std=c++2a -mcmodel=large
 LDFLAGS += --entry main -z norelro --image-base 0xffff800000000000 --static
 
-#@range_begin(add_objs)
 OBJS += ../syscall.o ../newlib_support.o
-#@range_end(add_objs)
 
 .PHONY: all
 all: $(TARGET)
