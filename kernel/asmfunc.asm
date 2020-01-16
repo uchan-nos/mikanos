@@ -160,12 +160,6 @@ SyscallEntry:  ; void SyscallEntry(void);
     push rbp
     push rcx  ; original RIP
     push r11  ; original RFLAGS
-    push rdi
-    push rsi
-    push rdx
-    push r10
-    push r8
-    push r9
 
     mov rcx, r10
     and eax, 0x7fffffff
@@ -178,12 +172,6 @@ SyscallEntry:  ; void SyscallEntry(void);
 
     mov rsp, rbp
 
-    pop r9
-    pop r8
-    pop r10
-    pop rdx
-    pop rsi
-    pop rdi
     pop r11
     pop rcx
     pop rbp
