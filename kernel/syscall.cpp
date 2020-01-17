@@ -76,7 +76,6 @@ SYSCALL(OpenWindow) {
   return { layer_id, 0 };
 }
 
-// #@@range_begin(write_string)
 SYSCALL(WinWriteString) {
   const unsigned int layer_id = arg1;
   const int x = arg2, y = arg3;
@@ -97,7 +96,6 @@ SYSCALL(WinWriteString) {
 
   return { 0, 0 };
 }
-// #@@range_end(write_string)
 
 #undef SYSCALL
 
