@@ -44,8 +44,6 @@ ssize_t write(int fd, const void* buf, size_t count) {
   return -1;
 }
 
-// #@@range_begin(newlib_exit)
 void _exit(int status) {
   SyscallExit(status);
 }
-// #@@range_end(newlib_exit)
