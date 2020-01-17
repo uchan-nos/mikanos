@@ -28,4 +28,6 @@ void SetLogLevel(enum LogLevel level);
  * @param level  ログの優先度．しきい値以上の優先度のログのみが記録される．
  * @param format  書式文字列．printk と互換．
  */
+// #@@range_begin(log_func)
 int Log(enum LogLevel level, const char* format, ...);
+// #@@range_end(log_func)
