@@ -76,46 +76,45 @@ SYSCALL(OpenWindow) {
   return { layer_id, 0 };
 }
 
-SYSCALL(WinWriteString) {
-  const unsigned int layer_id = arg1;
-  const int x = arg2, y = arg3;
-  const uint32_t color = arg4;
-  const auto s = reinterpret_cast<const char*>(arg5);
+namespace {
+  template <class Func, class... Args>
+  Result DoWinFunc(Func f, unsigned int layer_id, Args... args) {
+    __asm__("cli");
+    auto layer = layer_manager->FindLayer(layer_id);
+    __asm__("sti");
+    if (layer == nullptr) {
+      return { 0, EBADF };
+    }
 
-  __asm__("cli");
-  auto layer = layer_manager->FindLayer(layer_id);
-  __asm__("sti");
-  if (layer == nullptr) {
-    return { 0, EBADF };
+    const auto res = f(*layer->GetWindow(), args...);
+    if (res.error) {
+      return res;
+    }
+
+    __asm__("cli");
+    layer_manager->Draw(layer_id);
+    __asm__("sti");
+
+    return res;
   }
+}
 
-  WriteString(*layer->GetWindow()->Writer(), {x, y}, s, ToColor(color));
-  __asm__("cli");
-  layer_manager->Draw(layer_id);
-  __asm__("sti");
-
-  return { 0, 0 };
+SYSCALL(WinWriteString) {
+  return DoWinFunc(
+      [](Window& win,
+         int x, int y, uint32_t color, const char* s) {
+        WriteString(*win.Writer(), {x, y}, s, ToColor(color));
+        return Result{ 0, 0 };
+      }, arg1, arg2, arg3, arg4, reinterpret_cast<const char*>(arg5));
 }
 
 SYSCALL(WinFillRectangle) {
-  const unsigned int layer_id = arg1;
-  const int x = arg2, y = arg3;
-  const int w = arg4, h = arg5;
-  const uint32_t color = arg6;
-
-  __asm__("cli");
-  auto layer = layer_manager->FindLayer(layer_id);
-  __asm__("sti");
-  if (layer == nullptr) {
-    return { 0, EBADF };
-  }
-
-  FillRectangle(*layer->GetWindow()->Writer(), {x, y}, {w, h}, ToColor(color));
-  __asm__("cli");
-  layer_manager->Draw(layer_id);
-  __asm__("sti");
-
-  return { 0, 0 };
+  return DoWinFunc(
+      [](Window& win,
+         int x, int y, int w, int h, uint32_t color) {
+        FillRectangle(*win.Writer(), {x, y}, {w, h}, ToColor(color));
+        return Result{ 0, 0 };
+      }, arg1, arg2, arg3, arg4, arg5, arg6);
 }
 
 #undef SYSCALL
