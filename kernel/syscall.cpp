@@ -76,7 +76,6 @@ SYSCALL(OpenWindow) {
   return { layer_id, 0 };
 }
 
-// #@@range_begin(do_win_func)
 namespace {
   template <class Func, class... Args>
   Result DoWinFunc(Func f, unsigned int layer_id, Args... args) {
@@ -99,9 +98,7 @@ namespace {
     return res;
   }
 }
-// #@@range_end(do_win_func)
 
-// #@@range_begin(win_funcs)
 SYSCALL(WinWriteString) {
   return DoWinFunc(
       [](Window& win,
@@ -119,7 +116,6 @@ SYSCALL(WinFillRectangle) {
         return Result{ 0, 0 };
       }, arg1, arg2, arg3, arg4, arg5, arg6);
 }
-// #@@range_end(win_funcs)
 
 #undef SYSCALL
 
