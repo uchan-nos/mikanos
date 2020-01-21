@@ -16,3 +16,4 @@ define_syscall Exit,             0x80000002
 define_syscall OpenWindow,       0x80000003
 define_syscall WinWriteString,   0x80000004
 define_syscall WinFillRectangle, 0x80000005
+define_syscall GetCurrentTick,   0x80000006
