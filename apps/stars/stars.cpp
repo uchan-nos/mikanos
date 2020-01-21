@@ -19,7 +19,6 @@ extern "C" void main(int argc, char** argv) {
     num_stars = atoi(argv[1]);
   }
 
-  // #@@range_begin(measure_time)
   auto [tick_start, timer_freq] = SyscallGetCurrentTick();
 
   std::default_random_engine rand_engine;
@@ -36,7 +35,6 @@ extern "C" void main(int argc, char** argv) {
   printf("%d stars in %lu ms.\n",
          num_stars,
          (tick_end.value - tick_start) * 1000 / timer_freq);
-  // #@@range_end(measure_time)
 
   exit(0);
 }
