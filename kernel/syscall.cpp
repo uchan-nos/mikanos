@@ -78,7 +78,6 @@ SYSCALL(OpenWindow) {
 }
 
 namespace {
-  // #@@range_begin(do_win_func)
   template <class Func, class... Args>
   Result DoWinFunc(Func f, uint64_t layer_id_flags, Args... args) {
     const uint32_t layer_flags = layer_id_flags >> 32;
@@ -104,7 +103,6 @@ namespace {
 
     return res;
   }
-  // #@@range_end(do_win_func)
 }
 
 SYSCALL(WinWriteString) {
@@ -129,14 +127,12 @@ SYSCALL(GetCurrentTick) {
   return { timer_manager->CurrentTick(), kTimerFreq };
 }
 
-// #@@range_begin(win_redraw)
 SYSCALL(WinRedraw) {
   return DoWinFunc(
       [](Window&) {
         return Result{ 0, 0 };
       }, arg1);
 }
-// #@@range_end(win_redraw)
 
 #undef SYSCALL
 
