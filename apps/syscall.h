@@ -21,7 +21,7 @@ void SyscallExit(int exit_code);
 struct SyscallResult SyscallOpenWindow(int w, int h, int x, int y, const char* title);
 
 // #@@range_begin(syscall_decl)
-#define LAYER_NO_REDRAW (0x8000'0000'0000'0000)
+#define LAYER_NO_REDRAW (0x00000001ull << 32)
 struct SyscallResult SyscallWinWriteString(
     uint64_t layer_id_flags, int x, int y, uint32_t color, const char* s);
 struct SyscallResult SyscallWinFillRectangle(

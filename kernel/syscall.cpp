@@ -81,8 +81,8 @@ namespace {
   // #@@range_begin(do_win_func)
   template <class Func, class... Args>
   Result DoWinFunc(Func f, uint64_t layer_id_flags, Args... args) {
-    const bool no_redraw = layer_id_flags >> 63;
-    const unsigned int layer_id = layer_id_flags & 0x7fff'ffff'ffff'ffff;
+    const uint32_t layer_flags = layer_id_flags >> 32;
+    const unsigned int layer_id = layer_id_flags & 0xffffffff;
 
     __asm__("cli");
     auto layer = layer_manager->FindLayer(layer_id);
@@ -96,7 +96,7 @@ namespace {
       return res;
     }
 
-    if (!no_redraw) {
+    if ((layer_flags & 1) == 0) {
       __asm__("cli");
       layer_manager->Draw(layer_id);
       __asm__("sti");
