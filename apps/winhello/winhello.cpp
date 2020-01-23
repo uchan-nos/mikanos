@@ -8,8 +8,12 @@ extern "C" void main(int argc, char** argv) {
     exit(err_openwin);
   }
 
+  // #@@range_begin(close_before_exit)
   SyscallWinWriteString(layer_id, 7, 24, 0xc00000, "hello world!");
   SyscallWinWriteString(layer_id, 24, 40, 0x00c000, "hello world!");
   SyscallWinWriteString(layer_id, 40, 56, 0x0000c0, "hello world!");
+
+  SyscallCloseWindow(layer_id);
   exit(0);
+  // #@@range_end(close_before_exit)
 }
