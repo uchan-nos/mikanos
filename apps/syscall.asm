@@ -20,3 +20,4 @@ define_syscall GetCurrentTick,   0x80000006
 define_syscall WinRedraw,        0x80000007
 define_syscall WinDrawLine,      0x80000008
 define_syscall CloseWindow,      0x80000009
+define_syscall ReadEvent,        0x8000000a
