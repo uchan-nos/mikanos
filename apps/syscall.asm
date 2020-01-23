@@ -18,3 +18,4 @@ define_syscall WinWriteString,   0x80000004
 define_syscall WinFillRectangle, 0x80000005
 define_syscall GetCurrentTick,   0x80000006
 define_syscall WinRedraw,        0x80000007
+define_syscall WinDrawLine,      0x80000008
