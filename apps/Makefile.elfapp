@@ -9,10 +9,8 @@ OBJS += ../syscall.o ../newlib_support.o
 .PHONY: all
 all: $(TARGET)
 
-#@range_begin(add_lm)
 $(TARGET): $(OBJS) Makefile
 	ld.lld $(LDFLAGS) -o $@ $(OBJS) -lc -lc++ -lc++abi -lm
-#@range_end(add_lm)
 
 %.o: %.c Makefile
 	clang $(CPPFLAGS) $(CFLAGS) -c $< -o $@
