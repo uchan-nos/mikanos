@@ -135,7 +135,6 @@ SYSCALL(WinRedraw) {
       }, arg1);
 }
 
-// #@@range_begin(win_draw_line)
 SYSCALL(WinDrawLine) {
   return DoWinFunc(
       [](Window& win,
@@ -180,7 +179,6 @@ SYSCALL(WinDrawLine) {
         return Result{ 0, 0 };
       }, arg1, arg2, arg3, arg4, arg5, arg6);
 }
-// #@@range_end(win_draw_line)
 
 #undef SYSCALL
 
