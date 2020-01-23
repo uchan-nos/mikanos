@@ -30,6 +30,8 @@ struct SyscallResult SyscallWinRedraw(uint64_t layer_id_flags);
 struct SyscallResult SyscallWinDrawLine(
     uint64_t layer_id_flags, int x0, int y0, int x1, int y1, uint32_t color);
 
+struct SyscallResult SyscallCloseWindow(uint64_t layer_id_flags);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
