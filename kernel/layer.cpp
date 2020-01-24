@@ -63,7 +63,6 @@ Layer& LayerManager::NewLayer() {
   return *layers_.emplace_back(new Layer{latest_id_});
 }
 
-// #@@range_begin(remove_layer)
 void LayerManager::RemoveLayer(unsigned int id) {
   Hide(id);
 
@@ -72,7 +71,6 @@ void LayerManager::RemoveLayer(unsigned int id) {
   };
   std::erase_if(layers_, pred);
 }
-// #@@range_end(remove_layer)
 
 void LayerManager::Draw(const Rectangle<int>& area) const {
   for (auto layer : layer_stack_) {
