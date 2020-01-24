@@ -4,7 +4,6 @@
 #include "console.hpp"
 #include "logger.hpp"
 
-// #@@range_begin(erase_if)
 namespace {
   template <class T, class U>
   void EraseIf(T& c, const U& pred) {
@@ -12,7 +11,6 @@ namespace {
     c.erase(it, c.end());
   }
 } // namespace
-// #@@range_end(erase_if)
 
 Layer::Layer(unsigned int id) : id_{id} {
 }
@@ -73,7 +71,6 @@ Layer& LayerManager::NewLayer() {
   return *layers_.emplace_back(new Layer{latest_id_});
 }
 
-// #@@range_begin(remove_layer)
 void LayerManager::RemoveLayer(unsigned int id) {
   Hide(id);
 
@@ -82,7 +79,6 @@ void LayerManager::RemoveLayer(unsigned int id) {
   };
   EraseIf(layers_, pred);
 }
-// #@@range_end(remove_layer)
 
 void LayerManager::Draw(const Rectangle<int>& area) const {
   for (auto layer : layer_stack_) {
