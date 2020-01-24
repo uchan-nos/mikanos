@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdint>
 #include <cerrno>
+#include <cmath>
 
 #include "asmfunc.h"
 #include "msr.hpp"
@@ -150,14 +151,18 @@ SYSCALL(WinDrawLine) {
           return Result{ 0, 0 };
         }
 
+        const auto floord = static_cast<double(*)(double)>(floor);
+        const auto ceild = static_cast<double(*)(double)>(ceil);
+
         if (abs(dx) >= abs(dy)) {
           if (dx < 0) {
             std::swap(x0, x1);
             std::swap(y0, y1);
           }
+          const auto roundish = y1 >= y0 ? floord : ceild;
           const double m = static_cast<double>(dy) / dx;
           for (int x = x0; x <= x1; ++x) {
-            const int y = m * (x - x0) + y0;
+            const int y = roundish(m * (x - x0) + y0);
             win.Writer()->Write({x, y}, ToColor(color));
           }
         } else {
@@ -165,9 +170,10 @@ SYSCALL(WinDrawLine) {
             std::swap(x0, x1);
             std::swap(y0, y1);
           }
+          const auto roundish = x1 >= x0 ? floord : ceild;
           const double m = static_cast<double>(dx) / dy;
           for (int y = y0; y <= y1; ++y) {
-            const int x = m * (y - y0) + x0;
+            const int x = roundish(m * (y - y0) + x0);
             win.Writer()->Write({x, y}, ToColor(color));
           }
         }
