@@ -180,7 +180,6 @@ SYSCALL(WinDrawLine) {
       }, arg1, arg2, arg3, arg4, arg5, arg6);
 }
 
-// #@@range_begin(close_window)
 SYSCALL(CloseWindow) {
   const unsigned int layer_id = arg1 & 0xffffffff;
   const auto layer = layer_manager->FindLayer(layer_id);
@@ -200,7 +199,6 @@ SYSCALL(CloseWindow) {
 
   return { 0, 0 };
 }
-// #@@range_end(close_window)
 
 #undef SYSCALL
 
