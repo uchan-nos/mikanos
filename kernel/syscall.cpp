@@ -198,11 +198,14 @@ SYSCALL(CloseWindow) {
   const auto layer_pos = layer->GetPosition();
   const auto win_size = layer->GetWindow()->Size();
 
+  // #@@range_begin(unregister_layer)
   __asm__("cli");
   active_layer->Activate(0);
   layer_manager->RemoveLayer(layer_id);
   layer_manager->Draw({layer_pos, win_size});
+  layer_task_map->erase(layer_id);
   __asm__("sti");
+  // #@@range_end(unregister_layer)
 
   return { 0, 0 };
 }
