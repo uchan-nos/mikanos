@@ -68,7 +68,6 @@ SYSCALL(OpenWindow) {
   const auto win = std::make_shared<ToplevelWindow>(
       w, h, screen_config.pixel_format, title);
 
-  // #@@range_begin(register_layer)
   __asm__("cli");
   const auto layer_id = layer_manager->NewLayer()
     .SetWindow(win)
@@ -80,7 +79,6 @@ SYSCALL(OpenWindow) {
   const auto task_id = task_manager->CurrentTask().ID();
   layer_task_map->insert(std::make_pair(layer_id, task_id));
   __asm__("sti");
-  // #@@range_end(register_layer)
 
   return { layer_id, 0 };
 }
@@ -198,19 +196,16 @@ SYSCALL(CloseWindow) {
   const auto layer_pos = layer->GetPosition();
   const auto win_size = layer->GetWindow()->Size();
 
-  // #@@range_begin(unregister_layer)
   __asm__("cli");
   active_layer->Activate(0);
   layer_manager->RemoveLayer(layer_id);
   layer_manager->Draw({layer_pos, win_size});
   layer_task_map->erase(layer_id);
   __asm__("sti");
-  // #@@range_end(unregister_layer)
 
   return { 0, 0 };
 }
 
-// #@@range_begin(read_event)
 SYSCALL(ReadEvent) {
   if (arg1 < 0x8000'0000'0000'0000) {
     return { 0, EFAULT };
@@ -251,7 +246,6 @@ SYSCALL(ReadEvent) {
 
   return { i, 0 };
 }
-// #@@range_end(read_event)
 
 #undef SYSCALL
 
