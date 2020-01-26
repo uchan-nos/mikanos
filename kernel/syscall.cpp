@@ -239,7 +239,7 @@ SYSCALL(ReadEvent) {
     switch (msg->type) {
     case Message::kKeyPush:
       if (msg->arg.keyboard.keycode == 20 /* Q key */ &&
-          msg->arg.keyboard.modifier & kLControlBitMask) {
+          msg->arg.keyboard.modifier & (kLControlBitMask | kRControlBitMask)) {
         app_events[i].type = AppEvent::kQuit;
         ++i;
       }
