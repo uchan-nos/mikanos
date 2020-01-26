@@ -32,9 +32,7 @@ struct SyscallResult SyscallWinDrawLine(
     uint64_t layer_id_flags, int x0, int y0, int x1, int y1, uint32_t color);
 
 struct SyscallResult SyscallCloseWindow(uint64_t layer_id_flags);
-// #@@range_begin(read_event_decl)
 struct SyscallResult SyscallReadEvent(struct AppEvent* events, size_t len);
-// #@@range_end(read_event_decl)
 
 #ifdef __cplusplus
 } // extern "C"
