@@ -11,6 +11,7 @@ struct Message {
     kKeyPush,
     kLayer,
     kLayerFinish,
+    kMouseMove,
   } type;
 
   uint64_t src_task;
@@ -33,5 +34,13 @@ struct Message {
       int x, y;
       int w, h;
     } layer;
+
+    // #@@range_begin(message_mouse)
+    struct {
+      int x, y;
+      int dx, dy;
+      uint8_t buttons;
+    } mouse_move;
+    // #@@range_end(message_mouse)
   } arg;
 };
