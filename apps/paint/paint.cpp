@@ -1,6 +1,6 @@
-#include <cmath>
+#include <cstdio>
 #include <cstdlib>
-#include <random>
+#include <cstring>
 #include "../syscall.h"
 
 static const int kWidth = 200, kHeight = 130;
