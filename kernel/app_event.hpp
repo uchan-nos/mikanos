@@ -4,7 +4,6 @@
 extern "C" {
 #endif
 
-// #@@range_begin(app_event)
 struct AppEvent {
   enum Type {
     kQuit,
@@ -19,7 +18,6 @@ struct AppEvent {
     } mouse_move;
   } arg;
 };
-// #@@range_end(app_event)
 
 #ifdef __cplusplus
 } // extern "C"
