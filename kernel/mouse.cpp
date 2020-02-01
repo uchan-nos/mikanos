@@ -35,7 +35,6 @@ namespace {
     "         @@@   ",
   };
 
-  // #@@range_begin(mouse_send_message)
   void SendMouseMessage(Vector2D<int> newpos, Vector2D<int> posdiff,
                         uint8_t buttons) {
     const auto act = active_layer->GetActive();
@@ -60,7 +59,6 @@ namespace {
       task_manager->SendMessage(task_it->second, msg);
     }
   }
-  // #@@range_end(mouse_send_message)
 }
 
 void DrawMouseCursor(PixelWriter* pixel_writer, Vector2D<int> position) {
@@ -113,11 +111,9 @@ void Mouse::OnInterrupt(uint8_t buttons, int8_t displacement_x, int8_t displacem
     drag_layer_id_ = 0;
   }
 
-  // #@@range_begin(send_message_to_task)
   if (drag_layer_id_ == 0) {
     SendMouseMessage(newpos, posdiff, buttons);
   }
-  // #@@range_end(send_message_to_task)
 
   previous_buttons_ = buttons;
 }
