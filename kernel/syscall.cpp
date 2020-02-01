@@ -248,7 +248,6 @@ SYSCALL(ReadEvent) {
       app_events[i].arg.mouse_move.buttons = msg->arg.mouse_move.buttons;
       ++i;
       break;
-    // #@@range_begin(mouse_button_event)
     case Message::kMouseButton:
       app_events[i].type = AppEvent::kMouseButton;
       app_events[i].arg.mouse_button.x = msg->arg.mouse_button.x;
@@ -257,7 +256,6 @@ SYSCALL(ReadEvent) {
       app_events[i].arg.mouse_button.button = msg->arg.mouse_button.button;
       ++i;
       break;
-    // #@@range_end(mouse_button_event)
     default:
       Log(kInfo, "uncaught event type: %u\n", msg->type);
     }
