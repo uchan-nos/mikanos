@@ -59,7 +59,6 @@ namespace {
       task_manager->SendMessage(task_it->second, msg);
     }
 
-    // #@@range_begin(send_button_message)
     if (previous_buttons != buttons) {
       const auto diff = previous_buttons ^ buttons;
       for (int i = 0; i < 8; ++i) {
@@ -73,7 +72,6 @@ namespace {
         }
       }
     }
-    // #@@range_end(send_button_message)
   }
 }
 
@@ -109,7 +107,6 @@ void Mouse::OnInterrupt(uint8_t buttons, int8_t displacement_x, int8_t displacem
 
   layer_manager->Move(layer_id_, position_);
 
-  // #@@range_begin(limit_drag_area)
   const bool previous_left_pressed = (previous_buttons_ & 0x01);
   const bool left_pressed = (buttons & 0x01);
   if (!previous_left_pressed && left_pressed) {
@@ -124,7 +121,6 @@ void Mouse::OnInterrupt(uint8_t buttons, int8_t displacement_x, int8_t displacem
       active_layer->Activate(0);
     }
   } else if (previous_left_pressed && left_pressed) {
-  // #@@range_end(limit_drag_area)
     if (drag_layer_id_ > 0) {
       layer_manager->MoveRelative(drag_layer_id_, posdiff);
     }
@@ -132,11 +128,9 @@ void Mouse::OnInterrupt(uint8_t buttons, int8_t displacement_x, int8_t displacem
     drag_layer_id_ = 0;
   }
 
-  // #@@range_begin(pass_prev_buttons)
   if (drag_layer_id_ == 0) {
     SendMouseMessage(newpos, posdiff, buttons, previous_buttons_);
   }
-  // #@@range_end(pass_prev_buttons)
 
   previous_buttons_ = buttons;
 }
