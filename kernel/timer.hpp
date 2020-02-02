@@ -11,16 +11,20 @@ void StartLAPICTimer();
 uint32_t LAPICTimerElapsed();
 void StopLAPICTimer();
 
+// #@@range_begin(timer_class)
 class Timer {
  public:
-  Timer(unsigned long timeout, int value);
+  Timer(unsigned long timeout, int value, uint64_t task_id);
   unsigned long Timeout() const { return timeout_; }
   int Value() const { return value_; }
+  uint64_t TaskID() const { return task_id_; }
 
  private:
   unsigned long timeout_;
   int value_;
+  uint64_t task_id_;
 };
+// #@@range_end(timer_class)
 
 /** @brief タイマー優先度を比較する。タイムアウトが遠いほど優先度低。 */
 inline bool operator<(const Timer& lhs, const Timer& rhs) {
