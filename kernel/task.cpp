@@ -237,7 +237,7 @@ void InitializeTask() {
 
   __asm__("cli");
   timer_manager->AddTimer(
-      Timer{timer_manager->CurrentTick() + kTaskTimerPeriod, kTaskTimerValue});
+      Timer{timer_manager->CurrentTick() + kTaskTimerPeriod, kTaskTimerValue, 1});
   __asm__("sti");
 }
 

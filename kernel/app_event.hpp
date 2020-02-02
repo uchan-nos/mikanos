@@ -9,6 +9,7 @@ struct AppEvent {
     kQuit,
     kMouseMove,
     kMouseButton,
+    kTimerTimeout,
   } type;
 
   union {
@@ -23,6 +24,13 @@ struct AppEvent {
       int press; // 1: press, 0: release
       int button;
     } mouse_button;
+
+    // #@@range_begin(timer_arg)
+    struct {
+      unsigned long timeout;
+      int value;
+    } timer;
+    // #@@range_end(timer_arg)
   } arg;
 };
 
