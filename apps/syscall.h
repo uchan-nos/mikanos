@@ -34,12 +34,10 @@ struct SyscallResult SyscallWinDrawLine(
 struct SyscallResult SyscallCloseWindow(uint64_t layer_id_flags);
 struct SyscallResult SyscallReadEvent(struct AppEvent* events, size_t len);
 
-// #@@range_begin(create_timer_decl)
 #define TIMER_ONESHOT_REL 1
 #define TIMER_ONESHOT_ABS 0
 struct SyscallResult SyscallCreateTimer(
     unsigned int type, int timer_value, unsigned long timeout_ms);
-// #@@range_end(create_timer_decl)
 
 #ifdef __cplusplus
 } // extern "C"
