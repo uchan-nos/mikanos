@@ -11,7 +11,6 @@ void StartLAPICTimer();
 uint32_t LAPICTimerElapsed();
 void StopLAPICTimer();
 
-// #@@range_begin(timer_class)
 class Timer {
  public:
   Timer(unsigned long timeout, int value, uint64_t task_id);
@@ -24,7 +23,6 @@ class Timer {
   int value_;
   uint64_t task_id_;
 };
-// #@@range_end(timer_class)
 
 /** @brief タイマー優先度を比較する。タイムアウトが遠いほど優先度低。 */
 inline bool operator<(const Timer& lhs, const Timer& rhs) {
@@ -47,7 +45,5 @@ extern TimerManager* timer_manager;
 extern unsigned long lapic_timer_freq;
 const int kTimerFreq = 100;
 
-// #@@range_begin(task_timer_value)
 const int kTaskTimerPeriod = static_cast<int>(kTimerFreq * 0.02);
 const int kTaskTimerValue = std::numeric_limits<int>::max();
-// #@@range_end(task_timer_value)
