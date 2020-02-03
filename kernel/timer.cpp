@@ -71,12 +71,10 @@ bool TimerManager::Tick() {
       continue;
     }
 
-    // #@@range_begin(send_timeout_task)
     Message m{Message::kTimerTimeout};
     m.arg.timer.timeout = t.Timeout();
     m.arg.timer.value = t.Value();
     task_manager->SendMessage(t.TaskID(), m);
-    // #@@range_end(send_timeout_task)
 
     timers_.pop();
   }

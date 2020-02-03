@@ -25,12 +25,10 @@ struct AppEvent {
       int button;
     } mouse_button;
 
-    // #@@range_begin(timer_arg)
     struct {
       unsigned long timeout;
       int value;
     } timer;
-    // #@@range_end(timer_arg)
   } arg;
 };
 
