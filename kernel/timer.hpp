@@ -47,5 +47,7 @@ extern TimerManager* timer_manager;
 extern unsigned long lapic_timer_freq;
 const int kTimerFreq = 100;
 
+// #@@range_begin(task_timer_value)
 const int kTaskTimerPeriod = static_cast<int>(kTimerFreq * 0.02);
-const int kTaskTimerValue = std::numeric_limits<int>::min();
+const int kTaskTimerValue = std::numeric_limits<int>::max();
+// #@@range_end(task_timer_value)
