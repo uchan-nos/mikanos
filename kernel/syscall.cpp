@@ -292,7 +292,7 @@ SYSCALL(CreateTimer) {
   }
 
   timer_manager->AddTimer(Timer{timeout, -timer_value, task_id});
-  return { timeout, 0 };
+  return { timeout * 1000 / kTimerFreq, 0 };
 }
 // #@@range_end(create_timer)
 
