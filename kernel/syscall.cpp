@@ -294,7 +294,7 @@ SYSCALL(CreateTimer) {
   __asm__("cli");
   timer_manager->AddTimer(Timer{timeout, -timer_value, task_id});
   __asm__("sti");
-  return { timeout, 0 };
+  return { timeout * 1000 / kTimerFreq, 0 };
 }
 // #@@range_end(create_timer)
 
