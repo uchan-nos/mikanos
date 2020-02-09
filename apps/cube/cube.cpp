@@ -3,7 +3,6 @@
 #include <cstdlib>
 #include "../syscall.h"
 
-// #@@range_begin(constants)
 using namespace std;
 
 template <class T>
@@ -36,9 +35,7 @@ const array<uint32_t, kSurface.size()> kColor{
 array<Vector3D<double>, kCube.size()> vert;
 array<double, kSurface.size()> centerz4;
 array<Vector2D<int>, kCube.size()> scr;
-// #@@range_end(constants)
 
-// #@@range_begin(main)
 extern "C" void main(int argc, char** argv) {
   auto [layer_id, err_openwin]
     = SyscallOpenWindow(kCanvasSize + 8, kCanvasSize + 28, 10, 10, "cube");
@@ -87,7 +84,6 @@ extern "C" void main(int argc, char** argv) {
   SyscallCloseWindow(layer_id);
   exit(0);
 }
-// #@@range_end(main)
 
 void DrawObj(uint64_t layer_id) {
   // オブジェクト座標 vert を スクリーン座標 scr に変換（画面奥が Z+）
