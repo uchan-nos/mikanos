@@ -232,13 +232,22 @@ SYSCALL(ReadEvent) {
     }
 
     switch (msg->type) {
+    // #@@range_begin(read_key_push_event)
     case Message::kKeyPush:
       if (msg->arg.keyboard.keycode == 20 /* Q key */ &&
           msg->arg.keyboard.modifier & (kLControlBitMask | kRControlBitMask)) {
         app_events[i].type = AppEvent::kQuit;
         ++i;
+      } else {
+        app_events[i].type = AppEvent::kKeyPush;
+        app_events[i].arg.keypush.modifier = msg->arg.keyboard.modifier;
+        app_events[i].arg.keypush.keycode = msg->arg.keyboard.keycode;
+        app_events[i].arg.keypush.ascii = msg->arg.keyboard.ascii;
+        app_events[i].arg.keypush.press = msg->arg.keyboard.press;
+        ++i;
       }
       break;
+    // #@@range_end(read_key_push_event)
     case Message::kMouseMove:
       app_events[i].type = AppEvent::kMouseMove;
       app_events[i].arg.mouse_move.x = msg->arg.mouse_move.x;
