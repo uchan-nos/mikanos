@@ -582,10 +582,12 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
       }
       break;
     case Message::kKeyPush:
-      {
+      // #@@range_begin(if_press)
+      if (msg->arg.keyboard.press) {
         const auto area = terminal->InputKey(msg->arg.keyboard.modifier,
                                              msg->arg.keyboard.keycode,
                                              msg->arg.keyboard.ascii);
+      // #@@range_end(if_press)
         Message msg = MakeLayerMessage(
             task_id, terminal->LayerID(), LayerOperation::DrawArea, area);
         __asm__("cli");
