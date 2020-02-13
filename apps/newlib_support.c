@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <stdint.h>
+#include <signal.h>
 
 #include "syscall.h"
 
@@ -45,4 +46,13 @@ ssize_t write(int fd, const void* buf, size_t count) {
 
 void _exit(int status) {
   SyscallExit(status);
+}
+
+int kill(pid_t pid, int sig) {
+  errno = EPERM;
+  return -1;
+}
+
+pid_t getpid(void) {
+  return 0;
 }
