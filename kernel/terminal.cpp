@@ -10,6 +10,7 @@
 #include "elf.hpp"
 #include "memory_manager.hpp"
 #include "paging.hpp"
+#include "timer.hpp"
 
 namespace {
 
@@ -560,6 +561,12 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
   (*terminals)[task_id] = terminal;
   __asm__("sti");
 
+  auto add_blink_timer = [task_id](unsigned long t){
+    timer_manager->AddTimer(Timer{t + static_cast<int>(kTimerFreq * 0.5),
+                                  1, task_id});
+  };
+  add_blink_timer(timer_manager->CurrentTick());
+
   while (true) {
     __asm__("cli");
     auto msg = task.ReceiveMessage();
@@ -573,6 +580,8 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
     switch (msg->type) {
     case Message::kTimerTimeout:
       {
+        add_blink_timer(msg->arg.timer.timeout);
+
         const auto area = terminal->BlinkCursor();
         Message msg = MakeLayerMessage(
             task_id, terminal->LayerID(), LayerOperation::DrawArea, area);
