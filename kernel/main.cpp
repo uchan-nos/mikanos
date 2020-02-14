@@ -208,7 +208,6 @@ extern "C" void KernelMainNewStack(
         __asm__("sti");
       }
       break;
-      // #@@range_begin(new_term)
     case Message::kKeyPush:
       if (auto act = active_layer->GetActive(); act == text_window_layer_id) {
         if (msg->arg.keyboard.press) {
@@ -220,7 +219,6 @@ extern "C" void KernelMainNewStack(
           .InitContext(TaskTerminal, 0)
           .Wakeup();
       } else {
-      // #@@range_end(new_term)
         __asm__("cli");
         auto task_it = layer_task_map->find(act);
         __asm__("sti");
