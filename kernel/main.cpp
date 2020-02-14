@@ -158,10 +158,9 @@ extern "C" void KernelMainNewStack(
   InitializeTask();
   Task& main_task = task_manager->CurrentTask();
   terminals = new std::map<uint64_t, Terminal*>;
-  const uint64_t task_terminal_id = task_manager->NewTask()
+  task_manager->NewTask()
     .InitContext(TaskTerminal, 0)
-    .Wakeup()
-    .ID();
+    .Wakeup();
 
   usb::xhci::Initialize();
   InitializeKeyboard();
@@ -202,10 +201,6 @@ extern "C" void KernelMainNewStack(
         textbox_cursor_visible = !textbox_cursor_visible;
         DrawTextCursor(textbox_cursor_visible);
         layer_manager->Draw(text_window_layer_id);
-
-        __asm__("cli");
-        task_manager->SendMessage(task_terminal_id, *msg);
-        __asm__("sti");
       }
       break;
     case Message::kKeyPush:
