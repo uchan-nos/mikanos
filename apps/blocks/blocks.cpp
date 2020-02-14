@@ -103,7 +103,6 @@ extern "C" void main(int argc, char** argv) {
       SyscallCreateTimer(TIMER_ONESHOT_ABS, 1, prev_timeout);
     }
 
-    // #@@range_begin(read_event)
     AppEvent events[1];
     for (;;) {
       SyscallReadEvent(events, 1);
@@ -135,7 +134,6 @@ extern "C" void main(int argc, char** argv) {
         }
       }
     }
-    // #@@range_end(read_event)
 
     bar_x += move_dir * kBarSpeed / kFrameRate;
     bar_x = LimitRange(bar_x, 0, kCanvasWidth - kBarWidth - 1);

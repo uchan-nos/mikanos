@@ -31,14 +31,12 @@ struct AppEvent {
       int value;
     } timer;
 
-    // #@@range_begin(key_push_event)
     struct {
       uint8_t modifier;
       uint8_t keycode;
       char ascii;
       int press; // 1: press, 0: release
     } keypush;
-    // #@@range_end(key_push_event)
   } arg;
 };
 

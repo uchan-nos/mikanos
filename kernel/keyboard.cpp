@@ -40,7 +40,6 @@ const char keycode_map_shifted[256] = {
 
 } // namespace
 
-// #@@range_begin(register_key_observer)
 void InitializeKeyboard() {
   usb::HIDKeyboardDriver::default_observer =
     [](uint8_t modifier, uint8_t keycode, bool press) {
@@ -57,4 +56,3 @@ void InitializeKeyboard() {
       task_manager->SendMessage(1, msg);
     };
 }
-// #@@range_end(register_key_observer)
