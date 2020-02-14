@@ -232,7 +232,6 @@ SYSCALL(ReadEvent) {
     }
 
     switch (msg->type) {
-    // #@@range_begin(read_key_push_event)
     case Message::kKeyPush:
       if (msg->arg.keyboard.keycode == 20 /* Q key */ &&
           msg->arg.keyboard.modifier & (kLControlBitMask | kRControlBitMask)) {
@@ -247,7 +246,6 @@ SYSCALL(ReadEvent) {
         ++i;
       }
       break;
-    // #@@range_end(read_key_push_event)
     case Message::kMouseMove:
       app_events[i].type = AppEvent::kMouseMove;
       app_events[i].arg.mouse_move.x = msg->arg.mouse_move.x;
