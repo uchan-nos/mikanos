@@ -208,14 +208,19 @@ extern "C" void KernelMainNewStack(
         __asm__("sti");
       }
       break;
+      // #@@range_begin(new_term)
     case Message::kKeyPush:
-      // #@@range_begin(if_press_main)
       if (auto act = active_layer->GetActive(); act == text_window_layer_id) {
         if (msg->arg.keyboard.press) {
           InputTextWindow(msg->arg.keyboard.ascii);
         }
+      } else if (msg->arg.keyboard.press &&
+                 msg->arg.keyboard.keycode == 59 /* F2 */) {
+        task_manager->NewTask()
+          .InitContext(TaskTerminal, 0)
+          .Wakeup();
       } else {
-      // #@@range_end(if_press_main)
+      // #@@range_end(new_term)
         __asm__("cli");
         auto task_it = layer_task_map->find(act);
         __asm__("sti");
