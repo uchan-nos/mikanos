@@ -12,6 +12,8 @@
 #include "paging.hpp"
 #include "timer.hpp"
 
+#include "logger.hpp"
+
 namespace {
 
 WithError<int> MakeArgVector(char* command, char* first_arg,
@@ -556,8 +558,8 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
   Task& task = task_manager->CurrentTask();
   Terminal* terminal = new Terminal{task_id};
   layer_manager->Move(terminal->LayerID(), {100, 200});
-  active_layer->Activate(terminal->LayerID());
   layer_task_map->insert(std::make_pair(terminal->LayerID(), task_id));
+  active_layer->Activate(terminal->LayerID());
   (*terminals)[task_id] = terminal;
   __asm__("sti");
 
@@ -566,6 +568,8 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
                                   1, task_id});
   };
   add_blink_timer(timer_manager->CurrentTick());
+
+  bool window_isactive = false;
 
   while (true) {
     __asm__("cli");
@@ -582,12 +586,14 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
       {
         add_blink_timer(msg->arg.timer.timeout);
 
-        const auto area = terminal->BlinkCursor();
-        Message msg = MakeLayerMessage(
-            task_id, terminal->LayerID(), LayerOperation::DrawArea, area);
-        __asm__("cli");
-        task_manager->SendMessage(1, msg);
-        __asm__("sti");
+        if (window_isactive) {
+          const auto area = terminal->BlinkCursor();
+          Message msg = MakeLayerMessage(
+              task_id, terminal->LayerID(), LayerOperation::DrawArea, area);
+          __asm__("cli");
+          task_manager->SendMessage(1, msg);
+          __asm__("sti");
+        }
       }
       break;
     case Message::kKeyPush:
@@ -601,6 +607,9 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
         task_manager->SendMessage(1, msg);
         __asm__("sti");
       }
+      break;
+    case Message::kWindowActive:
+      window_isactive = msg->arg.window_active.activate;
       break;
     default:
       break;
