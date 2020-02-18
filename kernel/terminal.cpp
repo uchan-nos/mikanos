@@ -12,8 +12,6 @@
 #include "paging.hpp"
 #include "timer.hpp"
 
-#include "logger.hpp"
-
 namespace {
 
 WithError<int> MakeArgVector(char* command, char* first_arg,
@@ -583,17 +581,14 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
 
     switch (msg->type) {
     case Message::kTimerTimeout:
-      {
-        add_blink_timer(msg->arg.timer.timeout);
-
-        if (window_isactive) {
-          const auto area = terminal->BlinkCursor();
-          Message msg = MakeLayerMessage(
-              task_id, terminal->LayerID(), LayerOperation::DrawArea, area);
-          __asm__("cli");
-          task_manager->SendMessage(1, msg);
-          __asm__("sti");
-        }
+      add_blink_timer(msg->arg.timer.timeout);
+      if (window_isactive) {
+        const auto area = terminal->BlinkCursor();
+        Message msg = MakeLayerMessage(
+            task_id, terminal->LayerID(), LayerOperation::DrawArea, area);
+        __asm__("cli");
+        task_manager->SendMessage(1, msg);
+        __asm__("sti");
       }
       break;
     case Message::kKeyPush:
