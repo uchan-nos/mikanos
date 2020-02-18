@@ -561,6 +561,7 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
   (*terminals)[task_id] = terminal;
   __asm__("sti");
 
+  // #@@range_begin(terminal_loop)
   auto add_blink_timer = [task_id](unsigned long t){
     timer_manager->AddTimer(Timer{t + static_cast<int>(kTimerFreq * 0.5),
                                   1, task_id});
@@ -591,6 +592,7 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
         __asm__("sti");
       }
       break;
+  // #@@range_end(terminal_loop)
     case Message::kKeyPush:
       if (msg->arg.keyboard.press) {
         const auto area = terminal->InputKey(msg->arg.keyboard.modifier,
@@ -603,6 +605,7 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
         __asm__("sti");
       }
       break;
+  // #@@range_begin(case_winact)
     case Message::kWindowActive:
       window_isactive = msg->arg.window_active.activate;
       break;
@@ -610,4 +613,5 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
       break;
     }
   }
+  // #@@range_end(case_winact)
 }
