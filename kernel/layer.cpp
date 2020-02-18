@@ -207,6 +207,7 @@ int LayerManager::GetHeight(unsigned int id) {
 namespace {
   FrameBuffer* screen;
 
+  // #@@range_begin(send_winactmsg)
   Error SendWindowActiveMessage(unsigned int layer_id, int activate) {
     auto task_it = layer_task_map->find(layer_id);
     if (task_it == layer_task_map->end()) {
@@ -217,6 +218,7 @@ namespace {
     msg.arg.window_active.activate = activate;
     return task_manager->SendMessage(task_it->second, msg);
   }
+  // #@@range_end(send_winactmsg)
 }
 
 LayerManager* layer_manager;
@@ -228,6 +230,7 @@ void ActiveLayer::SetMouseLayer(unsigned int mouse_layer) {
   mouse_layer_ = mouse_layer;
 }
 
+// #@@range_begin(activate)
 void ActiveLayer::Activate(unsigned int layer_id) {
   if (active_layer_ == layer_id) {
     return;
@@ -249,6 +252,7 @@ void ActiveLayer::Activate(unsigned int layer_id) {
     SendWindowActiveMessage(active_layer_, 1);
   }
 }
+// #@@range_end(activate)
 
 ActiveLayer* active_layer;
 std::map<unsigned int, uint64_t>* layer_task_map;
