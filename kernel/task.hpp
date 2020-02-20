@@ -14,6 +14,7 @@
 
 #include "error.hpp"
 #include "message.hpp"
+#include "paging.hpp"
 
 using TaskFunc = void (uint64_t, int64_t);
 
@@ -37,6 +38,10 @@ class Task {
   int Level() const { return level_; }
   bool Running() const { return running_; }
 
+  // #@@range_begin(task_fields)
+  void SetPML4Page(PageMapEntry* pml4_page) { pml4_page_ = pml4_page; }
+  PageMapEntry* PML4Page() const { return pml4_page_; }
+
  private:
   uint64_t id_;
   std::vector<uint64_t> stack_;
@@ -44,6 +49,8 @@ class Task {
   std::deque<Message> msgs_;
   unsigned int level_{kDefaultLevel};
   bool running_{false};
+  PageMapEntry* pml4_page_{nullptr};
+  // #@@range_end(task_fields)
 
   Task& SetLevel(int level) { level_ = level; return *this; }
   Task& SetRunning(bool running) { running_ = running; return *this; }

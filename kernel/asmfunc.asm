@@ -93,7 +93,7 @@ KernelMain:
     jmp .fin
 
 global SwitchContext
-SwitchContext:  ; void SwitchContext(uint64_t* to_rsp, uint64_t* current_rsp);
+SwitchContext:  ; void SwitchContext(uint64_t* to_rsp, uint64_t* current_rsp, uint64_t to_pml4);
     push rax
     push rbx
     push rcx
@@ -107,14 +107,20 @@ SwitchContext:  ; void SwitchContext(uint64_t* to_rsp, uint64_t* current_rsp);
     push r11
     push r12
     push r13
+    ; #@@range_begin(restore_pml4)
     push r14
     push r15
 
     mov [rsi], rsp
     mov rsp, [rdi]
+    test rdx, rdx  ; to_pml4
+    jz .restore_ctx
+    mov cr3, rdx
 
+.restore_ctx:
     pop r15
     pop r14
+    ; #@@range_end(restore_pml4)
     pop r13
     pop r12
     pop r11

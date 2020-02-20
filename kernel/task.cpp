@@ -125,9 +125,15 @@ void TaskManager::SwitchTask(bool current_sleep) {
     }
   }
 
+  // #@@range_begin(pass_pml4)
   Task* next_task = running_[current_level_].front();
-
-  SwitchContext(&next_task->StackPointer(), &current_task->StackPointer());
+  uint64_t pml4_addr = 0;
+  if (next_task->PML4Page() != nullptr) {
+    pml4_addr = reinterpret_cast<uint64_t>(next_task->PML4Page());
+  }
+  SwitchContext(&next_task->StackPointer(), &current_task->StackPointer(),
+                pml4_addr);
+  // #@@range_end(pass_pml4)
 }
 
 void TaskManager::Sleep(Task* task) {
