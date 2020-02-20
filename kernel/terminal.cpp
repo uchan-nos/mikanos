@@ -225,6 +225,34 @@ Error CleanPageMaps(LinearAddress4Level addr) {
   return memory_manager->Free(pdp_frame, 1);
 }
 
+// #@@range_begin(setup_pml4)
+WithError<PageMapEntry*> SetupPML4(Task& current_task) {
+  auto pml4 = NewPageMap();
+  if (pml4.error) {
+    return pml4;
+  }
+
+  const auto current_pml4 = reinterpret_cast<PageMapEntry*>(GetCR3());
+  memcpy(pml4.value, current_pml4, 256 * sizeof(uint64_t));
+
+  const auto cr3 = reinterpret_cast<uint64_t>(pml4.value);
+  SetCR3(cr3);
+  current_task.Context().cr3 = cr3;
+  return pml4;
+}
+// #@@range_end(setup_pml4)
+
+// #@@range_begin(free_pml4)
+Error FreePML4(Task& current_task) {
+  const auto cr3 = current_task.Context().cr3;
+  current_task.Context().cr3 = 0;
+  ResetCR3();
+
+  const FrameID frame{cr3 / kBytesPerFrame};
+  return memory_manager->Free(frame, 1);
+}
+// #@@range_end(free_pml4)
+
 } // namespace
 
 Terminal::Terminal(uint64_t task_id) : task_id_{task_id} {
@@ -426,9 +454,19 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
     return MAKE_ERROR(Error::kSuccess);
   }
 
+  // #@@range_begin(setup_pml4_before_loadelf)
+  __asm__("cli");
+  auto& task = task_manager->CurrentTask();
+  __asm__("sti");
+
+  if (auto pml4 = SetupPML4(task); pml4.error) {
+    return pml4.error;
+  }
+
   if (auto err = LoadELF(elf_header)) {
     return err;
   }
+  // #@@range_end(setup_pml4_before_loadelf)
 
   LinearAddress4Level args_frame_addr{0xffff'ffff'ffff'f000};
   if (auto err = SetupPageMaps(args_frame_addr, 1)) {
@@ -448,10 +486,6 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
     return err;
   }
 
-  __asm__("cli");
-  auto& task = task_manager->CurrentTask();
-  __asm__("sti");
-
   auto entry_addr = elf_header->e_entry;
   int ret = CallApp(argc.value, argv, 3 << 3 | 3, entry_addr,
                     stack_frame_addr.value + 4096 - 8,
@@ -461,13 +495,14 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
   sprintf(s, "app exited. ret = %d\n", ret);
   Print(s);
 
+  // #@@range_begin(free_pml4_after_app)
   const auto addr_first = GetFirstLoadAddress(elf_header);
   if (auto err = CleanPageMaps(LinearAddress4Level{addr_first})) {
     return err;
   }
-
-  return MAKE_ERROR(Error::kSuccess);
+  return FreePML4(task);
 }
+  // #@@range_end(free_pml4_after_app)
 
 void Terminal::Print(char c) {
   auto newline = [this]() {
