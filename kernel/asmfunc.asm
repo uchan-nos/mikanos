@@ -107,7 +107,6 @@ SwitchContext:  ; void SwitchContext(uint64_t* to_rsp, uint64_t* current_rsp, ui
     push r11
     push r12
     push r13
-    ; #@@range_begin(restore_pml4)
     push r14
     push r15
 
@@ -120,7 +119,6 @@ SwitchContext:  ; void SwitchContext(uint64_t* to_rsp, uint64_t* current_rsp, ui
 .restore_ctx:
     pop r15
     pop r14
-    ; #@@range_end(restore_pml4)
     pop r13
     pop r12
     pop r11

@@ -38,7 +38,6 @@ class Task {
   int Level() const { return level_; }
   bool Running() const { return running_; }
 
-  // #@@range_begin(task_fields)
   void SetPML4Page(PageMapEntry* pml4_page) { pml4_page_ = pml4_page; }
   PageMapEntry* PML4Page() const { return pml4_page_; }
 
@@ -50,7 +49,6 @@ class Task {
   unsigned int level_{kDefaultLevel};
   bool running_{false};
   PageMapEntry* pml4_page_{nullptr};
-  // #@@range_end(task_fields)
 
   Task& SetLevel(int level) { level_ = level; return *this; }
   Task& SetRunning(bool running) { running_ = running; return *this; }
