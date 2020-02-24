@@ -158,7 +158,6 @@ extern "C" void KernelMainNewStack(
   Task& main_task = task_manager->CurrentTask();
   terminals = new std::map<uint64_t, Terminal*>;
 
-  // #@@range_begin(start_term_after_mouse)
   usb::xhci::Initialize();
   InitializeKeyboard();
   InitializeMouse();
@@ -166,7 +165,6 @@ extern "C" void KernelMainNewStack(
   task_manager->NewTask()
     .PushInitialStack(TaskTerminal, 0)
     .Wakeup();
-  // #@@range_end(start_term_after_mouse)
 
   char str[128];
 
