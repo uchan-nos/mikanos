@@ -457,13 +457,12 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
   std::vector<uint8_t> file_buf(file_entry.file_size);
   fat::LoadFile(&file_buf[0], file_buf.size(), file_entry);
 
+  // #@@range_begin(only_elf)
   auto elf_header = reinterpret_cast<Elf64_Ehdr*>(&file_buf[0]);
   if (memcmp(elf_header->e_ident, "\x7f" "ELF", 4) != 0) {
-    using Func = void ();
-    auto f = reinterpret_cast<Func*>(&file_buf[0]);
-    f();
-    return MAKE_ERROR(Error::kSuccess);
+    return MAKE_ERROR(Error::kInvalidFile);
   }
+  // #@@range_end(only_elf)
 
   __asm__("cli");
   auto& task = task_manager->CurrentTask();
