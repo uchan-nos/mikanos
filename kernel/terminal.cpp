@@ -251,7 +251,6 @@ Error FreePML4(Task& current_task) {
 
 } // namespace
 
-// #@@range_begin(term_ctor)
 Terminal::Terminal(uint64_t task_id, bool show_window)
     : task_id_{task_id}, show_window_{show_window} {
   if (show_window) {
@@ -271,7 +270,6 @@ Terminal::Terminal(uint64_t task_id, bool show_window)
   }
   cmd_history_.resize(8);
 }
-// #@@range_end(term_ctor)
 
 Rectangle<int> Terminal::BlinkCursor() {
   cursor_visible_ = !cursor_visible_;
@@ -280,14 +278,12 @@ Rectangle<int> Terminal::BlinkCursor() {
   return {CalcCursorPos(), {7, 15}};
 }
 
-// #@@range_begin(draw_cursor)
 void Terminal::DrawCursor(bool visible) {
   if (show_window_) {
     const auto color = visible ? ToColor(0xffffff) : ToColor(0);
     FillRectangle(*window_->Writer(), CalcCursorPos(), {7, 15}, color);
   }
 }
-// #@@range_end(draw_cursor)
 
 Vector2D<int> Terminal::CalcCursorPos() const {
   return ToplevelWindow::kTopLeftMargin +
@@ -331,7 +327,6 @@ Rectangle<int> Terminal::InputKey(
         --linebuf_index_;
       }
     }
-  // #@@range_begin(if_show_window)
   } else if (ascii != 0) {
     if (cursor_.x < kColumns - 1 && linebuf_index_ < kLineMax - 1) {
       linebuf_[linebuf_index_] = ascii;
@@ -342,7 +337,6 @@ Rectangle<int> Terminal::InputKey(
       ++cursor_.x;
     }
   } else if (keycode == 0x51) { // down arrow
-  // #@@range_end(if_show_window)
     draw_area = HistoryUpDown(-1);
   } else if (keycode == 0x52) { // up arrow
     draw_area = HistoryUpDown(1);
@@ -441,13 +435,11 @@ void Terminal::ExecuteLine() {
       }
       DrawCursor(true);
     }
-  // #@@range_begin(noterm)
   } else if (strcmp(command, "noterm") == 0) {
     task_manager->NewTask()
       .InitContext(TaskTerminal, reinterpret_cast<int64_t>(first_arg))
       .Wakeup();
   } else if (command[0] != 0) {
-  // #@@range_end(noterm)
     auto file_entry = fat::FindFile(command);
     if (!file_entry) {
       Print("no such command: ");
@@ -603,7 +595,6 @@ Rectangle<int> Terminal::HistoryUpDown(int direction) {
 
 std::map<uint64_t, Terminal*>* terminals;
 
-// #@@range_begin(task_term)
 void TaskTerminal(uint64_t task_id, int64_t data) {
   const char* command_line = reinterpret_cast<char*>(data);
   const bool show_window = command_line == nullptr;
@@ -625,7 +616,6 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
     }
     terminal->InputKey(0, 0, '\n');
   }
-// #@@range_end(task_term)
 
   auto add_blink_timer = [task_id](unsigned long t){
     timer_manager->AddTimer(Timer{t + static_cast<int>(kTimerFreq * 0.5),
@@ -645,7 +635,6 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
     }
     __asm__("sti");
 
-    // #@@range_begin(term_msg)
     switch (msg->type) {
     case Message::kTimerTimeout:
       add_blink_timer(msg->arg.timer.timeout);
@@ -678,6 +667,5 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
     default:
       break;
     }
-    // #@@range_end(term_msg)
   }
 }
