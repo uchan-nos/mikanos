@@ -321,7 +321,6 @@ SyscallEntry:  ; void SyscallEntry(void);
     mov esi, edx
     jmp ExitApp
 
-; #@@range_begin(exit_app)
 global ExitApp  ; void ExitApp(uint64_t rsp, int32_t ret_val);
 ExitApp:
     mov rsp, rdi
@@ -335,4 +334,3 @@ ExitApp:
     pop rbx
 
     ret  ; CallApp の次の行に飛ぶ
-; #@@range_end(exit_app)
