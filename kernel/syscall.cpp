@@ -315,16 +315,6 @@ namespace {
     return num_files;
   }
   // #@@range_end(allocate_fd)
-
-  // #@@range_begin(copy_cluster)
-  size_t CopyClusterToMem(void* dest, unsigned long cluster,
-                          size_t cluster_offset, size_t count) {
-    const uint8_t* sect = fat::GetSectorByCluster<uint8_t>(cluster);
-    count = std::min(count, fat::bytes_per_cluster - cluster_offset);
-    memcpy(dest, &sect[cluster_offset], count);
-    return count;
-  }
-  // #@@range_end(copy_cluster)
 } // namespace
 
 // #@@range_begin(open_file)
@@ -347,7 +337,7 @@ SYSCALL(OpenFile) {
   }
 
   size_t fd = AllocateFD(task);
-  task.Files()[fd] = std::make_unique<fat::FileDescriptor>(dir);
+  task.Files()[fd] = std::make_unique<fat::FileDescriptor>(*dir);
   return { fd, 0 };
 }
 // #@@range_end(open_file)
@@ -355,7 +345,7 @@ SYSCALL(OpenFile) {
 // #@@range_begin(read_file)
 SYSCALL(ReadFile) {
   const int fd = arg1;
-  uint8_t* const buf = reinterpret_cast<uint8_t*>(arg2);
+  void* buf = reinterpret_cast<void*>(arg2);
   size_t count = arg3;
   __asm__("cli");
   auto& task = task_manager->CurrentTask();
@@ -364,28 +354,7 @@ SYSCALL(ReadFile) {
   if (fd < 0 || task.Files().size() <= fd || !task.Files()[fd]) {
     return { 0, EBADF };
   }
-  fat::FileDescriptor& f = *task.Files()[fd];
-  if (f.read_cluster == 0) {
-    f.read_cluster = f.fat_entry->FirstCluster();
-  }
-  count = std::min(count, f.fat_entry->file_size - f.read_offset);
-
-  size_t total_copied = 0;
-  while (total_copied < count) {
-    const size_t copied =
-      CopyClusterToMem(&buf[total_copied], f.read_cluster,
-                       f.read_cluster_offset, count - total_copied);
-    total_copied += copied;
-    f.read_offset += copied;
-
-    f.read_cluster_offset += copied;
-    if (f.read_cluster_offset == fat::bytes_per_cluster) {
-      f.read_cluster = fat::NextCluster(f.read_cluster);
-      f.read_cluster_offset = 0;
-    }
-  }
-
-  return { total_copied, 0 };
+  return { task.Files()[fd]->Read(buf, count), 0 };
 }
 // #@@range_end(read_file)
 
