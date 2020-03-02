@@ -78,6 +78,10 @@ std::optional<Message> Task::ReceiveMessage() {
   return m;
 }
 
+std::vector<std::unique_ptr<fat::FileDescriptor>>& Task::Files() {
+  return files_;
+}
+
 TaskManager::TaskManager() {
   Task& task = NewTask()
     .SetLevel(current_level_)

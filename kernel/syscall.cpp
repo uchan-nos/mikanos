@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cerrno>
 #include <cmath>
+#include <fcntl.h>
 
 #include "asmfunc.h"
 #include "msr.hpp"
@@ -301,13 +302,100 @@ SYSCALL(CreateTimer) {
   return { timeout * 1000 / kTimerFreq, 0 };
 }
 
+namespace {
+  // #@@range_begin(allocate_fd)
+  size_t AllocateFD(Task& task) {
+    const size_t num_files = task.Files().size();
+    for (size_t i = 0; i < num_files; ++i) {
+      if (!task.Files()[i]) {
+        return i;
+      }
+    }
+    task.Files().emplace_back();
+    return num_files;
+  }
+  // #@@range_end(allocate_fd)
+
+  // #@@range_begin(copy_cluster)
+  size_t CopyClusterToMem(void* dest, unsigned long cluster,
+                          size_t cluster_offset, size_t count) {
+    const uint8_t* sect = fat::GetSectorByCluster<uint8_t>(cluster);
+    count = std::min(count, fat::bytes_per_cluster - cluster_offset);
+    memcpy(dest, &sect[cluster_offset], count);
+    return count;
+  }
+  // #@@range_end(copy_cluster)
+} // namespace
+
+// #@@range_begin(open_file)
+SYSCALL(OpenFile) {
+  const char* path = reinterpret_cast<const char*>(arg1);
+  const int flags = arg2;
+  __asm__("cli");
+  auto& task = task_manager->CurrentTask();
+  __asm__("sti");
+
+  if ((flags & O_ACCMODE) == O_WRONLY) {
+    return { 0, EINVAL };
+  }
+
+  auto [ dir, post_slash ] = fat::FindFile(path);
+  if (dir == nullptr) {
+    return { 0, ENOENT };
+  } else if (dir->attr != fat::Attribute::kDirectory && post_slash) {
+    return { 0, ENOENT };
+  }
+
+  size_t fd = AllocateFD(task);
+  task.Files()[fd] = std::make_unique<fat::FileDescriptor>(dir);
+  return { fd, 0 };
+}
+// #@@range_end(open_file)
+
+// #@@range_begin(read_file)
+SYSCALL(ReadFile) {
+  const int fd = arg1;
+  uint8_t* const buf = reinterpret_cast<uint8_t*>(arg2);
+  size_t count = arg3;
+  __asm__("cli");
+  auto& task = task_manager->CurrentTask();
+  __asm__("sti");
+
+  if (fd < 0 || task.Files().size() <= fd || !task.Files()[fd]) {
+    return { 0, EBADF };
+  }
+  fat::FileDescriptor& f = *task.Files()[fd];
+  if (f.read_cluster == 0) {
+    f.read_cluster = f.fat_entry->FirstCluster();
+  }
+  count = std::min(count, f.fat_entry->file_size - f.read_offset);
+
+  size_t total_copied = 0;
+  while (total_copied < count) {
+    const size_t copied =
+      CopyClusterToMem(&buf[total_copied], f.read_cluster,
+                       f.read_cluster_offset, count - total_copied);
+    total_copied += copied;
+    f.read_offset += copied;
+
+    f.read_cluster_offset += copied;
+    if (f.read_cluster_offset == fat::bytes_per_cluster) {
+      f.read_cluster = fat::NextCluster(f.read_cluster);
+      f.read_cluster_offset = 0;
+    }
+  }
+
+  return { total_copied, 0 };
+}
+// #@@range_end(read_file)
+
 #undef SYSCALL
 
 } // namespace syscall
 
 using SyscallFuncType = syscall::Result (uint64_t, uint64_t, uint64_t,
                                          uint64_t, uint64_t, uint64_t);
-extern "C" std::array<SyscallFuncType*, 0xc> syscall_table{
+extern "C" std::array<SyscallFuncType*, 0xe> syscall_table{
   /* 0x00 */ syscall::LogString,
   /* 0x01 */ syscall::PutString,
   /* 0x02 */ syscall::Exit,
@@ -320,6 +408,8 @@ extern "C" std::array<SyscallFuncType*, 0xc> syscall_table{
   /* 0x09 */ syscall::CloseWindow,
   /* 0x0a */ syscall::ReadEvent,
   /* 0x0b */ syscall::CreateTimer,
+  /* 0x0c */ syscall::OpenFile,
+  /* 0x0d */ syscall::ReadFile,
 };
 
 void InitializeSyscall() {
