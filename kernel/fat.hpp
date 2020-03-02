@@ -141,4 +141,13 @@ bool NameIsEqual(const DirectoryEntry& entry, const char* name);
  */
 size_t LoadFile(void* buf, size_t len, const DirectoryEntry& entry);
 
+struct FileDescriptor {
+  DirectoryEntry* fat_entry;
+  size_t read_offset = 0;
+  unsigned long read_cluster = 0;
+  size_t read_cluster_offset = 0;
+
+  explicit FileDescriptor(DirectoryEntry* fat_entry) : fat_entry{fat_entry} {}
+};
+
 } // namespace fat
