@@ -412,7 +412,6 @@ void Terminal::ExecuteLine() {
           dev.class_code.base, dev.class_code.sub, dev.class_code.interface);
       Print(s);
     }
-  // #@@range_begin(command_ls)
   } else if (strcmp(command, "ls") == 0) {
     if (!first_arg || first_arg[0] == '\0') {
       ListAllEntries(this, fat::boot_volume_image->root_cluster);
@@ -437,7 +436,6 @@ void Terminal::ExecuteLine() {
       }
     }
   } else if (strcmp(command, "cat") == 0) {
-  // #@@range_end(command_ls)
     char s[64];
 
     auto [ file_entry, post_slash ] = fat::FindFile(first_arg);
@@ -471,7 +469,6 @@ void Terminal::ExecuteLine() {
     task_manager->NewTask()
       .InitContext(TaskTerminal, reinterpret_cast<int64_t>(first_arg))
       .Wakeup();
-  // #@@range_begin(command_exec)
   } else if (command[0] != 0) {
     auto [ file_entry, post_slash ] = fat::FindFile(command);
     if (!file_entry) {
@@ -488,7 +485,6 @@ void Terminal::ExecuteLine() {
       Print(err.Name());
       Print("\n");
     }
-  // #@@range_end(command_exec)
   }
 }
 
