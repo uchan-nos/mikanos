@@ -6,7 +6,6 @@
 
 namespace {
 
-// #@@range_begin(next_path_element)
 std::pair<const char*, bool>
 NextPathElement(const char* path, char* path_elem) {
   const char* next_slash = strchr(path, '/');
@@ -20,7 +19,6 @@ NextPathElement(const char* path, char* path_elem) {
   path_elem[elem_len] = '\0';
   return { &next_slash[1], true };
 }
-// #@@range_end(next_path_element)
 
 } // namespace
 
@@ -59,7 +57,6 @@ void ReadName(const DirectoryEntry& entry, char* base, char* ext) {
   }
 }
 
-// #@@range_begin(format_name)
 void FormatName(const DirectoryEntry& entry, char* dest) {
   char ext[5] = ".";
   ReadName(entry, dest, &ext[1]);
@@ -67,7 +64,6 @@ void FormatName(const DirectoryEntry& entry, char* dest) {
     strcat(dest, ext);
   }
 }
-// #@@range_end(format_name)
 
 unsigned long NextCluster(unsigned long cluster) {
   uintptr_t fat_offset =
@@ -82,7 +78,6 @@ unsigned long NextCluster(unsigned long cluster) {
   return next;
 }
 
-// #@@range_begin(find_file)
 std::pair<DirectoryEntry*, bool>
 FindFile(const char* path, unsigned long directory_cluster) {
   if (path[0] == '/') {
@@ -119,7 +114,6 @@ FindFile(const char* path, unsigned long directory_cluster) {
 not_found:
   return { nullptr, post_slash };
 }
-// #@@range_end(find_file)
 
 bool NameIsEqual(const DirectoryEntry& entry, const char* name) {
   unsigned char name83[11];
