@@ -303,7 +303,6 @@ SYSCALL(CreateTimer) {
 }
 
 namespace {
-  // #@@range_begin(allocate_fd)
   size_t AllocateFD(Task& task) {
     const size_t num_files = task.Files().size();
     for (size_t i = 0; i < num_files; ++i) {
@@ -314,10 +313,8 @@ namespace {
     task.Files().emplace_back();
     return num_files;
   }
-  // #@@range_end(allocate_fd)
 } // namespace
 
-// #@@range_begin(open_file)
 SYSCALL(OpenFile) {
   const char* path = reinterpret_cast<const char*>(arg1);
   const int flags = arg2;
@@ -340,9 +337,7 @@ SYSCALL(OpenFile) {
   task.Files()[fd] = std::make_unique<fat::FileDescriptor>(*dir);
   return { fd, 0 };
 }
-// #@@range_end(open_file)
 
-// #@@range_begin(read_file)
 SYSCALL(ReadFile) {
   const int fd = arg1;
   void* buf = reinterpret_cast<void*>(arg2);
@@ -356,7 +351,6 @@ SYSCALL(ReadFile) {
   }
   return { task.Files()[fd]->Read(buf, count), 0 };
 }
-// #@@range_end(read_file)
 
 #undef SYSCALL
 

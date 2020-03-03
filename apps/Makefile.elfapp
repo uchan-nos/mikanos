@@ -1,4 +1,4 @@
-CPPFLAGS += -I.
+CPPFLAGS += -I. -D__SCLE
 CFLAGS   += -O2 -Wall -g --target=x86_64-elf -ffreestanding -mcmodel=large
 CXXFLAGS += -O2 -Wall -g --target=x86_64-elf -ffreestanding -mcmodel=large \
             -fno-exceptions -fno-rtti -std=c++17
