@@ -49,19 +49,15 @@ class Task {
   int Level() const { return level_; }
   bool Running() const { return running_; }
 
-  // #@@range_begin(task_fields)
  private:
   uint64_t id_;
-  // #@@range_end(task_fields)
   std::vector<uint64_t> stack_;
   alignas(16) TaskContext context_;
   uint64_t os_stack_ptr_;
   std::deque<Message> msgs_;
   unsigned int level_{kDefaultLevel};
   bool running_{false};
-  // #@@range_begin(task_files)
   std::vector<std::unique_ptr<fat::FileDescriptor>> files_{};
-  // #@@range_end(task_files)
 
   Task& SetLevel(int level) { level_ = level; return *this; }
   Task& SetRunning(bool running) { running_ = running; return *this; }
