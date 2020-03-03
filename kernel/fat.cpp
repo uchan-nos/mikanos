@@ -155,13 +155,10 @@ size_t LoadFile(void* buf, size_t len, const DirectoryEntry& entry) {
   return p - buf_uint8;
 }
 
-// #@@range_begin(file_descriptor_ctor)
 FileDescriptor::FileDescriptor(DirectoryEntry& fat_entry)
     : fat_entry_{fat_entry} {
 }
-// #@@range_end(file_descriptor_ctor)
 
-// #@@range_begin(file_descriptor_read)
 size_t FileDescriptor::Read(void* buf, size_t len) {
   if (rd_cluster_ == 0) {
     rd_cluster_ = fat_entry_.FirstCluster();
@@ -186,6 +183,5 @@ size_t FileDescriptor::Read(void* buf, size_t len) {
   rd_off_ += total;
   return total;
 }
-// #@@range_end(file_descriptor_read)
 
 } // namespace fat
