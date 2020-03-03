@@ -2,6 +2,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <signal.h>
 
 #include "syscall.h"
@@ -43,6 +44,18 @@ int open(const char* path, int flags) {
   errno = res.error;
   return -1;
 }
+
+// #@@range_begin(posix_memalign)
+int posix_memalign(void** memptr, size_t alignment, size_t size) {
+  void* p = malloc(size + alignment - 1);
+  if (!p) {
+    return ENOMEM;
+  }
+  uintptr_t addr = (uintptr_t)p;
+  *memptr = (void*)((addr + alignment - 1) & ~(uintptr_t)(alignment - 1));
+  return 0;
+}
+// #@@range_end(posix_memalign)
 
 ssize_t read(int fd, void* buf, size_t count) {
   struct SyscallResult res = SyscallReadFile(fd, buf, count);
