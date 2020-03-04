@@ -53,3 +53,15 @@ class Terminal {
 
 extern std::map<uint64_t, Terminal*>* terminals;
 void TaskTerminal(uint64_t task_id, int64_t data);
+
+// #@@range_begin(term_fd)
+class TerminalFileDescriptor : public FileDescriptor {
+ public:
+  explicit TerminalFileDescriptor(Task& task, Terminal& term);
+  size_t Read(void* buf, size_t len) override;
+
+ private:
+  Task& task_;
+  Terminal& term_;
+};
+// #@@range_end(term_fd)
