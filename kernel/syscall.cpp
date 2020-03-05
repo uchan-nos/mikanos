@@ -315,7 +315,6 @@ namespace {
   }
 } // namespace
 
-// #@@range_begin(open_file)
 SYSCALL(OpenFile) {
   const char* path = reinterpret_cast<const char*>(arg1);
   const int flags = arg2;
@@ -326,7 +325,6 @@ SYSCALL(OpenFile) {
   if (strcmp(path, "@stdin") == 0) {
     return { 0, 0 };
   }
-// #@@range_end(open_file)
 
   if ((flags & O_ACCMODE) == O_WRONLY) {
     return { 0, EINVAL };
