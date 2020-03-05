@@ -57,9 +57,7 @@ class Task {
   std::deque<Message> msgs_;
   unsigned int level_{kDefaultLevel};
   bool running_{false};
-  // #@@range_begin(task_files)
   std::vector<std::unique_ptr<::FileDescriptor>> files_{};
-  // #@@range_end(task_files)
 
   Task& SetLevel(int level) { level_ = level; return *this; }
   Task& SetRunning(bool running) { running_ = running; return *this; }
