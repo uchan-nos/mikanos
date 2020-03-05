@@ -313,6 +313,40 @@ namespace {
     task.Files().emplace_back();
     return num_files;
   }
+
+  // #@@range_begin(create_file)
+  std::pair<fat::DirectoryEntry*, int> CreateFile(const char* path) {
+    auto parent_dir_cluster = fat::boot_volume_image->root_cluster;
+    const char* filename = path;
+
+    if (const char* slash_pos = strrchr(path, '/')) {
+      filename = &slash_pos[1];
+      if (slash_pos[1] == '\0') {
+        return { nullptr, EISDIR };
+      }
+
+      char parent_dir_name[slash_pos - path + 1];
+      strncpy(parent_dir_name, path, slash_pos - path);
+      parent_dir_name[slash_pos - path] = '\0';
+
+      if (parent_dir_name[0] != '\0') {
+        auto [ parent_dir, post_slash2 ] = fat::FindFile(parent_dir_name);
+        if (parent_dir == nullptr) {
+          return { nullptr, ENOENT };
+        }
+        parent_dir_cluster = parent_dir->FirstCluster();
+      }
+    }
+
+    auto dir = fat::AllocateEntry(parent_dir_cluster);
+    if (dir == nullptr) {
+      return { nullptr, ENOSPC };
+    }
+    fat::SetFileName(*dir, filename);
+    dir->file_size = 0;
+    return { dir, 0 };
+  }
+  // #@@range_end(create_file)
 } // namespace
 
 SYSCALL(OpenFile) {
@@ -322,24 +356,29 @@ SYSCALL(OpenFile) {
   auto& task = task_manager->CurrentTask();
   __asm__("sti");
 
+  // #@@range_begin(open_file)
   if (strcmp(path, "@stdin") == 0) {
     return { 0, 0 };
   }
 
-  if ((flags & O_ACCMODE) == O_WRONLY) {
-    return { 0, EINVAL };
-  }
-
-  auto [ dir, post_slash ] = fat::FindFile(path);
-  if (dir == nullptr) {
-    return { 0, ENOENT };
-  } else if (dir->attr != fat::Attribute::kDirectory && post_slash) {
+  auto [ file, post_slash ] = fat::FindFile(path);
+  if (file == nullptr) {
+    if ((flags & O_CREAT) == 0) {
+      return { 0, ENOENT };
+    }
+    auto [ new_file, err ] = CreateFile(path);
+    if (err) {
+      return { 0, err };
+    }
+    file = new_file;
+  } else if (file->attr != fat::Attribute::kDirectory && post_slash) {
     return { 0, ENOENT };
   }
 
   size_t fd = AllocateFD(task);
-  task.Files()[fd] = std::make_unique<fat::FileDescriptor>(*dir);
+  task.Files()[fd] = std::make_unique<fat::FileDescriptor>(*file);
   return { fd, 0 };
+  // #@@range_end(open_file)
 }
 
 SYSCALL(ReadFile) {
