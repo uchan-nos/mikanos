@@ -40,6 +40,7 @@ SYSCALL(LogString) {
   return { len, 0 };
 }
 
+// #@@range_begin(put_string)
 SYSCALL(PutString) {
   const auto fd = arg1;
   const char* s = reinterpret_cast<const char*>(arg2);
@@ -57,6 +58,7 @@ SYSCALL(PutString) {
   }
   return { task.Files()[fd]->Write(s, len), 0 };
 }
+// #@@range_end(put_string)
 
 SYSCALL(Exit) {
   __asm__("cli");
