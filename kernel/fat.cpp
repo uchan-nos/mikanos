@@ -282,4 +282,8 @@ size_t FileDescriptor::Read(void* buf, size_t len) {
   return total;
 }
 
+size_t FileDescriptor::Write(const void* buf, size_t len) {
+  return 0;
+}
+
 } // namespace fat
