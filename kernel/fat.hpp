@@ -182,6 +182,7 @@ class FileDescriptor : public ::FileDescriptor {
  public:
   explicit FileDescriptor(DirectoryEntry& fat_entry);
   size_t Read(void* buf, size_t len) override;
+  size_t Write(const void* buf, size_t len) override;
 
  private:
   DirectoryEntry& fat_entry_;
