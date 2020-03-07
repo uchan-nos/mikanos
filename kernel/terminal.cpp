@@ -635,8 +635,6 @@ Rectangle<int> Terminal::HistoryUpDown(int direction) {
   return draw_area;
 }
 
-std::map<uint64_t, Terminal*>* terminals;
-
 void TaskTerminal(uint64_t task_id, int64_t data) {
   const char* command_line = reinterpret_cast<char*>(data);
   const bool show_window = command_line == nullptr;
@@ -649,7 +647,6 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
     layer_task_map->insert(std::make_pair(terminal->LayerID(), task_id));
     active_layer->Activate(terminal->LayerID());
   }
-  (*terminals)[task_id] = terminal;
   __asm__("sti");
 
   if (command_line) {

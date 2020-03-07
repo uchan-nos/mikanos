@@ -51,7 +51,6 @@ class Terminal {
   bool show_window_;
 };
 
-extern std::map<uint64_t, Terminal*>* terminals;
 void TaskTerminal(uint64_t task_id, int64_t data);
 
 class TerminalFileDescriptor : public FileDescriptor {
