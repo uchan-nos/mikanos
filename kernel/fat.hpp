@@ -185,6 +185,7 @@ WithError<DirectoryEntry*> CreateFile(const char* path);
  */
 unsigned long AllocateClusterChain(size_t n);
 
+// #@@range_begin(fat_fd)
 class FileDescriptor : public ::FileDescriptor {
  public:
   explicit FileDescriptor(DirectoryEntry& fat_entry);
@@ -200,5 +201,6 @@ class FileDescriptor : public ::FileDescriptor {
   unsigned long wr_cluster_ = 0;
   size_t wr_cluster_off_ = 0;
 };
+// #@@range_end(fat_fd)
 
 } // namespace fat
