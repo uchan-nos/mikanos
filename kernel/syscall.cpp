@@ -314,7 +314,6 @@ namespace {
     return num_files;
   }
 
-  // #@@range_begin(create_file)
   std::pair<fat::DirectoryEntry*, int> CreateFile(const char* path) {
     auto [ file, err ] = fat::CreateFile(path);
     switch (err.Cause()) {
@@ -324,7 +323,6 @@ namespace {
     default: return { file, 0 };
     }
   }
-  // #@@range_end(create_file)
 } // namespace
 
 SYSCALL(OpenFile) {
@@ -334,7 +332,6 @@ SYSCALL(OpenFile) {
   auto& task = task_manager->CurrentTask();
   __asm__("sti");
 
-  // #@@range_begin(open_file)
   if (strcmp(path, "@stdin") == 0) {
     return { 0, 0 };
   }
@@ -356,7 +353,6 @@ SYSCALL(OpenFile) {
   size_t fd = AllocateFD(task);
   task.Files()[fd] = std::make_unique<fat::FileDescriptor>(*file);
   return { fd, 0 };
-  // #@@range_end(open_file)
 }
 
 SYSCALL(ReadFile) {
