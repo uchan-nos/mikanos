@@ -150,13 +150,10 @@ size_t LoadFile(void* buf, size_t len, const DirectoryEntry& entry) {
   return p - buf_uint8;
 }
 
-// #@@range_begin(is_eoc)
 bool IsEndOfClusterchain(unsigned long cluster) {
   return cluster >= 0x0ffffff8ul;
 }
-// #@@range_end(is_eoc)
 
-// #@@range_begin(get_fat)
 uint32_t* GetFAT() {
   uintptr_t fat_offset =
     boot_volume_image->reserved_sector_count *
@@ -164,9 +161,7 @@ uint32_t* GetFAT() {
   return reinterpret_cast<uint32_t*>(
       reinterpret_cast<uintptr_t>(boot_volume_image) + fat_offset);
 }
-// #@@range_end(get_fat)
 
-// #@@range_begin(extend_cluster)
 unsigned long ExtendCluster(unsigned long eoc_cluster, size_t n) {
   uint32_t* fat = GetFAT();
   while (!IsEndOfClusterchain(fat[eoc_cluster])) {
@@ -187,9 +182,7 @@ unsigned long ExtendCluster(unsigned long eoc_cluster, size_t n) {
   fat[current] = kEndOfClusterchain;
   return current;
 }
-// #@@range_end(extend_cluster)
 
-// #@@range_begin(allocate_entry)
 DirectoryEntry* AllocateEntry(unsigned long dir_cluster) {
   while (true) {
     auto dir = GetSectorByCluster<DirectoryEntry>(dir_cluster);
@@ -210,9 +203,7 @@ DirectoryEntry* AllocateEntry(unsigned long dir_cluster) {
   memset(dir, 0, bytes_per_cluster);
   return &dir[0];
 }
-// #@@range_end(allocate_entry)
 
-// #@@range_begin(set_filename)
 void SetFileName(DirectoryEntry& entry, const char* name) {
   const char* dot_pos = strrchr(name, '.');
   memset(entry.name, ' ', 8+3);
@@ -229,9 +220,7 @@ void SetFileName(DirectoryEntry& entry, const char* name) {
     }
   }
 }
-// #@@range_end(set_filename)
 
-// #@@range_begin(fat_create_file)
 WithError<DirectoryEntry*> CreateFile(const char* path) {
   auto parent_dir_cluster = fat::boot_volume_image->root_cluster;
   const char* filename = path;
@@ -263,7 +252,6 @@ WithError<DirectoryEntry*> CreateFile(const char* path) {
   dir->file_size = 0;
   return { dir, MAKE_ERROR(Error::kSuccess) };
 }
-// #@@range_end(fat_create_file)
 
 FileDescriptor::FileDescriptor(DirectoryEntry& fat_entry)
     : fat_entry_{fat_entry} {
