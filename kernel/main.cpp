@@ -157,7 +157,6 @@ extern "C" void KernelMainNewStack(
 
   InitializeTask();
   Task& main_task = task_manager->CurrentTask();
-  terminals = new std::map<uint64_t, Terminal*>;
 
   usb::xhci::Initialize();
   InitializeKeyboard();
