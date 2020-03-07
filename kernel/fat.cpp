@@ -253,6 +253,7 @@ WithError<DirectoryEntry*> CreateFile(const char* path) {
   return { dir, MAKE_ERROR(Error::kSuccess) };
 }
 
+// #@@range_begin(alloc_chain)
 unsigned long AllocateClusterChain(size_t n) {
   uint32_t* fat = GetFAT();
   unsigned long first_cluster;
@@ -268,6 +269,7 @@ unsigned long AllocateClusterChain(size_t n) {
   }
   return first_cluster;
 }
+// #@@range_end(alloc_chain)
 
 FileDescriptor::FileDescriptor(DirectoryEntry& fat_entry)
     : fat_entry_{fat_entry} {
@@ -298,6 +300,7 @@ size_t FileDescriptor::Read(void* buf, size_t len) {
   return total;
 }
 
+// #@@range_begin(fat_fd_write)
 size_t FileDescriptor::Write(const void* buf, size_t len) {
   auto num_cluster = [](size_t bytes) {
     return (bytes + bytes_per_cluster - 1) / bytes_per_cluster;
@@ -339,5 +342,6 @@ size_t FileDescriptor::Write(const void* buf, size_t len) {
   fat_entry_.file_size = wr_off_;
   return total;
 }
+// #@@range_end(fat_fd_write)
 
 } // namespace fat
