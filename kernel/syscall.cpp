@@ -371,6 +371,7 @@ SYSCALL(ReadFile) {
   return { task.Files()[fd]->Read(buf, count), 0 };
 }
 
+// #@@range_begin(demand_pages)
 SYSCALL(DemandPages) {
   const size_t num_pages = arg1;
   // const int flags = arg2;
@@ -382,6 +383,7 @@ SYSCALL(DemandPages) {
   task.SetDPagingEnd(dp_end + 4096 * num_pages);
   return { dp_end, 0 };
 }
+// #@@range_end(demand_pages)
 
 #undef SYSCALL
 
