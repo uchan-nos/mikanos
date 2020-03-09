@@ -83,85 +83,19 @@ uintptr_t GetFirstLoadAddress(Elf64_Ehdr* ehdr) {
 
 static_assert(kBytesPerFrame >= 4096);
 
-WithError<PageMapEntry*> NewPageMap() {
-  auto frame = memory_manager->Allocate(1);
-  if (frame.error) {
-    return { nullptr, frame.error };
-  }
-
-  auto e = reinterpret_cast<PageMapEntry*>(frame.value.Frame());
-  memset(e, 0, sizeof(uint64_t) * 512);
-  return { e, MAKE_ERROR(Error::kSuccess) };
-}
-
-WithError<PageMapEntry*> SetNewPageMapIfNotPresent(PageMapEntry& entry) {
-  if (entry.bits.present) {
-    return { entry.Pointer(), MAKE_ERROR(Error::kSuccess) };
-  }
-
-  auto [ child_map, err ] = NewPageMap();
-  if (err) {
-    return { nullptr, err };
-  }
-
-  entry.SetPointer(child_map);
-  entry.bits.present = 1;
-
-  return { child_map, MAKE_ERROR(Error::kSuccess) };
-}
-
-WithError<size_t> SetupPageMap(
-    PageMapEntry* page_map, int page_map_level, LinearAddress4Level addr, size_t num_4kpages) {
-  while (num_4kpages > 0) {
-    const auto entry_index = addr.Part(page_map_level);
-
-    auto [ child_map, err ] = SetNewPageMapIfNotPresent(page_map[entry_index]);
-    if (err) {
-      return { num_4kpages, err };
-    }
-    page_map[entry_index].bits.writable = 1;
-    page_map[entry_index].bits.user = 1;
-
-    if (page_map_level == 1) {
-      --num_4kpages;
-    } else {
-      auto [ num_remain_pages, err ] =
-        SetupPageMap(child_map, page_map_level - 1, addr, num_4kpages);
-      if (err) {
-        return { num_4kpages, err };
-      }
-      num_4kpages = num_remain_pages;
-    }
-
-    if (entry_index == 511) {
-      break;
-    }
-
-    addr.SetPart(page_map_level, entry_index + 1);
-    for (int level = page_map_level - 1; level >= 1; --level) {
-      addr.SetPart(level, 0);
-    }
-  }
-
-  return { num_4kpages, MAKE_ERROR(Error::kSuccess) };
-}
-
-Error SetupPageMaps(LinearAddress4Level addr, size_t num_4kpages) {
-  auto pml4_table = reinterpret_cast<PageMapEntry*>(GetCR3());
-  return SetupPageMap(pml4_table, 4, addr, num_4kpages).error;
-}
-
-Error CopyLoadSegments(Elf64_Ehdr* ehdr) {
+WithError<uint64_t> CopyLoadSegments(Elf64_Ehdr* ehdr) {
   auto phdr = GetProgramHeader(ehdr);
+  uint64_t last_addr = 0;
   for (int i = 0; i < ehdr->e_phnum; ++i) {
     if (phdr[i].p_type != PT_LOAD) continue;
 
     LinearAddress4Level dest_addr;
     dest_addr.value = phdr[i].p_vaddr;
+    last_addr = std::max(last_addr, phdr[i].p_vaddr + phdr[i].p_memsz);
     const auto num_4kpages = (phdr[i].p_memsz + 4095) / 4096;
 
     if (auto err = SetupPageMaps(dest_addr, num_4kpages)) {
-      return err;
+      return { last_addr, err };
     }
 
     const auto src = reinterpret_cast<uint8_t*>(ehdr) + phdr[i].p_offset;
@@ -169,61 +103,20 @@ Error CopyLoadSegments(Elf64_Ehdr* ehdr) {
     memcpy(dst, src, phdr[i].p_filesz);
     memset(dst + phdr[i].p_filesz, 0, phdr[i].p_memsz - phdr[i].p_filesz);
   }
-  return MAKE_ERROR(Error::kSuccess);
+  return { last_addr, MAKE_ERROR(Error::kSuccess) };
 }
 
-Error LoadELF(Elf64_Ehdr* ehdr) {
+WithError<uint64_t> LoadELF(Elf64_Ehdr* ehdr) {
   if (ehdr->e_type != ET_EXEC) {
-    return MAKE_ERROR(Error::kInvalidFormat);
+    return { 0, MAKE_ERROR(Error::kInvalidFormat) };
   }
 
   const auto addr_first = GetFirstLoadAddress(ehdr);
   if (addr_first < 0xffff'8000'0000'0000) {
-    return MAKE_ERROR(Error::kInvalidFormat);
+    return { 0, MAKE_ERROR(Error::kInvalidFormat) };
   }
 
-  if (auto err = CopyLoadSegments(ehdr)) {
-    return err;
-  }
-
-  return MAKE_ERROR(Error::kSuccess);
-}
-
-Error CleanPageMap(PageMapEntry* page_map, int page_map_level) {
-  for (int i = 0; i < 512; ++i) {
-    auto entry = page_map[i];
-    if (!entry.bits.present) {
-      continue;
-    }
-
-    if (page_map_level > 1) {
-      if (auto err = CleanPageMap(entry.Pointer(), page_map_level - 1)) {
-        return err;
-      }
-    }
-
-    const auto entry_addr = reinterpret_cast<uintptr_t>(entry.Pointer());
-    const FrameID map_frame{entry_addr / kBytesPerFrame};
-    if (auto err = memory_manager->Free(map_frame, 1)) {
-      return err;
-    }
-    page_map[i].data = 0;
-  }
-
-  return MAKE_ERROR(Error::kSuccess);
-}
-
-Error CleanPageMaps(LinearAddress4Level addr) {
-  auto pml4_table = reinterpret_cast<PageMapEntry*>(GetCR3());
-  auto pdp_table = pml4_table[addr.parts.pml4].Pointer();
-  pml4_table[addr.parts.pml4].data = 0;
-  if (auto err = CleanPageMap(pdp_table, 3)) {
-    return err;
-  }
-
-  const auto pdp_addr = reinterpret_cast<uintptr_t>(pdp_table);
-  const FrameID pdp_frame{pdp_addr / kBytesPerFrame};
-  return memory_manager->Free(pdp_frame, 1);
+  return CopyLoadSegments(ehdr);
 }
 
 WithError<PageMapEntry*> SetupPML4(Task& current_task) {
@@ -246,8 +139,7 @@ Error FreePML4(Task& current_task) {
   current_task.Context().cr3 = 0;
   ResetCR3();
 
-  const FrameID frame{cr3 / kBytesPerFrame};
-  return memory_manager->Free(frame, 1);
+  return FreePageMap(reinterpret_cast<PageMapEntry*>(cr3));
 }
 
 void ListAllEntries(Terminal* term, uint32_t dir_cluster) {
@@ -506,8 +398,9 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
     return pml4.error;
   }
 
-  if (auto err = LoadELF(elf_header)) {
-    return err;
+  const auto [ elf_last_addr, elf_err ] = LoadELF(elf_header);
+  if (elf_err) {
+    return elf_err;
   }
 
   LinearAddress4Level args_frame_addr{0xffff'ffff'ffff'f000};
@@ -532,6 +425,11 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
     task.Files().push_back(
         std::make_unique<TerminalFileDescriptor>(task, *this));
   }
+
+  const uint64_t elf_next_page =
+    (elf_last_addr + 4095) & 0xffff'ffff'ffff'f000;
+  task.SetDPagingBegin(elf_next_page);
+  task.SetDPagingEnd(elf_next_page);
 
   auto entry_addr = elf_header->e_entry;
   int ret = CallApp(argc.value, argv, 3 << 3 | 3, entry_addr,
