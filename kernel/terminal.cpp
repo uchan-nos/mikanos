@@ -398,10 +398,12 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
     return pml4.error;
   }
 
+  // #@@range_begin(get_elf_last_addr)
   const auto [ elf_last_addr, elf_err ] = LoadELF(elf_header);
   if (elf_err) {
     return elf_err;
   }
+  // #@@range_end(get_elf_last_addr)
 
   LinearAddress4Level args_frame_addr{0xffff'ffff'ffff'f000};
   if (auto err = SetupPageMaps(args_frame_addr, 1)) {
@@ -426,6 +428,7 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
         std::make_unique<TerminalFileDescriptor>(task, *this));
   }
 
+  // #@@range_begin(set_dp_range)
   const uint64_t elf_next_page =
     (elf_last_addr + 4095) & 0xffff'ffff'ffff'f000;
   task.SetDPagingBegin(elf_next_page);
@@ -433,6 +436,7 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
 
   auto entry_addr = elf_header->e_entry;
   int ret = CallApp(argc.value, argv, 3 << 3 | 3, entry_addr,
+  // #@@range_end(set_dp_range)
                     stack_frame_addr.value + 4096 - 8,
                     &task.OSStackPointer());
 
