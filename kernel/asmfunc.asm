@@ -71,10 +71,12 @@ SetDSAll:
     mov gs, di
     ret
 
+; #@@range_begin(get_cr2)
 global GetCR2  ; uint64_t GetCR2();
 GetCR2:
     mov rax, cr2
     ret
+; #@@range_end(get_cr2)
 
 global SetCR3  ; void SetCR3(uint64_t value);
 SetCR3:
