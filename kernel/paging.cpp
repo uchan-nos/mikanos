@@ -139,11 +139,14 @@ Error SetupPageMaps(LinearAddress4Level addr, size_t num_4kpages) {
   return SetupPageMap(pml4_table, 4, addr, num_4kpages).error;
 }
 
+// #@@range_begin(clean_page_maps)
 Error CleanPageMaps(LinearAddress4Level addr) {
   auto pml4_table = reinterpret_cast<PageMapEntry*>(GetCR3());
   return CleanPageMap(pml4_table, 4, addr);
 }
+// #@@range_end(clean_page_maps)
 
+// #@@range_begin(handle_pf)
 Error HandlePageFault(uint64_t error_code, uint64_t causal_addr) {
   auto& task = task_manager->CurrentTask();
   if (causal_addr < task.DPagingBegin() || task.DPagingEnd() <= causal_addr) {
@@ -151,3 +154,4 @@ Error HandlePageFault(uint64_t error_code, uint64_t causal_addr) {
   }
   return SetupPageMaps(LinearAddress4Level{causal_addr}, 1);
 }
+// #@@range_end(handle_pf)

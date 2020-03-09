@@ -75,6 +75,7 @@ namespace {
     ExitApp(task.OSStackPointer(), 128 + SIGSEGV);
   }
 
+  // #@@range_begin(inthandler_pf)
   __attribute__((interrupt))
   void IntHandlerPF(InterruptFrame* frame, uint64_t error_code) {
     uint64_t cr2 = GetCR2();
@@ -87,6 +88,7 @@ namespace {
     PrintHex(error_code, 16, {500 + 8*4, 16*4});
     while (true) __asm__("hlt");
   }
+  // #@@range_end(inthandler_pf)
 
 #define FaultHandlerWithError(fault_name) \
   __attribute__((interrupt)) \
