@@ -75,6 +75,19 @@ namespace {
     ExitApp(task.OSStackPointer(), 128 + SIGSEGV);
   }
 
+  __attribute__((interrupt))
+  void IntHandlerPF(InterruptFrame* frame, uint64_t error_code) {
+    uint64_t cr2 = GetCR2();
+    if (auto err = HandlePageFault(error_code, cr2); !err) {
+      return;
+    }
+    KillApp(frame);
+    PrintFrame(frame, "#PF");
+    WriteString(*screen_writer, {500, 16*4}, "ERR", {0, 0, 0});
+    PrintHex(error_code, 16, {500 + 8*4, 16*4});
+    while (true) __asm__("hlt");
+  }
+
 #define FaultHandlerWithError(fault_name) \
   __attribute__((interrupt)) \
   void IntHandler ## fault_name (InterruptFrame* frame, uint64_t error_code) { \
@@ -105,7 +118,7 @@ namespace {
   FaultHandlerWithError(NP)
   FaultHandlerWithError(SS)
   FaultHandlerWithError(GP)
-  FaultHandlerWithError(PF)
+  // FaultHandlerWithError(PF)
   FaultHandlerNoError(MF)
   FaultHandlerWithError(AC)
   FaultHandlerNoError(MC)
