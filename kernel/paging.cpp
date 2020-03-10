@@ -149,6 +149,9 @@ Error CleanPageMaps(LinearAddress4Level addr) {
 // #@@range_begin(handle_pf)
 Error HandlePageFault(uint64_t error_code, uint64_t causal_addr) {
   auto& task = task_manager->CurrentTask();
+  if (error_code & 1) { // P=1 かつページレベルの権限違反により例外が起きた
+    return MAKE_ERROR(Error::kAlreadyAllocated);
+  }
   if (causal_addr < task.DPagingBegin() || task.DPagingEnd() <= causal_addr) {
     return MAKE_ERROR(Error::kIndexOutOfRange);
   }
