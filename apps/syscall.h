@@ -41,9 +41,7 @@ struct SyscallResult SyscallCreateTimer(
 
 struct SyscallResult SyscallOpenFile(const char* path, int flags);
 struct SyscallResult SyscallReadFile(int fd, void* buf, size_t count);
-// #@@range_begin(demand_pages_decl)
 struct SyscallResult SyscallDemandPages(size_t num_pages, int flags);
-// #@@range_end(demand_pages_decl)
 
 #ifdef __cplusplus
 } // extern "C"

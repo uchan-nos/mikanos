@@ -64,7 +64,6 @@ ssize_t read(int fd, void* buf, size_t count) {
   return -1;
 }
 
-// #@@range_begin(sbrk)
 caddr_t sbrk(int incr) {
   static uint64_t dpage_end = 0;
   static uint64_t program_break = 0;
@@ -84,7 +83,6 @@ caddr_t sbrk(int incr) {
   program_break += incr;
   return (caddr_t)prev_break;
 }
-// #@@range_end(sbrk)
 
 ssize_t write(int fd, const void* buf, size_t count) {
   struct SyscallResult res = SyscallPutString(fd, buf, count);
