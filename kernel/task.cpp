@@ -82,7 +82,6 @@ std::vector<std::unique_ptr<::FileDescriptor>>& Task::Files() {
   return files_;
 }
 
-// #@@range_begin(task_dpage_getset)
 uint64_t Task::DPagingBegin() const {
   return dpaging_begin_;
 }
@@ -98,7 +97,6 @@ uint64_t Task::DPagingEnd() const {
 void Task::SetDPagingEnd(uint64_t v) {
   dpaging_end_ = v;
 }
-// #@@range_end(task_dpage_getset)
 
 TaskManager::TaskManager() {
   Task& task = NewTask()
