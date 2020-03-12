@@ -30,6 +30,11 @@ using TaskFunc = void (uint64_t, int64_t);
 
 class TaskManager;
 
+struct FileMapping {
+  int fd;
+  uint64_t vaddr_begin, vaddr_end;
+};
+
 class Task {
  public:
   static const int kDefaultLevel = 1;
@@ -49,6 +54,9 @@ class Task {
   void SetDPagingBegin(uint64_t v);
   uint64_t DPagingEnd() const;
   void SetDPagingEnd(uint64_t v);
+  uint64_t FileMapEnd() const;
+  void SetFileMapEnd(uint64_t v);
+  std::vector<FileMapping>& FileMaps();
 
   int Level() const { return level_; }
   bool Running() const { return running_; }
@@ -63,6 +71,8 @@ class Task {
   bool running_{false};
   std::vector<std::unique_ptr<::FileDescriptor>> files_{};
   uint64_t dpaging_begin_{0}, dpaging_end_{0};
+  uint64_t file_map_end_{0};
+  std::vector<FileMapping> file_maps_{};
 
   Task& SetLevel(int level) { level_ = level; return *this; }
   Task& SetRunning(bool running) { running_ = running; return *this; }

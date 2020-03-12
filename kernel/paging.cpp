@@ -149,8 +149,25 @@ Error HandlePageFault(uint64_t error_code, uint64_t causal_addr) {
   if (error_code & 1) { // P=1 かつページレベルの権限違反により例外が起きた
     return MAKE_ERROR(Error::kAlreadyAllocated);
   }
-  if (causal_addr < task.DPagingBegin() || task.DPagingEnd() <= causal_addr) {
-    return MAKE_ERROR(Error::kIndexOutOfRange);
+  if (task.DPagingBegin() <= causal_addr && causal_addr < task.DPagingEnd()) {
+    return SetupPageMaps(LinearAddress4Level{causal_addr}, 1);
   }
-  return SetupPageMaps(LinearAddress4Level{causal_addr}, 1);
+  for (int i = 0; i < task.FileMaps().size(); ++i) {
+    if (task.FileMaps()[i].vaddr_begin <= causal_addr &&
+        causal_addr < task.FileMaps()[i].vaddr_end) {
+      if (auto err = SetupPageMaps(LinearAddress4Level{causal_addr}, 1)) {
+        return err;
+      }
+      auto fd = task.Files()[task.FileMaps()[i].fd].get();
+      if (!fd) {
+        return MAKE_ERROR(Error::kInvalidFile);
+      }
+      uint64_t addr_aligned = causal_addr & 0xffff'ffff'ffff'f000;
+      if (auto err = fd->Load(reinterpret_cast<void*>(addr_aligned), addr_aligned - task.FileMaps()[i].vaddr_begin, 4096)) {
+        return err;
+      }
+      return MAKE_ERROR(Error::kSuccess);
+    }
+  }
+  return MAKE_ERROR(Error::kIndexOutOfRange);
 }
