@@ -142,7 +142,7 @@ bool NameIsEqual(const DirectoryEntry& entry, const char* name);
  * @param entry  ファイルを表すディレクトリエントリ
  * @return  読み込んだバイト数
  */
-size_t LoadFile(void* buf, size_t len, const DirectoryEntry& entry);
+size_t LoadFile(void* buf, size_t len, DirectoryEntry& entry);
 
 bool IsEndOfClusterchain(unsigned long cluster);
 
@@ -191,7 +191,8 @@ class FileDescriptor : public ::FileDescriptor {
   size_t Read(void* buf, size_t len) override;
   size_t Write(const void* buf, size_t len) override;
   size_t Size() const override { return fat_entry_.file_size; }
-  Error Load(void* buf, size_t offset, size_t len) override;
+  Error Seek(bool write, long offset, int whence) override;
+  size_t Load(void* buf, size_t len, size_t offset) override;
 
  private:
   DirectoryEntry& fat_entry_;
