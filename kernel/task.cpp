@@ -98,6 +98,7 @@ void Task::SetDPagingEnd(uint64_t v) {
   dpaging_end_ = v;
 }
 
+// #@@range_begin(filemap_methods)
 uint64_t Task::FileMapEnd() const {
   return file_map_end_;
 }
@@ -109,6 +110,7 @@ void Task::SetFileMapEnd(uint64_t v) {
 std::vector<FileMapping>& Task::FileMaps() {
   return file_maps_;
 }
+// #@@range_end(filemap_methods)
 
 TaskManager::TaskManager() {
   Task& task = NewTask()
