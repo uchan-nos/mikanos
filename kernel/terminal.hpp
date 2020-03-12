@@ -58,6 +58,8 @@ class TerminalFileDescriptor : public FileDescriptor {
   explicit TerminalFileDescriptor(Task& task, Terminal& term);
   size_t Read(void* buf, size_t len) override;
   size_t Write(const void* buf, size_t len) override;
+  size_t Size() const override { return 0; }
+  Error Load(void* buf, size_t offset, size_t len) override;
 
  private:
   Task& task_;
