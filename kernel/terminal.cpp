@@ -648,10 +648,6 @@ size_t TerminalFileDescriptor::Write(const void* buf, size_t len) {
   return len;
 }
 
-Error TerminalFileDescriptor::Seek(bool write, long offset, int whence) {
-  return MAKE_ERROR(Error::kNotImplemented);
-}
-
 size_t TerminalFileDescriptor::Load(void* buf, size_t len, size_t offset) {
   return 0;
 }
