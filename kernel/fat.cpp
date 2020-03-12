@@ -340,4 +340,39 @@ size_t FileDescriptor::Write(const void* buf, size_t len) {
   return total;
 }
 
+Error FileDescriptor::Load(void* buf, size_t offset, size_t len) {
+  auto is_valid_cluster = [](uint32_t c) {
+    return c != 0 && c != fat::kEndOfClusterchain;
+  };
+  auto cluster = fat_entry_.FirstCluster();
+
+  const auto buf_uint8 = reinterpret_cast<uint8_t*>(buf);
+  const auto buf_end = buf_uint8 + len;
+  auto p = buf_uint8;
+
+  while (offset >= bytes_per_cluster) {
+    cluster = NextCluster(cluster);
+    offset -= bytes_per_cluster;
+  }
+  if (len <= bytes_per_cluster - offset) {
+    memcpy(p, GetSectorByCluster<uint8_t>(cluster) + offset, len);
+    return MAKE_ERROR(Error::kSuccess);
+  } else {
+    memcpy(p, GetSectorByCluster<uint8_t>(cluster) + offset, bytes_per_cluster - offset);
+    p += bytes_per_cluster - offset;
+    cluster = NextCluster(cluster);
+  }
+
+  while (is_valid_cluster(cluster)) {
+    if (bytes_per_cluster >= buf_end - p) {
+      memcpy(p, GetSectorByCluster<uint8_t>(cluster), buf_end - p);
+      return MAKE_ERROR(Error::kSuccess);
+    }
+    memcpy(p, GetSectorByCluster<uint8_t>(cluster), bytes_per_cluster);
+    p += bytes_per_cluster;
+    cluster = NextCluster(cluster);
+  }
+  return MAKE_ERROR(Error::kSuccess);
+}
+
 } // namespace fat
