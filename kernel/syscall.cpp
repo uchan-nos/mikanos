@@ -400,7 +400,6 @@ SYSCALL(MapFile) {
   const uint64_t vaddr_begin = (vaddr_end - *file_size) & 0xffff'ffff'ffff'f000;
   task.SetFileMapEnd(vaddr_begin);
   task.FileMaps().push_back(FileMapping{fd, vaddr_begin, vaddr_end});
-  Log(kWarn, "MapFile: map %d to [%08lx, %08lx)\n", fd, vaddr_begin, vaddr_end);
   return { vaddr_begin, 0 };
 }
 
