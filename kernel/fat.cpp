@@ -322,41 +322,18 @@ size_t FileDescriptor::Write(const void* buf, size_t len) {
   return total;
 }
 
-Error FileDescriptor::Seek(bool write, long offset, int whence) {
-  if (whence != SEEK_SET) {
-    return MAKE_ERROR(Error::kNotImplemented);
-  }
-  if (offset < 0 || fat_entry_.file_size < offset) {
-    return MAKE_ERROR(Error::kIndexOutOfRange);
-  }
-
-  if (write) {
-    wr_off_ = offset;
-  } else {
-    rd_off_ = offset;
-  }
-
-  unsigned long cluster = fat_entry_.FirstCluster();
-   while (offset >= bytes_per_cluster) {
-     offset -= bytes_per_cluster;
-     cluster = NextCluster(cluster);
-   }
-
-  if (write) {
-    wr_cluster_ = cluster;
-    wr_cluster_off_ = offset;
-  } else {
-    rd_cluster_ = cluster;
-    rd_cluster_off_ = offset;
-  }
-  return MAKE_ERROR(Error::kSuccess);
-}
-
 size_t FileDescriptor::Load(void* buf, size_t len, size_t offset) {
   FileDescriptor fd{fat_entry_};
-  if (auto err = fd.Seek(false, offset, SEEK_SET)) {
-    return 0;
+  fd.rd_off_ = offset;
+
+  unsigned long cluster = fat_entry_.FirstCluster();
+  while (offset >= bytes_per_cluster) {
+    offset -= bytes_per_cluster;
+    cluster = NextCluster(cluster);
   }
+
+  fd.rd_cluster_ = cluster;
+  fd.rd_cluster_off_ = offset;
   return fd.Read(buf, len);
 }
 

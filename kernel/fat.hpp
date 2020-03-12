@@ -191,7 +191,6 @@ class FileDescriptor : public ::FileDescriptor {
   size_t Read(void* buf, size_t len) override;
   size_t Write(const void* buf, size_t len) override;
   size_t Size() const override { return fat_entry_.file_size; }
-  Error Seek(bool write, long offset, int whence) override;
   size_t Load(void* buf, size_t len, size_t offset) override;
 
  private:
