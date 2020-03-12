@@ -381,7 +381,7 @@ void Terminal::ExecuteLine() {
   }
 }
 
-Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command, char* first_arg) {
+Error Terminal::ExecuteFile(fat::DirectoryEntry& file_entry, char* command, char* first_arg) {
   std::vector<uint8_t> file_buf(file_entry.file_size);
   fat::LoadFile(&file_buf[0], file_buf.size(), file_entry);
 
@@ -648,6 +648,10 @@ size_t TerminalFileDescriptor::Write(const void* buf, size_t len) {
   return len;
 }
 
-Error TerminalFileDescriptor::Load(void* buf, size_t offset, size_t len) {
+Error TerminalFileDescriptor::Seek(bool write, long offset, int whence) {
   return MAKE_ERROR(Error::kNotImplemented);
+}
+
+size_t TerminalFileDescriptor::Load(void* buf, size_t len, size_t offset) {
+  return 0;
 }

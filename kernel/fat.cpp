@@ -128,26 +128,8 @@ bool NameIsEqual(const DirectoryEntry& entry, const char* name) {
   return memcmp(entry.name, name83, sizeof(name83)) == 0;
 }
 
-size_t LoadFile(void* buf, size_t len, const DirectoryEntry& entry) {
-  auto is_valid_cluster = [](uint32_t c) {
-    return c != 0 && c != fat::kEndOfClusterchain;
-  };
-  auto cluster = entry.FirstCluster();
-
-  const auto buf_uint8 = reinterpret_cast<uint8_t*>(buf);
-  const auto buf_end = buf_uint8 + len;
-  auto p = buf_uint8;
-
-  while (is_valid_cluster(cluster)) {
-    if (bytes_per_cluster >= buf_end - p) {
-      memcpy(p, GetSectorByCluster<uint8_t>(cluster), buf_end - p);
-      return len;
-    }
-    memcpy(p, GetSectorByCluster<uint8_t>(cluster), bytes_per_cluster);
-    p += bytes_per_cluster;
-    cluster = NextCluster(cluster);
-  }
-  return p - buf_uint8;
+size_t LoadFile(void* buf, size_t len, DirectoryEntry& entry) {
+  return FileDescriptor{entry}.Read(buf, len);
 }
 
 bool IsEndOfClusterchain(unsigned long cluster) {
@@ -340,39 +322,42 @@ size_t FileDescriptor::Write(const void* buf, size_t len) {
   return total;
 }
 
-Error FileDescriptor::Load(void* buf, size_t offset, size_t len) {
-  auto is_valid_cluster = [](uint32_t c) {
-    return c != 0 && c != fat::kEndOfClusterchain;
-  };
-  auto cluster = fat_entry_.FirstCluster();
-
-  const auto buf_uint8 = reinterpret_cast<uint8_t*>(buf);
-  const auto buf_end = buf_uint8 + len;
-  auto p = buf_uint8;
-
-  while (offset >= bytes_per_cluster) {
-    cluster = NextCluster(cluster);
-    offset -= bytes_per_cluster;
+Error FileDescriptor::Seek(bool write, long offset, int whence) {
+  if (whence != SEEK_SET) {
+    return MAKE_ERROR(Error::kNotImplemented);
   }
-  if (len <= bytes_per_cluster - offset) {
-    memcpy(p, GetSectorByCluster<uint8_t>(cluster) + offset, len);
-    return MAKE_ERROR(Error::kSuccess);
+  if (offset < 0 || fat_entry_.file_size < offset) {
+    return MAKE_ERROR(Error::kIndexOutOfRange);
+  }
+
+  if (write) {
+    wr_off_ = offset;
   } else {
-    memcpy(p, GetSectorByCluster<uint8_t>(cluster) + offset, bytes_per_cluster - offset);
-    p += bytes_per_cluster - offset;
-    cluster = NextCluster(cluster);
+    rd_off_ = offset;
   }
 
-  while (is_valid_cluster(cluster)) {
-    if (bytes_per_cluster >= buf_end - p) {
-      memcpy(p, GetSectorByCluster<uint8_t>(cluster), buf_end - p);
-      return MAKE_ERROR(Error::kSuccess);
-    }
-    memcpy(p, GetSectorByCluster<uint8_t>(cluster), bytes_per_cluster);
-    p += bytes_per_cluster;
-    cluster = NextCluster(cluster);
+  unsigned long cluster = fat_entry_.FirstCluster();
+   while (offset >= bytes_per_cluster) {
+     offset -= bytes_per_cluster;
+     cluster = NextCluster(cluster);
+   }
+
+  if (write) {
+    wr_cluster_ = cluster;
+    wr_cluster_off_ = offset;
+  } else {
+    rd_cluster_ = cluster;
+    rd_cluster_off_ = offset;
   }
   return MAKE_ERROR(Error::kSuccess);
+}
+
+size_t FileDescriptor::Load(void* buf, size_t len, size_t offset) {
+  FileDescriptor fd{fat_entry_};
+  if (auto err = fd.Seek(false, offset, SEEK_SET)) {
+    return 0;
+  }
+  return fd.Read(buf, len);
 }
 
 } // namespace fat
