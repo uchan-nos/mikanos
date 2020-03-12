@@ -429,6 +429,7 @@ Error Terminal::ExecuteFile(fat::DirectoryEntry& file_entry, char* command, char
   const uint64_t elf_next_page =
     (elf_last_addr + 4095) & 0xffff'ffff'ffff'f000;
   task.SetDPagingBegin(elf_next_page);
+  // #@@range_begin(set_filemap_end)
   task.SetDPagingEnd(elf_next_page);
 
   task.SetFileMapEnd(0xffff'ffff'ffff'e000);
@@ -440,6 +441,7 @@ Error Terminal::ExecuteFile(fat::DirectoryEntry& file_entry, char* command, char
 
   task.Files().clear();
   task.FileMaps().clear();
+  // #@@range_end(set_filemap_end)
 
   char s[64];
   sprintf(s, "app exited. ret = %d\n", ret);

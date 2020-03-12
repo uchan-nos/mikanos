@@ -322,6 +322,7 @@ size_t FileDescriptor::Write(const void* buf, size_t len) {
   return total;
 }
 
+// #@@range_begin(fat_fd_load)
 size_t FileDescriptor::Load(void* buf, size_t len, size_t offset) {
   FileDescriptor fd{fat_entry_};
   fd.rd_off_ = offset;
@@ -336,5 +337,6 @@ size_t FileDescriptor::Load(void* buf, size_t len, size_t offset) {
   fd.rd_cluster_off_ = offset;
   return fd.Read(buf, len);
 }
+// #@@range_end(fat_fd_load)
 
 } // namespace fat
