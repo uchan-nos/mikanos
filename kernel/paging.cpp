@@ -116,7 +116,6 @@ Error CleanPageMap(
   return MAKE_ERROR(Error::kSuccess);
 }
 
-// #@@range_begin(find_filemapping)
 const FileMapping* FindFileMapping(const std::vector<FileMapping>& fmaps,
                                    uint64_t causal_vaddr) {
   for (const FileMapping& m : fmaps) {
@@ -126,9 +125,7 @@ const FileMapping* FindFileMapping(const std::vector<FileMapping>& fmaps,
   }
   return nullptr;
 }
-// #@@range_end(find_filemapping)
 
-// #@@range_begin(prepare_pagecache)
 Error PreparePageCache(FileDescriptor& fd, const FileMapping& m,
                        uint64_t causal_vaddr) {
   LinearAddress4Level page_vaddr{causal_vaddr};
@@ -142,7 +139,6 @@ Error PreparePageCache(FileDescriptor& fd, const FileMapping& m,
   fd.Load(page_cache, 4096, file_offset);
   return MAKE_ERROR(Error::kSuccess);
 }
-// #@@range_end(prepare_pagecache)
 
 } // namespace
 
@@ -172,7 +168,6 @@ Error CleanPageMaps(LinearAddress4Level addr) {
   return CleanPageMap(pml4_table, 4, addr);
 }
 
-// #@@range_begin(handle_pf)
 Error HandlePageFault(uint64_t error_code, uint64_t causal_addr) {
   auto& task = task_manager->CurrentTask();
   if (error_code & 1) { // P=1 かつページレベルの権限違反により例外が起きた
@@ -186,4 +181,3 @@ Error HandlePageFault(uint64_t error_code, uint64_t causal_addr) {
   }
   return MAKE_ERROR(Error::kIndexOutOfRange);
 }
-// #@@range_end(handle_pf)
