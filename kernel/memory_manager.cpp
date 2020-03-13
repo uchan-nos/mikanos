@@ -51,7 +51,6 @@ void BitmapMemoryManager::SetMemoryRange(FrameID range_begin, FrameID range_end)
   range_end_ = range_end;
 }
 
-// #@@range_begin(memman_stat)
 MemoryStat BitmapMemoryManager::Stat() const {
   size_t sum = 0;
   for (int i = range_begin_.ID() / kBitsPerMapLine;
@@ -60,7 +59,6 @@ MemoryStat BitmapMemoryManager::Stat() const {
   }
   return { sum, range_end_.ID() - range_begin_.ID() };
 }
-// #@@range_end(memman_stat)
 
 bool BitmapMemoryManager::GetBit(FrameID frame) const {
   auto line_index = frame.ID() / kBitsPerMapLine;

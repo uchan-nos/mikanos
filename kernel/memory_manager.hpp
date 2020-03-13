@@ -41,12 +41,10 @@ class FrameID {
 
 static const FrameID kNullFrame{std::numeric_limits<size_t>::max()};
 
-// #@@range_begin(memory_stat_struct)
 struct MemoryStat {
   size_t allocated_frames;
   size_t total_frames;
 };
-// #@@range_end(memory_stat_struct)
 
 /** @brief ビットマップ配列を用いてフレーム単位でメモリ管理するクラス．
  *
