@@ -383,7 +383,6 @@ SYSCALL(DemandPages) {
   return { dp_end, 0 };
 }
 
-// #@@range_begin(map_file)
 SYSCALL(MapFile) {
   const int fd = arg1;
   size_t* file_size = reinterpret_cast<size_t*>(arg2);
@@ -403,7 +402,6 @@ SYSCALL(MapFile) {
   task.FileMaps().push_back(FileMapping{fd, vaddr_begin, vaddr_end});
   return { vaddr_begin, 0 };
 }
-// #@@range_end(map_file)
 
 #undef SYSCALL
 
