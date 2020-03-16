@@ -162,10 +162,12 @@ extern "C" void KernelMainNewStack(
   InitializeKeyboard();
   InitializeMouse();
 
+  // #@@range_begin(init_app_loads)
   app_loads = new std::map<fat::DirectoryEntry*, AppLoadInfo>;
   task_manager->NewTask()
     .InitContext(TaskTerminal, 0)
     .Wakeup();
+  // #@@range_end(init_app_loads)
 
   char str[128];
 
