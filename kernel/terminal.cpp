@@ -83,6 +83,7 @@ uintptr_t GetFirstLoadAddress(Elf64_Ehdr* ehdr) {
 
 static_assert(kBytesPerFrame >= 4096);
 
+// #@@range_begin(copy_load_segments)
 WithError<uint64_t> CopyLoadSegments(Elf64_Ehdr* ehdr) {
   auto phdr = GetProgramHeader(ehdr);
   uint64_t last_addr = 0;
@@ -94,6 +95,7 @@ WithError<uint64_t> CopyLoadSegments(Elf64_Ehdr* ehdr) {
     last_addr = std::max(last_addr, phdr[i].p_vaddr + phdr[i].p_memsz);
     const auto num_4kpages = (phdr[i].p_memsz + 4095) / 4096;
 
+    // setup pagemaps as readonly (writable = false)
     if (auto err = SetupPageMaps(dest_addr, num_4kpages, false)) {
       return { last_addr, err };
     }
@@ -105,6 +107,7 @@ WithError<uint64_t> CopyLoadSegments(Elf64_Ehdr* ehdr) {
   }
   return { last_addr, MAKE_ERROR(Error::kSuccess) };
 }
+// #@@range_end(copy_load_segments)
 
 WithError<uint64_t> LoadELF(Elf64_Ehdr* ehdr) {
   if (ehdr->e_type != ET_EXEC) {
@@ -168,6 +171,7 @@ void ListAllEntries(Terminal* term, uint32_t dir_cluster) {
   }
 }
 
+// #@@range_begin(load_app)
 WithError<AppLoadInfo> LoadApp(fat::DirectoryEntry& file_entry, Task& task) {
   PageMapEntry* temp_pml4;
   if (auto [ pml4, err ] = SetupPML4(task); err) {
@@ -207,10 +211,13 @@ WithError<AppLoadInfo> LoadApp(fat::DirectoryEntry& file_entry, Task& task) {
   auto err = CopyPageMaps(app_load.pml4, temp_pml4, 4, 256);
   return { app_load, err };
 }
+// #@@range_end(load_app)
 
 } // namespace
 
+// #@@range_begin(app_loads_map)
 std::map<fat::DirectoryEntry*, AppLoadInfo>* app_loads;
+// #@@range_end(app_loads_map)
 
 Terminal::Terminal(uint64_t task_id, bool show_window)
     : task_id_{task_id}, show_window_{show_window} {
@@ -435,6 +442,7 @@ void Terminal::ExecuteLine() {
   }
 }
 
+// #@@range_begin(execute_file)
 Error Terminal::ExecuteFile(fat::DirectoryEntry& file_entry, char* command, char* first_arg) {
   __asm__("cli");
   auto& task = task_manager->CurrentTask();
@@ -446,6 +454,7 @@ Error Terminal::ExecuteFile(fat::DirectoryEntry& file_entry, char* command, char
   }
 
   LinearAddress4Level args_frame_addr{0xffff'ffff'ffff'f000};
+// #@@range_end(execute_file)
   if (auto err = SetupPageMaps(args_frame_addr, 1)) {
     return err;
   }
