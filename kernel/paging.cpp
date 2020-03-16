@@ -28,8 +28,10 @@ void SetupIdentityPageTable() {
     }
   }
 
+  // #@@range_begin(clear_wp)
   ResetCR3();
   SetCR0(GetCR0() & 0xfffeffff); // Clear WP
+  // #@@range_end(clear_wp)
 }
 
 void InitializePaging() {
@@ -58,6 +60,7 @@ WithError<PageMapEntry*> SetNewPageMapIfNotPresent(PageMapEntry& entry) {
   return { child_map, MAKE_ERROR(Error::kSuccess) };
 }
 
+// #@@range_begin(setup_pagemap)
 WithError<size_t> SetupPageMap(
     PageMapEntry* page_map, int page_map_level, LinearAddress4Level addr,
     size_t num_4kpages, bool writable) {
@@ -77,6 +80,7 @@ WithError<size_t> SetupPageMap(
       page_map[entry_index].bits.writable = true;
       auto [ num_remain_pages, err ] =
         SetupPageMap(child_map, page_map_level - 1, addr, num_4kpages, writable);
+// #@@range_end(setup_pagemap)
       if (err) {
         return { num_4kpages, err };
       }
@@ -96,10 +100,12 @@ WithError<size_t> SetupPageMap(
   return { num_4kpages, MAKE_ERROR(Error::kSuccess) };
 }
 
+// #@@range_begin(clean_page_map)
 Error CleanPageMap(
     PageMapEntry* page_map, int page_map_level, LinearAddress4Level addr) {
   for (int i = addr.Part(page_map_level); i < 512; ++i) {
     auto entry = page_map[i];
+// #@@range_end(clean_page_map)
     if (!entry.bits.present) {
       continue;
     }
@@ -110,6 +116,7 @@ Error CleanPageMap(
       }
     }
 
+// #@@range_begin(clean_page_map_free)
     if (entry.bits.writable) {
       const auto entry_addr = reinterpret_cast<uintptr_t>(entry.Pointer());
       const FrameID map_frame{entry_addr / kBytesPerFrame};
@@ -118,6 +125,7 @@ Error CleanPageMap(
       }
     }
     page_map[i].data = 0;
+// #@@range_end(clean_page_map_free)
   }
 
   return MAKE_ERROR(Error::kSuccess);
@@ -147,6 +155,7 @@ Error PreparePageCache(FileDescriptor& fd, const FileMapping& m,
   return MAKE_ERROR(Error::kSuccess);
 }
 
+// #@@range_begin(set_page_content)
 Error SetPageContent(PageMapEntry* table, int part,
                      LinearAddress4Level addr, PageMapEntry* content) {
   if (part == 1) {
@@ -160,7 +169,9 @@ Error SetPageContent(PageMapEntry* table, int part,
   const auto i = addr.Part(part);
   return SetPageContent(table[i].Pointer(), part - 1, addr, content);
 }
+// #@@range_end(set_page_content)
 
+// #@@range_begin(copy_one_page)
 Error CopyOnePage(uint64_t causal_addr) {
   auto [ p, err ] = NewPageMap();
   if (err) {
@@ -171,6 +182,7 @@ Error CopyOnePage(uint64_t causal_addr) {
   return SetPageContent(reinterpret_cast<PageMapEntry*>(GetCR3()), 4,
                         LinearAddress4Level{causal_addr}, p);
 }
+// #@@range_end(copy_one_page)
 
 } // namespace
 
@@ -200,6 +212,7 @@ Error CleanPageMaps(LinearAddress4Level addr) {
   return CleanPageMap(pml4_table, 4, addr);
 }
 
+// #@@range_begin(copy_page_maps)
 Error CopyPageMaps(PageMapEntry* dest, PageMapEntry* src, int part, int start) {
   if (part == 1) {
     for (int i = start; i < 512; ++i) {
@@ -228,7 +241,9 @@ Error CopyPageMaps(PageMapEntry* dest, PageMapEntry* src, int part, int start) {
   }
   return MAKE_ERROR(Error::kSuccess);
 }
+// #@@range_end(copy_page_maps)
 
+// #@@range_begin(handle_pf)
 Error HandlePageFault(uint64_t error_code, uint64_t causal_addr) {
   auto& task = task_manager->CurrentTask();
   const bool present = (error_code >> 0) & 1;
@@ -241,6 +256,7 @@ Error HandlePageFault(uint64_t error_code, uint64_t causal_addr) {
   }
 
   if (task.DPagingBegin() <= causal_addr && causal_addr < task.DPagingEnd()) {
+// #@@range_end(handle_pf)
     return SetupPageMaps(LinearAddress4Level{causal_addr}, 1);
   }
   if (auto m = FindFileMapping(task.FileMaps(), causal_addr)) {
