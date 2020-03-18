@@ -350,9 +350,7 @@ ExitApp:
 
     ret  ; CallApp の次の行に飛ぶ
 
-; #@@range_begin(invalidate_tlb)
 global InvalidateTLB  ; void InvalidateTLB(uint64_t addr);
 InvalidateTLB:
     invlpg [rdi]
     ret
-; #@@range_end(invalidate_tlb)
