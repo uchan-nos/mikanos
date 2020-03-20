@@ -493,7 +493,12 @@ Error Terminal::ExecuteFile(fat::DirectoryEntry& file_entry, char* command, char
   return FreePML4(task);
 }
 
-void Terminal::Print(char c) {
+// #@@range_begin(print_char)
+void Terminal::Print(char32_t c) {
+  if (!show_window_) {
+    return;
+  }
+
   auto newline = [this]() {
     cursor_.x = 0;
     if (cursor_.y < kRows - 1) {
@@ -503,37 +508,40 @@ void Terminal::Print(char c) {
     }
   };
 
-  if (c == '\n') {
+  if (c == U'\n') {
     newline();
-  } else {
-    if (show_window_) {
-      WriteAscii(*window_->Writer(), CalcCursorPos(), c, {255, 255, 255});
-    }
-    if (cursor_.x == kColumns - 1) {
+  } else if (IsHankaku(c)) {
+    if (cursor_.x == kColumns) {
       newline();
-    } else {
-      ++cursor_.x;
     }
+    WriteAscii(*window_->Writer(), CalcCursorPos(), c, {255, 255, 255});
+    ++cursor_.x;
+  } else {
+    if (cursor_.x >= kColumns - 1) {
+      newline();
+    }
+    WriteUnicode(*window_->Writer(), CalcCursorPos(), c, {255, 255, 255});
+    cursor_.x += 2;
   }
 }
+// #@@range_end(print_char)
 
+// #@@range_begin(print_str)
 void Terminal::Print(const char* s, std::optional<size_t> len) {
   const auto cursor_before = CalcCursorPos();
   DrawCursor(false);
 
-  if (len) {
-    for (size_t i = 0; i < *len; ++i) {
-      Print(*s);
-      ++s;
-    }
-  } else {
-    while (*s) {
-      Print(*s);
-      ++s;
-    }
+  size_t i = 0;
+  const size_t len_ = len ? *len : std::numeric_limits<size_t>::max();
+
+  while (s[i] && i < len_) {
+    const auto [ u32, bytes ] = ConvertUTF8To32(&s[i]);
+    Print(u32);
+    i += bytes;
   }
 
   DrawCursor(true);
+// #@@range_end(print_str)
   const auto cursor_after = CalcCursorPos();
 
   Vector2D<int> draw_pos{ToplevelWindow::kTopLeftMargin.x, cursor_before.y};
