@@ -25,9 +25,12 @@ const uint8_t* GetFont(char c) {
   return &_binary_hankaku_bin_start + index;
 }
 
+// #@@range_begin(global_var)
 FT_Library ft_library;
 std::vector<uint8_t>* nihongo_buf;
+// #@@range_end(global_var)
 
+// #@@range_begin(render_unicode)
 Error RenderUnicode(char32_t c, FT_Face face) {
   const auto glyph_index = FT_Get_Char_Index(face, c);
   if (glyph_index == 0) {
@@ -40,6 +43,7 @@ Error RenderUnicode(char32_t c, FT_Face face) {
   }
   return MAKE_ERROR(Error::kSuccess);
 }
+// #@@range_end(render_unicode)
 
 } // namespace
 
@@ -125,6 +129,7 @@ bool IsHankaku(char32_t c) {
 }
 // #@@range_end(is_hankaku)
 
+// #@@range_begin(new_ftface)
 WithError<FT_Face> NewFTFace() {
   FT_Face face;
   if (int err = FT_New_Memory_Face(
@@ -136,6 +141,7 @@ WithError<FT_Face> NewFTFace() {
   }
   return { face, MAKE_ERROR(Error::kSuccess) };
 }
+// #@@range_end(new_ftface)
 
 // #@@range_begin(write_unicode)
 Error WriteUnicode(PixelWriter& writer, Vector2D<int> pos,
@@ -183,6 +189,7 @@ Error WriteUnicode(PixelWriter& writer, Vector2D<int> pos,
 }
 // #@@range_end(write_unicode)
 
+// #@@range_begin(init_font)
 void InitializeFont() {
   if (int err = FT_Init_FreeType(&ft_library)) {
     exit(1);
@@ -200,3 +207,4 @@ void InitializeFont() {
     exit(1);
   }
 }
+// #@@range_end(init_font)
