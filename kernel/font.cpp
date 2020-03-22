@@ -48,11 +48,11 @@ void WriteString(PixelWriter& writer, Vector2D<int> pos, const char* s, const Pi
 int CountUTF8Size(uint8_t c) {
   if (c < 0x80) {
     return 1;
-  } else if (c < 0xe0) {
+  } else if (0xc0 <= c && c < 0xe0) {
     return 2;
-  } else if (c < 0xf0) {
+  } else if (0xe0 <= c && c < 0xf0) {
     return 3;
-  } else if (c < 0xf8) {
+  } else if (0xf0 <= c && c < 0xf8) {
     return 4;
   }
   return 0;
