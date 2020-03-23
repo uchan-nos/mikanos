@@ -25,12 +25,9 @@ const uint8_t* GetFont(char c) {
   return &_binary_hankaku_bin_start + index;
 }
 
-// #@@range_begin(global_var)
 FT_Library ft_library;
 std::vector<uint8_t>* nihongo_buf;
-// #@@range_end(global_var)
 
-// #@@range_begin(render_unicode)
 Error RenderUnicode(char32_t c, FT_Face face) {
   const auto glyph_index = FT_Get_Char_Index(face, c);
   if (glyph_index == 0) {
@@ -43,7 +40,6 @@ Error RenderUnicode(char32_t c, FT_Face face) {
   }
   return MAKE_ERROR(Error::kSuccess);
 }
-// #@@range_end(render_unicode)
 
 } // namespace
 
@@ -61,7 +57,6 @@ void WriteAscii(PixelWriter& writer, Vector2D<int> pos, char c, const PixelColor
   }
 }
 
-// #@@range_begin(write_string)
 void WriteString(PixelWriter& writer, Vector2D<int> pos, const char* s, const PixelColor& color) {
   int x = 0;
   while (*s) {
@@ -71,9 +66,7 @@ void WriteString(PixelWriter& writer, Vector2D<int> pos, const char* s, const Pi
     x += IsHankaku(u32) ? 1 : 2;
   }
 }
-// #@@range_end(write_string)
 
-// #@@range_begin(count_utf8size)
 int CountUTF8Size(uint8_t c) {
   if (c < 0x80) {
     return 1;
@@ -86,9 +79,7 @@ int CountUTF8Size(uint8_t c) {
   }
   return 0;
 }
-// #@@range_end(count_utf8size)
 
-// #@@range_begin(conv_utf8to32)
 std::pair<char32_t, int> ConvertUTF8To32(const char* u8) {
   switch (CountUTF8Size(u8[0])) {
   case 1:
@@ -121,15 +112,11 @@ std::pair<char32_t, int> ConvertUTF8To32(const char* u8) {
     return { 0, 0 };
   }
 }
-// #@@range_end(conv_utf8to32)
 
-// #@@range_begin(is_hankaku)
 bool IsHankaku(char32_t c) {
   return c <= 0x7f;
 }
-// #@@range_end(is_hankaku)
 
-// #@@range_begin(new_ftface)
 WithError<FT_Face> NewFTFace() {
   FT_Face face;
   if (int err = FT_New_Memory_Face(
@@ -141,9 +128,7 @@ WithError<FT_Face> NewFTFace() {
   }
   return { face, MAKE_ERROR(Error::kSuccess) };
 }
-// #@@range_end(new_ftface)
 
-// #@@range_begin(write_unicode)
 Error WriteUnicode(PixelWriter& writer, Vector2D<int> pos,
                   char32_t c, const PixelColor& color) {
   if (c <= 0x7f) {
@@ -186,9 +171,7 @@ Error WriteUnicode(PixelWriter& writer, Vector2D<int> pos,
   FT_Done_Face(face);
   return MAKE_ERROR(Error::kSuccess);
 }
-// #@@range_end(write_unicode)
 
-// #@@range_begin(init_font)
 void InitializeFont() {
   if (int err = FT_Init_FreeType(&ft_library)) {
     exit(1);
@@ -206,4 +189,3 @@ void InitializeFont() {
     exit(1);
   }
 }
-// #@@range_end(init_font)

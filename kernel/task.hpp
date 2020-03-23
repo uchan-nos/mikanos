@@ -35,12 +35,10 @@ struct FileMapping {
   uint64_t vaddr_begin, vaddr_end;
 };
 
-// #@@range_begin(task_stack)
 class Task {
  public:
   static const int kDefaultLevel = 1;
   static const size_t kDefaultStackBytes = 8 * 4096;
-// #@@range_end(task_stack)
 
   Task(uint64_t id);
   Task& InitContext(TaskFunc* f, int64_t data);
