@@ -1,0 +1,4 @@
+ようこそ，MikanOSへ！
+MikanOSは計算機科学の教材となることを目指して作られています。
+
+リポジトリ→ https://github.com/uchan-nos/mikanos
