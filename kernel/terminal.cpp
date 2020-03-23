@@ -383,7 +383,6 @@ void Terminal::ExecuteLine() {
       fat::FormatName(*file_entry, name);
       Print(name);
       Print(" is not a directory\n");
-    // #@@range_begin(cat_print)
     } else {
       fat::FileDescriptor fd{*file_entry};
       char u8buf[4];
@@ -403,7 +402,6 @@ void Terminal::ExecuteLine() {
       }
       DrawCursor(true);
     }
-    // #@@range_end(cat_print)
   } else if (strcmp(command, "noterm") == 0) {
     task_manager->NewTask()
       .InitContext(TaskTerminal, reinterpret_cast<int64_t>(first_arg))
@@ -462,13 +460,11 @@ Error Terminal::ExecuteFile(fat::DirectoryEntry& file_entry, char* command, char
     return argc.error;
   }
 
-  // #@@range_begin(app_stack_size)
   const int stack_size = 8 * 4096;
   LinearAddress4Level stack_frame_addr{0xffff'ffff'ffff'f000 - stack_size};
   if (auto err = SetupPageMaps(stack_frame_addr, stack_size / 4096)) {
     return err;
   }
-  // #@@range_end(app_stack_size)
 
   for (int i = 0; i < 3; ++i) {
     task.Files().push_back(
@@ -480,13 +476,11 @@ Error Terminal::ExecuteFile(fat::DirectoryEntry& file_entry, char* command, char
   task.SetDPagingBegin(elf_next_page);
   task.SetDPagingEnd(elf_next_page);
 
-  // #@@range_begin(use_stack_size)
   task.SetFileMapEnd(stack_frame_addr.value);
 
   int ret = CallApp(argc.value, argv, 3 << 3 | 3, app_load.entry,
                     stack_frame_addr.value + stack_size - 8,
                     &task.OSStackPointer());
-  // #@@range_end(use_stack_size)
 
   task.Files().clear();
   task.FileMaps().clear();
@@ -501,7 +495,6 @@ Error Terminal::ExecuteFile(fat::DirectoryEntry& file_entry, char* command, char
   return FreePML4(task);
 }
 
-// #@@range_begin(print_char)
 void Terminal::Print(char32_t c) {
   if (!show_window_) {
     return;
@@ -532,9 +525,7 @@ void Terminal::Print(char32_t c) {
     cursor_.x += 2;
   }
 }
-// #@@range_end(print_char)
 
-// #@@range_begin(print_str)
 void Terminal::Print(const char* s, std::optional<size_t> len) {
   const auto cursor_before = CalcCursorPos();
   DrawCursor(false);
@@ -549,7 +540,6 @@ void Terminal::Print(const char* s, std::optional<size_t> len) {
   }
 
   DrawCursor(true);
-// #@@range_end(print_str)
   const auto cursor_after = CalcCursorPos();
 
   Vector2D<int> draw_pos{ToplevelWindow::kTopLeftMargin.x, cursor_before.y};
