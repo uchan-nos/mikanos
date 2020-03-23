@@ -23,11 +23,9 @@ all: $(TARGET)
 clean:
 	rm -rf *.o
 
-#@range_begin(link_freetype)
 kernel.elf: $(OBJS) Makefile
 	ld.lld $(LDFLAGS) -o kernel.elf $(OBJS) -lc -lc++ -lc++abi -lm \
 	-lfreetype
-#@range_end(link_freetype)
 
 %.o: %.cpp Makefile
 	clang++ $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
