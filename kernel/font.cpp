@@ -178,8 +178,7 @@ Error WriteUnicode(PixelWriter& writer, Vector2D<int> pos,
     for (int dx = 0; dx < bitmap.width; ++dx) {
       const bool b = q[dx >> 3] & (0x80 >> (dx & 0x7));
       if (b) {
-        PixelColor c{255, 255, 255};
-        writer.Write(glyph_topleft + Vector2D<int>{dx, dy}, c);
+        writer.Write(glyph_topleft + Vector2D<int>{dx, dy}, color);
       }
     }
   }
