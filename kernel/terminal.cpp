@@ -229,12 +229,14 @@ WithError<AppLoadInfo> LoadApp(fat::DirectoryEntry& file_entry, Task& task) {
 
 std::map<fat::DirectoryEntry*, AppLoadInfo>* app_loads;
 
+// #@@range_begin(term_ctor)
 Terminal::Terminal(Task& task, bool show_window)
     : task_{task}, show_window_{show_window} {
   for (int i = 0; i < files_.size(); ++i) {
     files_[i] = std::make_shared<TerminalFileDescriptor>(*this);
   }
   if (show_window) {
+// #@@range_end(term_ctor)
     window_ = std::make_shared<ToplevelWindow>(
         kColumns * 8 + 8 + ToplevelWindow::kMarginX,
         kRows * 16 + 8 + ToplevelWindow::kMarginY,
@@ -504,9 +506,11 @@ Error Terminal::ExecuteFile(fat::DirectoryEntry& file_entry,
     return err;
   }
 
+  // #@@range_begin(setup_app_files)
   for (int i = 0; i < files_.size(); ++i) {
     task.Files().push_back(files_[i]);
   }
+  // #@@range_end(setup_app_files)
 
   const uint64_t elf_next_page =
     (app_load.vaddr_end + 4095) & 0xffff'ffff'ffff'f000;
