@@ -421,11 +421,11 @@ void Terminal::ExecuteLine() {
   } else if (strcmp(command, "cat") == 0) {
     auto [ file_entry, post_slash ] = fat::FindFile(first_arg);
     if (!file_entry) {
-      PrintToFD(*files_[1], "no such file: %s\n", first_arg);
+      PrintToFD(*files_[2], "no such file: %s\n", first_arg);
     } else if (file_entry->attr != fat::Attribute::kDirectory && post_slash) {
       char name[13];
       fat::FormatName(*file_entry, name);
-      PrintToFD(*files_[1], "%s is not a directory\n", name);
+      PrintToFD(*files_[2], "%s is not a directory\n", name);
     } else {
       fat::FileDescriptor fd{*file_entry};
       char u8buf[5];
