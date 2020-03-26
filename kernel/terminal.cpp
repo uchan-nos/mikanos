@@ -143,21 +143,6 @@ Error FreePML4(Task& current_task) {
   return FreePageMap(reinterpret_cast<PageMapEntry*>(cr3));
 }
 
-// #@@range_begin(print_to_fd)
-size_t PrintToFD(FileDescriptor& fd, const char* format, ...) {
-  va_list ap;
-  int result;
-  char s[128];
-
-  va_start(ap, format);
-  result = vsprintf(s, format, ap);
-  va_end(ap);
-
-  fd.Write(s, result);
-  return result;
-}
-// #@@range_end(print_to_fd)
-
 // #@@range_begin(list_all_entries)
 void ListAllEntries(FileDescriptor& fd, uint32_t dir_cluster) {
   const auto kEntriesPerCluster =
