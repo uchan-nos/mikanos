@@ -69,9 +69,7 @@ class Task {
   std::deque<Message> msgs_;
   unsigned int level_{kDefaultLevel};
   bool running_{false};
-  // #@@range_begin(task_files)
   std::vector<std::shared_ptr<::FileDescriptor>> files_{};
-  // #@@range_end(task_files)
   uint64_t dpaging_begin_{0}, dpaging_end_{0};
   uint64_t file_map_end_{0};
   std::vector<FileMapping> file_maps_{};
