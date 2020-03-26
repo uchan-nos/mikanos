@@ -49,7 +49,7 @@ class Task {
   Task& Wakeup();
   void SendMessage(const Message& msg);
   std::optional<Message> ReceiveMessage();
-  std::vector<std::unique_ptr<::FileDescriptor>>& Files();
+  std::vector<std::shared_ptr<::FileDescriptor>>& Files();
   uint64_t DPagingBegin() const;
   void SetDPagingBegin(uint64_t v);
   uint64_t DPagingEnd() const;
@@ -69,7 +69,9 @@ class Task {
   std::deque<Message> msgs_;
   unsigned int level_{kDefaultLevel};
   bool running_{false};
-  std::vector<std::unique_ptr<::FileDescriptor>> files_{};
+  // #@@range_begin(task_files)
+  std::vector<std::shared_ptr<::FileDescriptor>> files_{};
+  // #@@range_end(task_files)
   uint64_t dpaging_begin_{0}, dpaging_end_{0};
   uint64_t file_map_end_{0};
   std::vector<FileMapping> file_maps_{};
