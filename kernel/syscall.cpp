@@ -316,35 +316,13 @@ namespace {
 
   // #@@range_begin(create_file)
   std::pair<fat::DirectoryEntry*, int> CreateFile(const char* path) {
-    auto parent_dir_cluster = fat::boot_volume_image->root_cluster;
-    const char* filename = path;
-
-    if (const char* slash_pos = strrchr(path, '/')) {
-      filename = &slash_pos[1];
-      if (slash_pos[1] == '\0') {
-        return { nullptr, EISDIR };
-      }
-
-      char parent_dir_name[slash_pos - path + 1];
-      strncpy(parent_dir_name, path, slash_pos - path);
-      parent_dir_name[slash_pos - path] = '\0';
-
-      if (parent_dir_name[0] != '\0') {
-        auto [ parent_dir, post_slash2 ] = fat::FindFile(parent_dir_name);
-        if (parent_dir == nullptr) {
-          return { nullptr, ENOENT };
-        }
-        parent_dir_cluster = parent_dir->FirstCluster();
-      }
+    auto [ file, err ] = fat::CreateFile(path);
+    switch (err.Cause()) {
+    case Error::kIsDirectory: return { file, EISDIR };
+    case Error::kNoSuchEntry: return { file, ENOENT };
+    case Error::kNoEnoughMemory: return { file, ENOSPC };
+    default: return { file, 0 };
     }
-
-    auto dir = fat::AllocateEntry(parent_dir_cluster);
-    if (dir == nullptr) {
-      return { nullptr, ENOSPC };
-    }
-    fat::SetFileName(*dir, filename);
-    dir->file_size = 0;
-    return { dir, 0 };
   }
   // #@@range_end(create_file)
 } // namespace
