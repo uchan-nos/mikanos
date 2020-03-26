@@ -36,7 +36,6 @@ class Terminal {
   void Print(const char* s, std::optional<size_t> len = std::nullopt);
 
   Task& UnderlyingTask() const { return task_; }
-  int LastExitCode() const { return last_exit_code_; }
 
  private:
   std::shared_ptr<ToplevelWindow> window_;
@@ -53,8 +52,8 @@ class Terminal {
   void Scroll1();
 
   void ExecuteLine();
-  WithError<int> ExecuteFile(fat::DirectoryEntry& file_entry,
-                             char* command, char* first_arg);
+  Error ExecuteFile(fat::DirectoryEntry& file_entry,
+                    char* command, char* first_arg);
   void Print(char32_t c);
 
   std::deque<std::array<char, kLineMax>> cmd_history_{};
@@ -64,7 +63,6 @@ class Terminal {
 // #@@range_begin(terminal_fields)
   bool show_window_;
   std::array<std::shared_ptr<FileDescriptor>, 3> files_;
-  int last_exit_code_{0};
 // #@@range_end(terminal_fields)
 };
 
