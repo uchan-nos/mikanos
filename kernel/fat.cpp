@@ -231,6 +231,40 @@ void SetFileName(DirectoryEntry& entry, const char* name) {
 }
 // #@@range_end(set_filename)
 
+// #@@range_begin(fat_create_file)
+WithError<DirectoryEntry*> CreateFile(const char* path) {
+  auto parent_dir_cluster = fat::boot_volume_image->root_cluster;
+  const char* filename = path;
+
+  if (const char* slash_pos = strrchr(path, '/')) {
+    filename = &slash_pos[1];
+    if (slash_pos[1] == '\0') {
+      return { nullptr, MAKE_ERROR(Error::kIsDirectory) };
+    }
+
+    char parent_dir_name[slash_pos - path + 1];
+    strncpy(parent_dir_name, path, slash_pos - path);
+    parent_dir_name[slash_pos - path] = '\0';
+
+    if (parent_dir_name[0] != '\0') {
+      auto [ parent_dir, post_slash2 ] = fat::FindFile(parent_dir_name);
+      if (parent_dir == nullptr) {
+        return { nullptr, MAKE_ERROR(Error::kNoSuchEntry) };
+      }
+      parent_dir_cluster = parent_dir->FirstCluster();
+    }
+  }
+
+  auto dir = fat::AllocateEntry(parent_dir_cluster);
+  if (dir == nullptr) {
+    return { nullptr, MAKE_ERROR(Error::kNoEnoughMemory) };
+  }
+  fat::SetFileName(*dir, filename);
+  dir->file_size = 0;
+  return { dir, MAKE_ERROR(Error::kSuccess) };
+}
+// #@@range_end(fat_create_file)
+
 FileDescriptor::FileDescriptor(DirectoryEntry& fat_entry)
     : fat_entry_{fat_entry} {
 }
