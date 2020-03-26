@@ -143,7 +143,6 @@ Error FreePML4(Task& current_task) {
   return FreePageMap(reinterpret_cast<PageMapEntry*>(cr3));
 }
 
-// #@@range_begin(list_all_entries)
 void ListAllEntries(FileDescriptor& fd, uint32_t dir_cluster) {
   const auto kEntriesPerCluster =
     fat::bytes_per_cluster / sizeof(fat::DirectoryEntry);
@@ -168,7 +167,6 @@ void ListAllEntries(FileDescriptor& fd, uint32_t dir_cluster) {
     dir_cluster = fat::NextCluster(dir_cluster);
   }
 }
-// #@@range_end(list_all_entries)
 
 WithError<AppLoadInfo> LoadApp(fat::DirectoryEntry& file_entry, Task& task) {
   PageMapEntry* temp_pml4;
@@ -214,14 +212,12 @@ WithError<AppLoadInfo> LoadApp(fat::DirectoryEntry& file_entry, Task& task) {
 
 std::map<fat::DirectoryEntry*, AppLoadInfo>* app_loads;
 
-// #@@range_begin(term_ctor)
 Terminal::Terminal(Task& task, bool show_window)
     : task_{task}, show_window_{show_window} {
   for (int i = 0; i < files_.size(); ++i) {
     files_[i] = std::make_shared<TerminalFileDescriptor>(*this);
   }
   if (show_window) {
-// #@@range_end(term_ctor)
     window_ = std::make_shared<ToplevelWindow>(
         kColumns * 8 + 8 + ToplevelWindow::kMarginX,
         kRows * 16 + 8 + ToplevelWindow::kMarginY,
@@ -325,7 +321,6 @@ void Terminal::Scroll1() {
                 {4, 4 + 16*cursor_.y}, {8*kColumns, 16}, {0, 0, 0});
 }
 
-// #@@range_begin(execute_line)
 void Terminal::ExecuteLine() {
   char* command = &linebuf_[0];
   char* first_arg = strchr(&linebuf_[0], ' ');
@@ -360,15 +355,12 @@ void Terminal::ExecuteLine() {
     files_[1] = std::make_shared<fat::FileDescriptor>(*file);
   }
 
-// #@@range_begin(echo_command)
   if (strcmp(command, "echo") == 0) {
-// #@@range_end(execute_line)
     if (first_arg) {
       PrintToFD(*files_[1], "%s", first_arg);
     }
     PrintToFD(*files_[1], "\n");
   } else if (strcmp(command, "clear") == 0) {
-// #@@range_end(echo_command)
     if (show_window_) {
       FillRectangle(*window_->InnerWriter(),
                     {4, 4}, {8*kColumns, 16*kRows}, {0, 0, 0});
@@ -402,7 +394,6 @@ void Terminal::ExecuteLine() {
         }
       }
     }
-// #@@range_begin(cat_command)
   } else if (strcmp(command, "cat") == 0) {
     auto [ file_entry, post_slash ] = fat::FindFile(first_arg);
     if (!file_entry) {
@@ -431,7 +422,6 @@ void Terminal::ExecuteLine() {
       DrawCursor(true);
     }
   } else if (strcmp(command, "noterm") == 0) {
-// #@@range_end(cat_command)
     task_manager->NewTask()
       .InitContext(TaskTerminal, reinterpret_cast<int64_t>(first_arg))
       .Wakeup();
@@ -456,10 +446,8 @@ void Terminal::ExecuteLine() {
     }
   }
 
-// #@@range_begin(execute_line_finish)
   files_[1] = original_stdout;
 }
-// #@@range_end(execute_line_finish)
 
 Error Terminal::ExecuteFile(fat::DirectoryEntry& file_entry,
                             char* command, char* first_arg) {
@@ -491,11 +479,9 @@ Error Terminal::ExecuteFile(fat::DirectoryEntry& file_entry,
     return err;
   }
 
-  // #@@range_begin(setup_app_files)
   for (int i = 0; i < files_.size(); ++i) {
     task.Files().push_back(files_[i]);
   }
-  // #@@range_end(setup_app_files)
 
   const uint64_t elf_next_page =
     (app_load.vaddr_end + 4095) & 0xffff'ffff'ffff'f000;
