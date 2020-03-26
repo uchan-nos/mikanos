@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <cstddef>
 
+#include "error.hpp"
 #include "file.hpp"
 
 namespace fat {
@@ -169,6 +170,13 @@ DirectoryEntry* AllocateEntry(unsigned long dir_cluster);
  * @param name  基本名と拡張子をドットで結合したファイル名
  */
 void SetFileName(DirectoryEntry& entry, const char* name);
+
+/** @brief 指定されたパスにファイルエントリを作成する。
+ *
+ * @param path  ファイルパス
+ * @return 新規作成されたファイルエントリ
+ */
+WithError<DirectoryEntry*> CreateFile(const char* path);
 
 class FileDescriptor : public ::FileDescriptor {
  public:
