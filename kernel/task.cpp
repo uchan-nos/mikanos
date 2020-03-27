@@ -128,6 +128,7 @@ Task& TaskManager::NewTask() {
   return *tasks_.emplace_back(new Task{latest_id_});
 }
 
+// #@@range_begin(switch_task)
 void TaskManager::SwitchTask(const TaskContext& current_ctx) {
   TaskContext& task_ctx = task_manager->CurrentTask().Context();
   memcpy(&task_ctx, &current_ctx, sizeof(TaskContext));
@@ -136,6 +137,7 @@ void TaskManager::SwitchTask(const TaskContext& current_ctx) {
     RestoreContext(&CurrentTask().Context());
   }
 }
+// #@@range_end(switch_task)
 
 void TaskManager::Sleep(Task* task) {
   if (!task->Running()) {
@@ -210,6 +212,44 @@ Task& TaskManager::CurrentTask() {
   return *running_[current_level_].front();
 }
 
+// #@@range_begin(taskmgr_finish)
+void TaskManager::Finish(int exit_code) {
+  Task* current_task = RotateCurrentRunQueue(true);
+
+  const auto task_id = current_task->ID();
+  auto it = std::find_if(
+      tasks_.begin(), tasks_.end(),
+      [current_task](const auto& t){ return t.get() == current_task; });
+  tasks_.erase(it);
+
+  finish_tasks_[task_id] = exit_code;
+  if (auto it = finish_waiter_.find(task_id); it != finish_waiter_.end()) {
+    auto waiter = it->second;
+    finish_waiter_.erase(it);
+    Wakeup(waiter);
+  }
+
+  RestoreContext(&CurrentTask().Context());
+}
+// #@@range_end(taskmgr_finish)
+
+// #@@range_begin(taskmgr_waitfinish)
+WithError<int> TaskManager::WaitFinish(uint64_t task_id) {
+  int exit_code;
+  Task* current_task = &CurrentTask();
+  while (true) {
+    if (auto it = finish_tasks_.find(task_id); it != finish_tasks_.end()) {
+      exit_code = it->second;
+      finish_tasks_.erase(it);
+      break;
+    }
+    finish_waiter_[task_id] = current_task;
+    Sleep(current_task);
+  }
+  return { exit_code, MAKE_ERROR(Error::kSuccess) };
+}
+// #@@range_end(taskmgr_waitfinish)
+
 void TaskManager::ChangeLevelRunning(Task* task, int level) {
   if (level < 0 || level == task->Level()) {
     return;
@@ -238,6 +278,7 @@ void TaskManager::ChangeLevelRunning(Task* task, int level) {
   }
 }
 
+// #@@range_begin(taskmgr_rotate_runq)
 Task* TaskManager::RotateCurrentRunQueue(bool current_sleep) {
   auto& level_queue = running_[current_level_];
   Task* current_task = level_queue.front();
@@ -261,6 +302,7 @@ Task* TaskManager::RotateCurrentRunQueue(bool current_sleep) {
 
   return current_task;
 }
+// #@@range_end(taskmgr_rotate_runq)
 
 TaskManager* task_manager;
 
