@@ -60,11 +60,9 @@ class Terminal {
   int cmd_history_index_{-1};
   Rectangle<int> HistoryUpDown(int direction);
 
-  // #@@range_begin(term_fields)
   bool show_window_;
   std::array<std::shared_ptr<FileDescriptor>, 3> files_;
   int last_exit_code_{0};
-  // #@@range_end(term_fields)
 };
 
 void TaskTerminal(uint64_t task_id, int64_t data);
