@@ -52,16 +52,19 @@ class Terminal {
   void Scroll1();
 
   void ExecuteLine();
-  Error ExecuteFile(fat::DirectoryEntry& file_entry,
-                    char* command, char* first_arg);
+  WithError<int> ExecuteFile(fat::DirectoryEntry& file_entry,
+                             char* command, char* first_arg);
   void Print(char32_t c);
 
   std::deque<std::array<char, kLineMax>> cmd_history_{};
   int cmd_history_index_{-1};
   Rectangle<int> HistoryUpDown(int direction);
 
+  // #@@range_begin(term_fields)
   bool show_window_;
   std::array<std::shared_ptr<FileDescriptor>, 3> files_;
+  int last_exit_code_{0};
+  // #@@range_end(term_fields)
 };
 
 void TaskTerminal(uint64_t task_id, int64_t data);
