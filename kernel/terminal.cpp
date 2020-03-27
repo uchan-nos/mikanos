@@ -330,10 +330,8 @@ void Terminal::ExecuteLine() {
     ++first_arg;
   }
 
-  // #@@range_begin(exit_code_var)
   auto original_stdout = files_[1];
   int exit_code = 0;
-  // #@@range_end(exit_code_var)
 
   if (redir_char) {
     *redir_char = 0;
@@ -358,7 +356,6 @@ void Terminal::ExecuteLine() {
     files_[1] = std::make_shared<fat::FileDescriptor>(*file);
   }
 
-  // #@@range_begin(echo_command)
   if (strcmp(command, "echo") == 0) {
     if (first_arg && first_arg[0] == '$') {
       if (strcmp(&first_arg[1], "?") == 0) {
@@ -369,7 +366,6 @@ void Terminal::ExecuteLine() {
     }
     PrintToFD(*files_[1], "\n");
   } else if (strcmp(command, "clear") == 0) {
-  // #@@range_end(echo_command)
     if (show_window_) {
       FillRectangle(*window_->InnerWriter(),
                     {4, 4}, {8*kColumns, 16*kRows}, {0, 0, 0});
@@ -405,7 +401,6 @@ void Terminal::ExecuteLine() {
         }
       }
     }
-  // #@@range_begin(cat_command)
   } else if (strcmp(command, "cat") == 0) {
     auto [ file_entry, post_slash ] = fat::FindFile(first_arg);
     if (!file_entry) {
@@ -417,7 +412,6 @@ void Terminal::ExecuteLine() {
       PrintToFD(*files_[2], "%s is not a directory\n", name);
       exit_code = 1;
     } else {
-  // #@@range_end(cat_command)
       fat::FileDescriptor fd{*file_entry};
       char u8buf[5];
 
@@ -459,7 +453,6 @@ void Terminal::ExecuteLine() {
       PrintToFD(*files_[2], "%s is not a directory\n", name);
       exit_code = 1;
     } else {
-      // #@@range_begin(call_exec_file)
       auto [ ec, err ] = ExecuteFile(*file_entry, command, first_arg);
       if (err) {
         PrintToFD(*files_[2], "failed to exec file: %s\n", err.Name());
@@ -467,17 +460,13 @@ void Terminal::ExecuteLine() {
       } else {
         exit_code = ec;
       }
-      // #@@range_end(call_exec_file)
     }
   }
 
-// #@@range_begin(exec_line_finish)
   last_exit_code_ = exit_code;
   files_[1] = original_stdout;
 }
-// #@@range_end(exec_line_finish)
 
-// #@@range_begin(exec_file)
 WithError<int> Terminal::ExecuteFile(fat::DirectoryEntry& file_entry,
                                      char* command, char* first_arg) {
   __asm__("cli");
@@ -488,7 +477,6 @@ WithError<int> Terminal::ExecuteFile(fat::DirectoryEntry& file_entry,
   if (err) {
     return { 0, err };
   }
-// #@@range_end(exec_file)
 
   LinearAddress4Level args_frame_addr{0xffff'ffff'ffff'f000};
   if (auto err = SetupPageMaps(args_frame_addr, 1)) {
@@ -520,7 +508,6 @@ WithError<int> Terminal::ExecuteFile(fat::DirectoryEntry& file_entry,
 
   task.SetFileMapEnd(stack_frame_addr.value);
 
-// #@@range_begin(exec_file_finish)
   int ret = CallApp(argc.value, argv, 3 << 3 | 3, app_load.entry,
                     stack_frame_addr.value + stack_size - 8,
                     &task.OSStackPointer());
@@ -533,7 +520,6 @@ WithError<int> Terminal::ExecuteFile(fat::DirectoryEntry& file_entry,
   }
   return { ret, FreePML4(task) };
 }
-// #@@range_end(exec_file_finish)
 
 void Terminal::Print(char32_t c) {
   if (!show_window_) {
