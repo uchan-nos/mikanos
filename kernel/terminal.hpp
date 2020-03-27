@@ -23,12 +23,21 @@ struct AppLoadInfo {
 
 extern std::map<fat::DirectoryEntry*, AppLoadInfo>* app_loads;
 
+// #@@range_begin(term_desc)
+struct TerminalDescriptor {
+  std::string command_line;
+  bool exit_after_command;
+  bool show_window;
+  std::array<std::shared_ptr<FileDescriptor>, 3> files;
+};
+// #@@range_end(term_desc)
+
 class Terminal {
  public:
   static const int kRows = 15, kColumns = 60;
   static const int kLineMax = 128;
 
-  Terminal(Task& task, bool show_window);
+  Terminal(Task& task, const TerminalDescriptor* term_desc);
   unsigned int LayerID() const { return layer_id_; }
   Rectangle<int> BlinkCursor();
   Rectangle<int> InputKey(uint8_t modifier, uint8_t keycode, char ascii);
@@ -36,6 +45,7 @@ class Terminal {
   void Print(const char* s, std::optional<size_t> len = std::nullopt);
 
   Task& UnderlyingTask() const { return task_; }
+  int LastExitCode() const { return last_exit_code_; }
 
  private:
   std::shared_ptr<ToplevelWindow> window_;
@@ -78,3 +88,22 @@ class TerminalFileDescriptor : public FileDescriptor {
  private:
   Terminal& term_;
 };
+
+// #@@range_begin(pipe_fd)
+class PipeDescriptor : public FileDescriptor {
+ public:
+  explicit PipeDescriptor(Task& task);
+  size_t Read(void* buf, size_t len) override;
+  size_t Write(const void* buf, size_t len) override;
+  size_t Size() const override { return 0; }
+  size_t Load(void* buf, size_t len, size_t offset) override { return 0; }
+
+  void FinishWrite();
+
+ private:
+  Task& task_;
+  char data_[16];
+  size_t len_{0};
+  bool closed_{false};
+};
+// #@@range_end(pipe_fd)
