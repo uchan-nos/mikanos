@@ -107,6 +107,7 @@ KernelMain:
     hlt
     jmp .fin
 
+; #@@range_begin(switch_ctx)
 global SwitchContext
 SwitchContext:  ; void SwitchContext(void* next_ctx, void* current_ctx);
     mov [rsi + 0x40], rax
