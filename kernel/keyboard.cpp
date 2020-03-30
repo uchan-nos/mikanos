@@ -27,10 +27,8 @@ const char keycode_map[256] = {
   0,    '\\', 0,    0,    0,    0,    0,    0,   // 136
 };
 
-// #@@range_begin(keycode_map)
 const char keycode_map_shifted[256] = {
   0,    0,    0,    0,    'A',  'B',  'C',  'D', // 0
-// #@@range_end(keycode_map)
   'E',  'F',  'G',  'H',  'I',  'J',  'K',  'L', // 8
   'M',  'N',  'O',  'P',  'Q',  'R',  'S',  'T', // 16
   'U',  'V',  'W',  'X',  'Y',  'Z',  '!',  '@', // 24
@@ -47,10 +45,8 @@ const char keycode_map_shifted[256] = {
   0,    0,    0,    0,    0,    0,    0,    0,   // 112
   0,    0,    0,    0,    0,    0,    0,    0,   // 120
   0,    0,    0,    0,    0,    0,    0,    0,   // 128
-// #@@range_begin(keycode_map_added)
   0,    '|',  0,    0,    0,    0,    0,    0,   // 136
 };
-// #@@range_end(keycode_map_added)
 
 } // namespace
 

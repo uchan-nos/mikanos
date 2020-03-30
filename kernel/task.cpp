@@ -137,7 +137,6 @@ void TaskManager::SwitchTask(const TaskContext& current_ctx) {
     RestoreContext(&CurrentTask().Context());
   }
 }
-// #@@range_end(switch_task)
 
 void TaskManager::Sleep(Task* task) {
   if (!task->Running()) {
@@ -212,7 +211,6 @@ Task& TaskManager::CurrentTask() {
   return *running_[current_level_].front();
 }
 
-// #@@range_begin(taskmgr_finish)
 void TaskManager::Finish(int exit_code) {
   Task* current_task = RotateCurrentRunQueue(true);
 
@@ -231,9 +229,7 @@ void TaskManager::Finish(int exit_code) {
 
   RestoreContext(&CurrentTask().Context());
 }
-// #@@range_end(taskmgr_finish)
 
-// #@@range_begin(taskmgr_waitfinish)
 WithError<int> TaskManager::WaitFinish(uint64_t task_id) {
   int exit_code;
   Task* current_task = &CurrentTask();
@@ -248,7 +244,6 @@ WithError<int> TaskManager::WaitFinish(uint64_t task_id) {
   }
   return { exit_code, MAKE_ERROR(Error::kSuccess) };
 }
-// #@@range_end(taskmgr_waitfinish)
 
 void TaskManager::ChangeLevelRunning(Task* task, int level) {
   if (level < 0 || level == task->Level()) {
@@ -278,7 +273,6 @@ void TaskManager::ChangeLevelRunning(Task* task, int level) {
   }
 }
 
-// #@@range_begin(taskmgr_rotate_runq)
 Task* TaskManager::RotateCurrentRunQueue(bool current_sleep) {
   auto& level_queue = running_[current_level_];
   Task* current_task = level_queue.front();
@@ -302,7 +296,6 @@ Task* TaskManager::RotateCurrentRunQueue(bool current_sleep) {
 
   return current_task;
 }
-// #@@range_end(taskmgr_rotate_runq)
 
 TaskManager* task_manager;
 
