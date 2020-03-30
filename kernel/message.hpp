@@ -55,11 +55,9 @@ struct Message {
       int activate; // 1: activate, 0: deactivate
     } window_active;
 
-    // #@@range_begin(msg_pipe)
     struct {
       char data[16];
       uint8_t len;
     } pipe;
-    // #@@range_end(msg_pipe)
   } arg;
 };

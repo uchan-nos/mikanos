@@ -23,14 +23,12 @@ struct AppLoadInfo {
 
 extern std::map<fat::DirectoryEntry*, AppLoadInfo>* app_loads;
 
-// #@@range_begin(term_desc)
 struct TerminalDescriptor {
   std::string command_line;
   bool exit_after_command;
   bool show_window;
   std::array<std::shared_ptr<FileDescriptor>, 3> files;
 };
-// #@@range_end(term_desc)
 
 class Terminal {
  public:
@@ -89,7 +87,6 @@ class TerminalFileDescriptor : public FileDescriptor {
   Terminal& term_;
 };
 
-// #@@range_begin(pipe_fd)
 class PipeDescriptor : public FileDescriptor {
  public:
   explicit PipeDescriptor(Task& task);
@@ -106,4 +103,3 @@ class PipeDescriptor : public FileDescriptor {
   size_t len_{0};
   bool closed_{false};
 };
-// #@@range_end(pipe_fd)
