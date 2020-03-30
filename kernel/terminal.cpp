@@ -213,7 +213,6 @@ WithError<AppLoadInfo> LoadApp(fat::DirectoryEntry& file_entry, Task& task) {
 
 std::map<fat::DirectoryEntry*, AppLoadInfo>* app_loads;
 
-// #@@range_begin(term_ctor)
 Terminal::Terminal(Task& task, const TerminalDescriptor* term_desc)
     : task_{task} {
   if (term_desc) {
@@ -229,7 +228,6 @@ Terminal::Terminal(Task& task, const TerminalDescriptor* term_desc)
   }
 
   if (show_window_) {
-// #@@range_end(term_ctor)
     window_ = std::make_shared<ToplevelWindow>(
         kColumns * 8 + 8 + ToplevelWindow::kMarginX,
         kRows * 16 + 8 + ToplevelWindow::kMarginY,
@@ -333,13 +331,11 @@ void Terminal::Scroll1() {
                 {4, 4 + 16*cursor_.y}, {8*kColumns, 16}, {0, 0, 0});
 }
 
-// #@@range_begin(exec_line)
 void Terminal::ExecuteLine() {
   char* command = &linebuf_[0];
   char* first_arg = strchr(&linebuf_[0], ' ');
   char* redir_char = strchr(&linebuf_[0], '>');
   char* pipe_char = strchr(&linebuf_[0], '|');
-// #@@range_end(exec_line)
   if (first_arg) {
     *first_arg = 0;
     ++first_arg;
@@ -371,7 +367,6 @@ void Terminal::ExecuteLine() {
     files_[1] = std::make_shared<fat::FileDescriptor>(*file);
   }
 
-  // #@@range_begin(piping)
   std::shared_ptr<PipeDescriptor> pipe_fd;
   uint64_t subtask_id = 0;
 
@@ -395,7 +390,6 @@ void Terminal::ExecuteLine() {
       .Wakeup()
       .ID();
   }
-  // #@@range_end(piping)
 
   if (strcmp(command, "echo") == 0) {
     if (first_arg && first_arg[0] == '$') {
@@ -471,7 +465,6 @@ void Terminal::ExecuteLine() {
       }
       DrawCursor(true);
     }
-    // #@@range_begin(noterm_term_desc)
   } else if (strcmp(command, "noterm") == 0) {
     auto term_desc = new TerminalDescriptor{
       first_arg, true, false, files_
@@ -479,7 +472,6 @@ void Terminal::ExecuteLine() {
     task_manager->NewTask()
       .InitContext(TaskTerminal, reinterpret_cast<int64_t>(term_desc))
       .Wakeup();
-    // #@@range_end(noterm_term_desc)
   } else if (strcmp(command, "memstat") == 0) {
     const auto p_stat = memory_manager->Stat();
     PrintToFD(*files_[1], "Phys used : %lu frames (%llu MiB)\n",
@@ -509,7 +501,6 @@ void Terminal::ExecuteLine() {
     }
   }
 
-// #@@range_begin(finish_subtask)
   if (pipe_fd) {
     pipe_fd->FinishWrite();
     __asm__("cli");
@@ -524,7 +515,6 @@ void Terminal::ExecuteLine() {
   last_exit_code_ = exit_code;
   files_[1] = original_stdout;
 }
-// #@@range_end(finish_subtask)
 
 WithError<int> Terminal::ExecuteFile(fat::DirectoryEntry& file_entry,
                                      char* command, char* first_arg) {
@@ -666,7 +656,6 @@ Rectangle<int> Terminal::HistoryUpDown(int direction) {
   return draw_area;
 }
 
-// #@@range_begin(task_term)
 void TaskTerminal(uint64_t task_id, int64_t data) {
   const auto term_desc = reinterpret_cast<TerminalDescriptor*>(data);
   bool show_window = true;
@@ -697,7 +686,6 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
     task_manager->Finish(terminal->LastExitCode());
     __asm__("sti");
   }
-// #@@range_end(task_term)
 
   auto add_blink_timer = [task_id](unsigned long t){
     timer_manager->AddTimer(Timer{t + static_cast<int>(kTimerFreq * 0.5),
@@ -796,12 +784,9 @@ size_t TerminalFileDescriptor::Load(void* buf, size_t len, size_t offset) {
   return 0;
 }
 
-// #@@range_begin(pipe_fd_ctor)
 PipeDescriptor::PipeDescriptor(Task& task) : task_{task} {
 }
-// #@@range_end(pipe_fd_ctor)
 
-// #@@range_begin(pipe_fd_read)
 size_t PipeDescriptor::Read(void* buf, size_t len) {
   if (len_ > 0) {
     const size_t copy_bytes = std::min(len_, len);
@@ -840,9 +825,7 @@ size_t PipeDescriptor::Read(void* buf, size_t len) {
     return copy_bytes;
   }
 }
-// #@@range_end(pipe_fd_read)
 
-// #@@range_begin(pipe_fd_write)
 size_t PipeDescriptor::Write(const void* buf, size_t len) {
   auto bufc = reinterpret_cast<const char*>(buf);
   Message msg{Message::kPipe};
@@ -857,9 +840,7 @@ size_t PipeDescriptor::Write(const void* buf, size_t len) {
   }
   return len;
 }
-// #@@range_end(pipe_fd_write)
 
-// #@@range_begin(pipe_fd_finishwrite)
 void PipeDescriptor::FinishWrite() {
   Message msg{Message::kPipe};
   msg.arg.pipe.len = 0;
@@ -867,4 +848,3 @@ void PipeDescriptor::FinishWrite() {
   task_.SendMessage(msg);
   __asm__("sti");
 }
-// #@@range_end(pipe_fd_finishwrite)
