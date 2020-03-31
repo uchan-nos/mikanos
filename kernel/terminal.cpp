@@ -471,6 +471,7 @@ void Terminal::ExecuteLine() {
       }
       DrawCursor(true);
     }
+    // #@@range_begin(noterm_term_desc)
   } else if (strcmp(command, "noterm") == 0) {
     auto term_desc = new TerminalDescriptor{
       first_arg, true, false, files_
@@ -478,6 +479,7 @@ void Terminal::ExecuteLine() {
     task_manager->NewTask()
       .InitContext(TaskTerminal, reinterpret_cast<int64_t>(term_desc))
       .Wakeup();
+    // #@@range_end(noterm_term_desc)
   } else if (strcmp(command, "memstat") == 0) {
     const auto p_stat = memory_manager->Stat();
     PrintToFD(*files_[1], "Phys used : %lu frames (%llu MiB)\n",
