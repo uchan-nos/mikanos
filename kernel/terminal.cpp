@@ -209,7 +209,6 @@ WithError<AppLoadInfo> LoadApp(fat::DirectoryEntry& file_entry, Task& task) {
   return { app_load, err };
 }
 
-// #@@range_begin(find_command)
 fat::DirectoryEntry* FindCommand(const char* command,
                                  unsigned long dir_cluster = 0) {
   auto file_entry = fat::FindFile(command, dir_cluster);
@@ -232,7 +231,6 @@ fat::DirectoryEntry* FindCommand(const char* command,
   }
   return FindCommand(command, apps_entry.first->FirstCluster());
 }
-// #@@range_end(find_command)
 
 } // namespace
 
@@ -498,7 +496,6 @@ void Terminal::ExecuteLine() {
     PrintToFD(*files_[1], "Phys total: %lu frames (%llu MiB)\n",
         p_stat.total_frames,
         p_stat.total_frames * kBytesPerFrame / 1024 / 1024);
-  // #@@range_begin(exec_command)
   } else if (command[0] != 0) {
     auto file_entry = FindCommand(command);
     if (!file_entry) {
@@ -506,7 +503,6 @@ void Terminal::ExecuteLine() {
       exit_code = 1;
     } else {
       auto [ ec, err ] = ExecuteFile(*file_entry, command, first_arg);
-  // #@@range_end(exec_command)
       if (err) {
         PrintToFD(*files_[2], "failed to exec file: %s\n", err.Name());
         exit_code = -ec;
