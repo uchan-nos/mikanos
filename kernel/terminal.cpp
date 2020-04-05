@@ -359,14 +359,12 @@ void Terminal::ExecuteLine() {
   char* first_arg = strchr(&linebuf_[0], ' ');
   char* redir_char = strchr(&linebuf_[0], '>');
   char* pipe_char = strchr(&linebuf_[0], '|');
-  // #@@range_begin(first_arg)
   if (first_arg) {
     *first_arg = 0;
     do {
       ++first_arg;
     } while (isspace(*first_arg));
   }
-  // #@@range_end(first_arg)
 
   auto original_stdout = files_[1];
   int exit_code = 0;
@@ -464,7 +462,6 @@ void Terminal::ExecuteLine() {
         }
       }
     }
-  // #@@range_begin(cat_command)
   } else if (strcmp(command, "cat") == 0) {
     std::shared_ptr<FileDescriptor> fd;
     if (!first_arg || first_arg[0] == '\0') {
@@ -495,7 +492,6 @@ void Terminal::ExecuteLine() {
       DrawCursor(true);
     }
   } else if (strcmp(command, "noterm") == 0) {
-  // #@@range_end(cat_command)
     auto term_desc = new TerminalDescriptor{
       first_arg, true, false, files_
     };
