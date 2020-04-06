@@ -386,8 +386,8 @@ EFI_STATUS EFIAPI UefiMain(
 
     EFI_BLOCK_IO_MEDIA* media = block_io->Media;
     UINTN volume_bytes = (UINTN)media->BlockSize * (media->LastBlock + 1);
-    if (volume_bytes > 16 * 1024 * 1024) {
-      volume_bytes = 16 * 1024 * 1024;
+    if (volume_bytes > 32 * 1024 * 1024) {
+      volume_bytes = 32 * 1024 * 1024;
     }
 
     Print(L"Reading %lu bytes (Present %d, BlockSize %u, LastBlock %u)\n",
