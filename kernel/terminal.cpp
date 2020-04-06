@@ -717,7 +717,6 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
     delete term_desc;
     __asm__("cli");
     task_manager->Finish(terminal->LastExitCode());
-    __asm__("sti");
   }
 
   auto add_blink_timer = [task_id](unsigned long t){
@@ -770,6 +769,8 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
     // #@@range_begin(term_closewin)
     case Message::kWindowClose:
       CloseLayer(msg->arg.window_close.layer_id);
+      __asm__("cli");
+      task_manager->Finish(terminal->LastExitCode());
       break;
     // #@@range_end(term_closewin)
     default:
