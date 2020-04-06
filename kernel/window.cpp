@@ -118,11 +118,9 @@ void Window::Move(Vector2D<int> dst_pos, const Rectangle<int>& src) {
   shadow_buffer_.Move(dst_pos, src);
 }
 
-// #@@range_begin(win_getwinregion)
 WindowRegion Window::GetWindowRegion(Vector2D<int> pos) {
   return WindowRegion::kOther;
 }
-// #@@range_end(win_getwinregion)
 
 ToplevelWindow::ToplevelWindow(int width, int height, PixelFormat shadow_format,
                                const std::string& title)
@@ -140,7 +138,6 @@ void ToplevelWindow::Deactivate() {
   DrawWindowTitle(*Writer(), title_.c_str(), false);
 }
 
-// #@@range_begin(toplevelwin_getwinregion)
 WindowRegion ToplevelWindow::GetWindowRegion(Vector2D<int> pos) {
   if (pos.x < 2 || Width() - 2 <= pos.x ||
       pos.y < 2 || Height() - 2 <= pos.y) {
@@ -154,7 +151,6 @@ WindowRegion ToplevelWindow::GetWindowRegion(Vector2D<int> pos) {
   }
   return WindowRegion::kOther;
 }
-// #@@range_end(toplevelwin_getwinregion)
 
 Vector2D<int> ToplevelWindow::InnerSize() const {
   return Size() - kTopLeftMargin - kBottomRightMargin;
