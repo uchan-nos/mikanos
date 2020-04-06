@@ -310,7 +310,6 @@ void ProcessLayerMessage(const Message& msg) {
   }
 }
 
-// #@@range_begin(close_layer)
 Error CloseLayer(unsigned int layer_id) {
   Layer* layer = layer_manager->FindLayer(layer_id);
   if (layer == nullptr) {
@@ -329,4 +328,3 @@ Error CloseLayer(unsigned int layer_id) {
 
   return MAKE_ERROR(Error::kSuccess);
 }
-// #@@range_end(close_layer)

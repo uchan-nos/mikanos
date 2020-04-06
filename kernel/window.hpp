@@ -12,14 +12,12 @@
 #include "graphics.hpp"
 #include "frame_buffer.hpp"
 
-// #@@range_begin(winregion)
 enum class WindowRegion {
   kTitleBar,
   kCloseButton,
   kBorder,
   kOther,
 };
-// #@@range_end(winregion)
 
 /** @brief Window クラスはグラフィックの表示領域を表す。
  *
@@ -85,9 +83,7 @@ class Window {
 
   virtual void Activate() {}
   virtual void Deactivate() {}
-  // #@@range_begin(win_getwinregion_decl)
   virtual WindowRegion GetWindowRegion(Vector2D<int> pos);
-  // #@@range_end(win_getwinregion_decl)
 
  private:
   int width_, height_;
