@@ -188,26 +188,16 @@ SYSCALL(WinDrawLine) {
       }, arg1, arg2, arg3, arg4, arg5, arg6);
 }
 
+// #@@range_begin(close_win)
 SYSCALL(CloseWindow) {
   const unsigned int layer_id = arg1 & 0xffffffff;
-  const auto layer = layer_manager->FindLayer(layer_id);
-
-  if (layer == nullptr) {
+  const auto err = CloseLayer(layer_id);
+  if (err.Cause() == Error::kNoSuchEntry) {
     return { EBADF, 0 };
   }
-
-  const auto layer_pos = layer->GetPosition();
-  const auto win_size = layer->GetWindow()->Size();
-
-  __asm__("cli");
-  active_layer->Activate(0);
-  layer_manager->RemoveLayer(layer_id);
-  layer_manager->Draw({layer_pos, win_size});
-  layer_task_map->erase(layer_id);
-  __asm__("sti");
-
   return { 0, 0 };
 }
+// #@@range_end(close_win)
 
 SYSCALL(ReadEvent) {
   if (arg1 < 0x8000'0000'0000'0000) {
@@ -274,6 +264,12 @@ SYSCALL(ReadEvent) {
         ++i;
       }
       break;
+    // #@@range_begin(read_event_winclose)
+    case Message::kWindowClose:
+      app_events[i].type = AppEvent::kQuit;
+      ++i;
+      break;
+    // #@@range_end(read_event_winclose)
     default:
       Log(kInfo, "uncaught event type: %u\n", msg->type);
     }

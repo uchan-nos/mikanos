@@ -23,6 +23,10 @@ extern "C" void main(int argc, char** argv) {
     }
     if (events[0].type == AppEvent::kQuit) {
       break;
+    } else if (events[0].type == AppEvent::kMouseMove ||
+        events[0].type == AppEvent::kMouseButton ||
+        events[0].type == AppEvent::kKeyPush) {
+      // ignore
     } else {
       printf("unknown event: type = %d\n", events[0].type);
     }
