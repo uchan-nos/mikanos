@@ -35,7 +35,6 @@ namespace {
     "         @@@   ",
   };
 
-  // #@@range_begin(find_active)
   std::tuple<Layer*, uint64_t> FindActiveLayerTask() {
     const auto act = active_layer->GetActive();
     if (!act) {
@@ -52,7 +51,6 @@ namespace {
     }
     return { layer, task_it->second };
   }
-  // #@@range_end(find_active)
 
   void SendMouseMessage(Vector2D<int> newpos, Vector2D<int> posdiff,
                         uint8_t buttons, uint8_t previous_buttons) {
@@ -87,7 +85,6 @@ namespace {
     }
   }
 
-  // #@@range_begin(send_closemsg)
   void SendCloseMessage() {
     const auto [ layer, task_id ] = FindActiveLayerTask();
     if (!layer || !task_id) {
@@ -98,7 +95,6 @@ namespace {
     msg.arg.window_close.layer_id = layer->ID();
     task_manager->SendMessage(task_id, msg);
   }
-  // #@@range_end(send_closemsg)
 }
 
 void DrawMouseCursor(PixelWriter* pixel_writer, Vector2D<int> position) {
@@ -133,7 +129,6 @@ void Mouse::OnInterrupt(uint8_t buttons, int8_t displacement_x, int8_t displacem
 
   layer_manager->Move(layer_id_, position_);
 
-  // #@@range_begin(closewin_by_click)
   unsigned int close_layer_id = 0;
 
   const bool previous_left_pressed = (previous_buttons_ & 0x01);
@@ -141,7 +136,6 @@ void Mouse::OnInterrupt(uint8_t buttons, int8_t displacement_x, int8_t displacem
   if (!previous_left_pressed && left_pressed) {
     auto layer = layer_manager->FindLayerByPosition(position_, layer_id_);
     if (layer && layer->IsDraggable()) {
-      // #@@range_begin(switch_mouse_click)
       const auto pos_layer = position_ - layer->GetPosition();
       switch (layer->GetWindow()->GetWindowRegion(pos_layer)) {
       case WindowRegion::kTitleBar:
@@ -153,7 +147,6 @@ void Mouse::OnInterrupt(uint8_t buttons, int8_t displacement_x, int8_t displacem
       default:
         break;
       }
-      // #@@range_end(switch_mouse_click)
       active_layer->Activate(layer->ID());
     } else {
       active_layer->Activate(0);
@@ -173,7 +166,6 @@ void Mouse::OnInterrupt(uint8_t buttons, int8_t displacement_x, int8_t displacem
       SendCloseMessage();
     }
   }
-  // #@@range_end(closewin_by_click)
 
   previous_buttons_ = buttons;
 }

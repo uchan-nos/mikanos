@@ -188,7 +188,6 @@ SYSCALL(WinDrawLine) {
       }, arg1, arg2, arg3, arg4, arg5, arg6);
 }
 
-// #@@range_begin(close_win)
 SYSCALL(CloseWindow) {
   const unsigned int layer_id = arg1 & 0xffffffff;
   const auto err = CloseLayer(layer_id);
@@ -197,7 +196,6 @@ SYSCALL(CloseWindow) {
   }
   return { 0, 0 };
 }
-// #@@range_end(close_win)
 
 SYSCALL(ReadEvent) {
   if (arg1 < 0x8000'0000'0000'0000) {
@@ -264,12 +262,10 @@ SYSCALL(ReadEvent) {
         ++i;
       }
       break;
-    // #@@range_begin(read_event_winclose)
     case Message::kWindowClose:
       app_events[i].type = AppEvent::kQuit;
       ++i;
       break;
-    // #@@range_end(read_event_winclose)
     default:
       Log(kInfo, "uncaught event type: %u\n", msg->type);
     }
