@@ -767,6 +767,11 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
     case Message::kWindowActive:
       window_isactive = msg->arg.window_active.activate;
       break;
+    // #@@range_begin(term_closewin)
+    case Message::kWindowClose:
+      CloseLayer(msg->arg.window_close.layer_id);
+      break;
+    // #@@range_end(term_closewin)
     default:
       break;
     }

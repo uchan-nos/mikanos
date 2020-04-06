@@ -22,6 +22,25 @@ namespace {
     fill_rect(pos + Vector2D<int>{0, size.y}, {size.x, 1}, border_light);
     fill_rect(pos + Vector2D<int>{size.x, 0}, {1, size.y}, border_light);
   }
+
+  const int kCloseButtonWidth = 16;
+  const int kCloseButtonHeight = 14;
+  const char close_button[kCloseButtonHeight][kCloseButtonWidth + 1] = {
+    "...............@",
+    ".:::::::::::::$@",
+    ".:::::::::::::$@",
+    ".:::@@::::@@::$@",
+    ".::::@@::@@:::$@",
+    ".:::::@@@@::::$@",
+    ".::::::@@:::::$@",
+    ".:::::@@@@::::$@",
+    ".::::@@::@@:::$@",
+    ".:::@@::::@@::$@",
+    ".:::::::::::::$@",
+    ".:::::::::::::$@",
+    ".$$$$$$$$$$$$$$@",
+    "@@@@@@@@@@@@@@@@",
+  };
 }
 
 Window::Window(int width, int height, PixelFormat shadow_format) : width_{width}, height_{height} {
@@ -99,6 +118,12 @@ void Window::Move(Vector2D<int> dst_pos, const Rectangle<int>& src) {
   shadow_buffer_.Move(dst_pos, src);
 }
 
+// #@@range_begin(win_getwinregion)
+WindowRegion Window::GetWindowRegion(Vector2D<int> pos) {
+  return WindowRegion::kOther;
+}
+// #@@range_end(win_getwinregion)
+
 ToplevelWindow::ToplevelWindow(int width, int height, PixelFormat shadow_format,
                                const std::string& title)
     : Window{width, height, shadow_format}, title_{title} {
@@ -115,29 +140,24 @@ void ToplevelWindow::Deactivate() {
   DrawWindowTitle(*Writer(), title_.c_str(), false);
 }
 
+// #@@range_begin(toplevelwin_getwinregion)
+WindowRegion ToplevelWindow::GetWindowRegion(Vector2D<int> pos) {
+  if (pos.x < 2 || Width() - 2 <= pos.x ||
+      pos.y < 2 || Height() - 2 <= pos.y) {
+    return WindowRegion::kBorder;
+  } else if (pos.y < kTopLeftMargin.y) {
+    if (Width() - 5 - kCloseButtonWidth <= pos.x && pos.x < Width() - 5 &&
+        5 <= pos.y && pos.y < 5 + kCloseButtonHeight) {
+      return WindowRegion::kCloseButton;
+    }
+    return WindowRegion::kTitleBar;
+  }
+  return WindowRegion::kOther;
+}
+// #@@range_end(toplevelwin_getwinregion)
+
 Vector2D<int> ToplevelWindow::InnerSize() const {
   return Size() - kTopLeftMargin - kBottomRightMargin;
-}
-
-namespace {
-  const int kCloseButtonWidth = 16;
-  const int kCloseButtonHeight = 14;
-  const char close_button[kCloseButtonHeight][kCloseButtonWidth + 1] = {
-    "...............@",
-    ".:::::::::::::$@",
-    ".:::::::::::::$@",
-    ".:::@@::::@@::$@",
-    ".::::@@::@@:::$@",
-    ".:::::@@@@::::$@",
-    ".::::::@@:::::$@",
-    ".:::::@@@@::::$@",
-    ".::::@@::@@:::$@",
-    ".:::@@::::@@::$@",
-    ".:::::::::::::$@",
-    ".:::::::::::::$@",
-    ".$$$$$$$$$$$$$$@",
-    "@@@@@@@@@@@@@@@@",
-  };
 }
 
 void DrawWindow(PixelWriter& writer, const char* title) {
