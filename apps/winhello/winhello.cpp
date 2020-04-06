@@ -14,7 +14,6 @@ extern "C" void main(int argc, char** argv) {
   SyscallWinWriteString(layer_id, 24, 40, 0x00c000, "hello world!");
   SyscallWinWriteString(layer_id, 40, 56, 0x0000c0, "hello world!");
 
-  // #@@range_begin(msg_switch)
   AppEvent events[1];
   while (true) {
     auto [ n, err ] = SyscallReadEvent(events, 1);
@@ -34,5 +33,4 @@ extern "C" void main(int argc, char** argv) {
   }
   SyscallCloseWindow(layer_id);
   exit(0);
-  // #@@range_end(msg_switch)
 }

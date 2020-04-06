@@ -61,10 +61,8 @@ struct Message {
       uint8_t len;
     } pipe;
 
-    // #@@range_begin(msg_winclose)
     struct {
       unsigned int layer_id;
     } window_close;
-    // #@@range_end(msg_winclose)
   } arg;
 };
