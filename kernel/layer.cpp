@@ -309,3 +309,24 @@ void ProcessLayerMessage(const Message& msg) {
     break;
   }
 }
+
+// #@@range_begin(close_layer)
+Error CloseLayer(unsigned int layer_id) {
+  Layer* layer = layer_manager->FindLayer(layer_id);
+  if (layer == nullptr) {
+    return MAKE_ERROR(Error::kNoSuchEntry);
+  }
+
+  const auto pos = layer->GetPosition();
+  const auto size = layer->GetWindow()->Size();
+
+  __asm__("cli");
+  active_layer->Activate(0);
+  layer_manager->RemoveLayer(layer_id);
+  layer_manager->Draw({pos, size});
+  layer_task_map->erase(layer_id);
+  __asm__("sti");
+
+  return MAKE_ERROR(Error::kSuccess);
+}
+// #@@range_end(close_layer)
