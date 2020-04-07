@@ -8,7 +8,6 @@
 #include <vector>
 #include "../syscall.h"
 
-// #@@range_begin(map_file)
 std::tuple<int, char*, size_t> MapFile(const char* filepath) {
   SyscallResult res = SyscallOpenFile(filepath, O_RDONLY);
   if (res.error) {
@@ -26,9 +25,7 @@ std::tuple<int, char*, size_t> MapFile(const char* filepath) {
 
   return {fd, reinterpret_cast<char*>(res.value), filesize};
 }
-// #@@range_end(map_file)
 
-// #@@range_begin(open_textwindow)
 uint64_t OpenTextWindow(int w, int h, const char* title) {
   SyscallResult res = SyscallOpenWindow(8 + 8*w, 28 + 16*h, 10, 10, title);
   if (res.error) {
@@ -47,9 +44,7 @@ uint64_t OpenTextWindow(int w, int h, const char* title) {
 
   return layer_id;
 }
-// #@@range_end(open_textwindow)
 
-// #@@range_begin(find_lines)
 using LinesType = std::vector<std::pair<const char*, size_t>>;
 
 LinesType FindLines(const char* p, size_t len) {
@@ -75,9 +70,7 @@ LinesType FindLines(const char* p, size_t len) {
 
   return lines;
 }
-// #@@range_end(find_lines)
 
-// #@@range_begin(count_utf8size)
 int CountUTF8Size(uint8_t c) {
   if (c < 0x80) {
     return 1;
@@ -90,9 +83,7 @@ int CountUTF8Size(uint8_t c) {
   }
   return 0;
 }
-// #@@range_end(count_utf8size)
 
-// #@@range_begin(copy_utf8string)
 void CopyUTF8String(char* dst, size_t dst_size,
                     const char* src, size_t src_size,
                     int w, int tab) {
@@ -133,9 +124,7 @@ void CopyUTF8String(char* dst, size_t dst_size,
 
   *dst = '\0';
 }
-// #@@range_end(copy_utf8string)
 
-// #@@range_begin(draw_lines)
 void DrawLines(const LinesType& lines, int start_line,
                uint64_t layer_id, int w, int h, int tab) {
   char buf[1024];
@@ -151,9 +140,7 @@ void DrawLines(const LinesType& lines, int start_line,
     SyscallWinWriteString(layer_id, 4, 24 + 16*i, 0x000000, buf);
   }
 }
-// #@@range_end(draw_lines)
 
-// #@@range_begin(wait_event)
 std::tuple<bool, int> WaitEvent(int h) {
   AppEvent events[1];
   while (true) {
@@ -170,9 +157,7 @@ std::tuple<bool, int> WaitEvent(int h) {
     }
   }
 }
-// #@@range_end(wait_event)
 
-// #@@range_begin(update_startline)
 bool UpdateStartLine(int* start_line, int height, size_t num_lines) {
   while (true) {
     const auto [ quit, keycode ] = WaitEvent(height);
@@ -207,9 +192,7 @@ bool UpdateStartLine(int* start_line, int height, size_t num_lines) {
     return false;
   }
 }
-// #@@range_end(update_startline)
 
-// #@@range_begin(main)
 extern "C" void main(int argc, char** argv) {
   auto print_help = [argv](){
     fprintf(stderr,
@@ -254,4 +237,3 @@ extern "C" void main(int argc, char** argv) {
   SyscallCloseWindow(layer_id);
   exit(0);
 }
-// #@@range_end(main)
