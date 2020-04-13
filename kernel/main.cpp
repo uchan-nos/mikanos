@@ -8,10 +8,11 @@
 #include <cstddef>
 #include <cstdio>
 
-#include <numeric>
-#include <vector>
+#include <array>
 #include <deque>
 #include <limits>
+#include <numeric>
+#include <vector>
 
 #include "frame_buffer_config.hpp"
 #include "memory_map.hpp"
@@ -132,9 +133,19 @@ void InitializeTaskBWindow() {
 }
 // #@@range_end(taskb_window)
 
-// #@@range_begin(taskb_func)
-uint64_t task_b_rsp, task_a_rsp;
+// #@@range_begin(task_context)
+struct TaskContext {
+  uint64_t cr3, rip, rflags, reserved1; // offset 0x00
+  uint64_t cs, ss, fs, gs; // offset 0x20
+  uint64_t rax, rbx, rcx, rdx, rdi, rsi, rsp, rbp; // offset 0x40
+  uint64_t r8, r9, r10, r11, r12, r13, r14, r15; // offset 0x80
+  std::array<uint8_t, 512> fxsave_area; // offset 0xc0
+} __attribute__((packed));
 
+alignas(16) TaskContext task_b_ctx, task_a_ctx;
+// #@@range_end(task_context)
+
+// #@@range_begin(taskb_func)
 void TaskB(int task_id, int data) {
   printk("TaskB: task_id=%d, data=%d\n", task_id, data);
   char str[128];
@@ -146,7 +157,7 @@ void TaskB(int task_id, int data) {
     WriteString(*task_b_window->Writer(), {24, 28}, str, {0, 0, 0});
     layer_manager->Draw(task_b_window_layer_id);
 
-    SwitchContext(&task_a_rsp, &task_b_rsp);
+    SwitchContext(&task_a_ctx, &task_b_ctx);
   }
 }
 // #@@range_end(taskb_func)
@@ -197,29 +208,18 @@ extern "C" void KernelMainNewStack(
 
   // #@@range_begin(init_taskb)
   std::vector<uint64_t> task_b_stack(1024);
-  uint64_t task_b_stack_addr = reinterpret_cast<uint64_t>(&task_b_stack[0]);
-  uint64_t* task_b_stack_aligned =
-    reinterpret_cast<uint64_t*>(task_b_stack_addr & ~0xflu);
+  uint64_t task_b_stack_end = reinterpret_cast<uint64_t>(&task_b_stack[1024]);
 
-  task_b_stack_aligned[1023] = 0; // not-used
-  task_b_stack_aligned[1022] = reinterpret_cast<uint64_t>(TaskB);
-  task_b_stack_aligned[1021] = 0; // rax
-  task_b_stack_aligned[1020] = 0; // rbx
-  task_b_stack_aligned[1019] = 0; // rcx
-  task_b_stack_aligned[1018] = 0; // rdx
-  task_b_stack_aligned[1017] = 1; // rdi
-  task_b_stack_aligned[1016] = 42; // rsi
-  task_b_stack_aligned[1015] = 0; // rbp
-  task_b_stack_aligned[1014] = 0; // r8
-  task_b_stack_aligned[1013] = 0; // r9
-  task_b_stack_aligned[1012] = 0; // r10
-  task_b_stack_aligned[1011] = 0; // r11
-  task_b_stack_aligned[1010] = 0; // r12
-  task_b_stack_aligned[1009] = 0; // r13
-  task_b_stack_aligned[1008] = 0; // r14
-  task_b_stack_aligned[1007] = 0; // r15
+  memset(&task_b_ctx, 0, sizeof(task_b_ctx));
+  task_b_ctx.rip = reinterpret_cast<uint64_t>(TaskB);
+  task_b_ctx.rdi = 1;
+  task_b_ctx.rsi = 42;
 
-  task_b_rsp = reinterpret_cast<uint64_t>(&task_b_stack_aligned[1007]);
+  task_b_ctx.cr3 = GetCR3();
+  task_b_ctx.rflags = 0x202;
+  task_b_ctx.cs = kKernelCS;
+  task_b_ctx.ss = kKernelSS;
+  task_b_ctx.rsp = (task_b_stack_end & ~0xflu) - 8;
   // #@@range_end(init_taskb)
 
   char str[128];
@@ -238,7 +238,7 @@ extern "C" void KernelMainNewStack(
     __asm__("cli");
     if (main_queue->size() == 0) {
       __asm__("sti");
-      SwitchContext(&task_b_rsp, &task_a_rsp);
+      SwitchContext(&task_b_ctx, &task_a_ctx);
       continue;
     }
     // #@@range_end(switch_to_taskb)
