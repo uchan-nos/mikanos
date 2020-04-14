@@ -115,7 +115,6 @@ void InputTextWindow(char c) {
   layer_manager->Draw(text_window_layer_id);
 }
 
-// #@@range_begin(taskb_window)
 std::shared_ptr<Window> task_b_window;
 unsigned int task_b_window_layer_id;
 void InitializeTaskBWindow() {
@@ -131,9 +130,7 @@ void InitializeTaskBWindow() {
 
   layer_manager->UpDown(task_b_window_layer_id, std::numeric_limits<int>::max());
 }
-// #@@range_end(taskb_window)
 
-// #@@range_begin(task_context)
 struct TaskContext {
   uint64_t cr3, rip, rflags, reserved1; // offset 0x00
   uint64_t cs, ss, fs, gs; // offset 0x20
@@ -143,9 +140,7 @@ struct TaskContext {
 } __attribute__((packed));
 
 alignas(16) TaskContext task_b_ctx, task_a_ctx;
-// #@@range_end(task_context)
 
-// #@@range_begin(taskb_func)
 void TaskB(int task_id, int data) {
   printk("TaskB: task_id=%d, data=%d\n", task_id, data);
   char str[128];
@@ -160,7 +155,6 @@ void TaskB(int task_id, int data) {
     SwitchContext(&task_a_ctx, &task_b_ctx);
   }
 }
-// #@@range_end(taskb_func)
 
 std::deque<Message>* main_queue;
 
@@ -206,7 +200,6 @@ extern "C" void KernelMainNewStack(
   __asm__("sti");
   bool textbox_cursor_visible = false;
 
-  // #@@range_begin(init_taskb)
   std::vector<uint64_t> task_b_stack(1024);
   uint64_t task_b_stack_end = reinterpret_cast<uint64_t>(&task_b_stack[1024]);
 
@@ -223,7 +216,6 @@ extern "C" void KernelMainNewStack(
 
   // MXCSR のすべての例外をマスクする
   *reinterpret_cast<uint32_t*>(&task_b_ctx.fxsave_area[24]) = 0x1f80;
-  // #@@range_end(init_taskb)
 
   char str[128];
 
@@ -237,14 +229,12 @@ extern "C" void KernelMainNewStack(
     WriteString(*main_window->Writer(), {24, 28}, str, {0, 0, 0});
     layer_manager->Draw(main_window_layer_id);
 
-    // #@@range_begin(switch_to_taskb)
     __asm__("cli");
     if (main_queue->size() == 0) {
       __asm__("sti");
       SwitchContext(&task_b_ctx, &task_a_ctx);
       continue;
     }
-    // #@@range_end(switch_to_taskb)
 
     Message msg = main_queue->front();
     main_queue->pop_front();
