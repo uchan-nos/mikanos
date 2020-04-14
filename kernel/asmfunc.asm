@@ -135,8 +135,6 @@ SwitchContext:  ; void SwitchContext(void* next_ctx, void* current_ctx);
 
     fxsave [rsi + 0xc0]
 
-    and rsp, 0xfffffffffffffff0
-
     ; iret 用のスタックフレーム
     push qword [rdi + 0x28] ; SS
     push qword [rdi + 0x70] ; RSP
