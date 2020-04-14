@@ -137,7 +137,7 @@ SwitchContext:  ; void SwitchContext(void* next_ctx, void* current_ctx);
 
     and rsp, 0xfffffffffffffff0
 
-    ; iretq 用のスタックフレーム
+    ; iret 用のスタックフレーム
     push qword [rdi + 0x28] ; SS
     push qword [rdi + 0x70] ; RSP
     push qword [rdi + 0x10] ; RFLAGS
@@ -171,5 +171,5 @@ SwitchContext:  ; void SwitchContext(void* next_ctx, void* current_ctx);
 
     mov rdi, [rdi + 0x60]
 
-    iretq
+    o64 iret
 ; #@@range_end(switch_context)
