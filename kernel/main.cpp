@@ -131,7 +131,6 @@ void InitializeTaskBWindow() {
   layer_manager->UpDown(task_b_window_layer_id, std::numeric_limits<int>::max());
 }
 
-// #@@range_begin(taskb)
 void TaskB(int task_id, int data) {
   printk("TaskB: task_id=%d, data=%d\n", task_id, data);
   char str[128];
@@ -144,7 +143,6 @@ void TaskB(int task_id, int data) {
     layer_manager->Draw(task_b_window_layer_id);
   }
 }
-// #@@range_end(taskb)
 
 std::deque<Message>* main_queue;
 
@@ -193,12 +191,10 @@ extern "C" void KernelMainNewStack(
   std::vector<uint64_t> task_b_stack(1024);
   uint64_t task_b_stack_end = reinterpret_cast<uint64_t>(&task_b_stack[1024]);
 
-  // #@@range_begin(taskb_value_43)
   memset(&task_b_ctx, 0, sizeof(task_b_ctx));
   task_b_ctx.rip = reinterpret_cast<uint64_t>(TaskB);
   task_b_ctx.rdi = 1;
   task_b_ctx.rsi = 43;
-  // #@@range_end(taskb_value_43)
 
   task_b_ctx.cr3 = GetCR3();
   task_b_ctx.rflags = 0x202;
@@ -209,9 +205,7 @@ extern "C" void KernelMainNewStack(
   // MXCSR のすべての例外をマスクする
   *reinterpret_cast<uint32_t*>(&task_b_ctx.fxsave_area[24]) = 0x1f80;
 
-  // #@@range_begin(call_inittask)
   InitializeTask();
-  // #@@range_end(call_inittask)
 
   char str[128];
 
@@ -225,13 +219,11 @@ extern "C" void KernelMainNewStack(
     WriteString(*main_window->Writer(), {24, 28}, str, {0, 0, 0});
     layer_manager->Draw(main_window_layer_id);
 
-    // #@@range_begin(mainloop)
     __asm__("cli");
     if (main_queue->size() == 0) {
       __asm__("sti\n\thlt");
       continue;
     }
-    // #@@range_end(mainloop)
 
     Message msg = main_queue->front();
     main_queue->pop_front();
