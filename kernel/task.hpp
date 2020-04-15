@@ -19,7 +19,6 @@ struct TaskContext {
   std::array<uint8_t, 512> fxsave_area; // offset 0xc0
 } __attribute__((packed));
 
-// #@@range_begin(task)
 using TaskFunc = void (uint64_t, int64_t);
 
 class Task {
@@ -35,9 +34,7 @@ class Task {
   std::vector<uint64_t> stack_;
   alignas(16) TaskContext context_;
 };
-// #@@range_end(task)
 
-// #@@range_begin(taskmgr)
 class TaskManager {
  public:
   TaskManager();
@@ -51,6 +48,5 @@ class TaskManager {
 };
 
 extern TaskManager* task_manager;
-// #@@range_end(taskmgr)
 
 void InitializeTask();
