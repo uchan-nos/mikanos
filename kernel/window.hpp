@@ -86,10 +86,14 @@ class Window {
   FrameBuffer shadow_buffer_{};
 };
 
+// #@@range_begin(window_consts)
 class ToplevelWindow : public Window {
  public:
   static constexpr Vector2D<int> kTopLeftMargin{4, 24};
   static constexpr Vector2D<int> kBottomRightMargin{4, 4};
+  static constexpr int kMarginX = kTopLeftMargin.x + kBottomRightMargin.x;
+  static constexpr int kMarginY = kTopLeftMargin.y + kBottomRightMargin.y;
+// #@@range_end(window_consts)
 
   class InnerAreaWriter : public PixelWriter {
    public:
@@ -122,4 +126,5 @@ class ToplevelWindow : public Window {
 
 void DrawWindow(PixelWriter& writer, const char* title);
 void DrawTextbox(PixelWriter& writer, Vector2D<int> pos, Vector2D<int> size);
+void DrawTerminal(PixelWriter& writer, Vector2D<int> pos, Vector2D<int> size);
 void DrawWindowTitle(PixelWriter& writer, const char* title, bool active);
