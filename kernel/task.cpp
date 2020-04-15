@@ -3,7 +3,6 @@
 #include "asmfunc.h"
 #include "timer.hpp"
 
-// #@@range_begin(switchtask)
 alignas(16) TaskContext task_b_ctx, task_a_ctx;
 
 namespace {
@@ -19,9 +18,7 @@ void SwitchTask() {
   }
   SwitchContext(current_task, old_current_task);
 }
-// #@@range_end(switchtask)
 
-// #@@range_begin(inittask)
 void InitializeTask() {
   current_task = &task_a_ctx;
 
@@ -30,4 +27,3 @@ void InitializeTask() {
       Timer{timer_manager->CurrentTick() + kTaskTimerPeriod, kTaskTimerValue});
   __asm__("sti");
 }
-// #@@range_end(inittask)
