@@ -14,4 +14,5 @@ extern "C" {
   uint64_t GetCR3();
   void SwitchContext(void* next_ctx, void* current_ctx);
   void CallApp(int argc, char** argv, uint16_t cs, uint16_t ss, uint64_t rip, uint64_t rsp);
+  void LoadTR(uint16_t sel);
 }
