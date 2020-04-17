@@ -178,3 +178,8 @@ CallApp:  ; void CallApp(int argc, char** argv, uint16_t cs, uint16_t ss, uint64
     push r8   ; RIP
     o64 retf
     ; アプリケーションが終了してもここには来ない
+
+global LoadTR
+LoadTR:  ; void LoadTR(uint16_t sel);
+    ltr di
+    ret
