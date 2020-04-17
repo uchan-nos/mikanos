@@ -13,7 +13,6 @@
 
 namespace {
 
-// #@@range_begin(make_argv)
 WithError<int> MakeArgVector(char* command, char* first_arg,
     char** argv, int argv_len, char* argbuf, int argbuf_len) {
   int argc = 0;
@@ -37,7 +36,6 @@ WithError<int> MakeArgVector(char* command, char* first_arg,
   if (!first_arg) {
     return { argc, MAKE_ERROR(Error::kSuccess) };
   }
-  // #@@range_end(make_argv)
 
   char* p = first_arg;
   while (true) {
@@ -115,14 +113,12 @@ WithError<size_t> SetupPageMap(
   while (num_4kpages > 0) {
     const auto entry_index = addr.Part(page_map_level);
 
-    // #@@range_begin(set_userbit)
     auto [ child_map, err ] = SetNewPageMapIfNotPresent(page_map[entry_index]);
     if (err) {
       return { num_4kpages, err };
     }
     page_map[entry_index].bits.writable = 1;
     page_map[entry_index].bits.user = 1;
-    // #@@range_end(set_userbit)
 
     if (page_map_level == 1) {
       --num_4kpages;
@@ -433,7 +429,6 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
     return err;
   }
 
-  // #@@range_begin(arrange_args)
   LinearAddress4Level args_frame_addr{0xffff'ffff'ffff'f000};
   if (auto err = SetupPageMaps(args_frame_addr, 1)) {
     return err;
@@ -446,9 +441,7 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
   if (argc.error) {
     return argc.error;
   }
-  // #@@range_end(arrange_args)
 
-  // #@@range_begin(call_app)
   LinearAddress4Level stack_frame_addr{0xffff'ffff'ffff'e000};
   if (auto err = SetupPageMaps(stack_frame_addr, 1)) {
     return err;
@@ -463,7 +456,6 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
   sprintf(s, "app exited. ret = %d\n", ret);
   Print(s);
   */
-  // #@@range_end(call_app)
 
   const auto addr_first = GetFirstLoadAddress(elf_header);
   if (auto err = CleanPageMaps(LinearAddress4Level{addr_first})) {

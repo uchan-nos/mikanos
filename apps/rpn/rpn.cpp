@@ -32,11 +32,9 @@ extern "C" int main(int argc, char** argv) {
       Push(a);
     }
   }
-  // #@@range_begin(rpn_main)
   if (stack_ptr < 0) {
     return 0;
   }
   while (1);
   //return static_cast<int>(Pop());
-  // #@@range_end(rpn_main)
 }
