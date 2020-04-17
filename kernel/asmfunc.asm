@@ -92,9 +92,11 @@ KernelMain:
     hlt
     jmp .fin
 
+; #@@range_begin(switch_ctx)
 global SwitchContext
 SwitchContext:  ; void SwitchContext(void* next_ctx, void* current_ctx);
     mov [rsi + 0x40], rax
+; #@@range_end(switch_ctx)
     mov [rsi + 0x48], rbx
     mov [rsi + 0x50], rcx
     mov [rsi + 0x58], rdx
@@ -130,6 +132,7 @@ SwitchContext:  ; void SwitchContext(void* next_ctx, void* current_ctx);
     mov dx, gs
     mov [rsi + 0x38], rdx
 
+; #@@range_begin(restore_ctx)
     fxsave [rsi + 0xc0]
     ; fall through to RestoreContext
 
@@ -137,6 +140,7 @@ global RestoreContext
 RestoreContext:  ; void RestoreContext(void* task_context);
     ; iret 用のスタックフレーム
     push qword [rdi + 0x28] ; SS
+; #@@range_end(restore_ctx)
     push qword [rdi + 0x70] ; RSP
     push qword [rdi + 0x10] ; RFLAGS
     push qword [rdi + 0x20] ; CS
@@ -169,7 +173,9 @@ RestoreContext:  ; void RestoreContext(void* task_context);
 
     mov rdi, [rdi + 0x60]
 
+; #@@range_begin(restore_ctx_ret)
     o64 iret
+; #@@range_end(restore_ctx_ret)
 
 global CallApp
 CallApp:  ; void CallApp(int argc, char** argv, uint16_t cs, uint16_t ss, uint64_t rip, uint64_t rsp);
@@ -182,6 +188,7 @@ CallApp:  ; void CallApp(int argc, char** argv, uint16_t cs, uint16_t ss, uint64
     o64 retf
     ; アプリケーションが終了してもここには来ない
 
+; #@@range_begin(inthandler_timer)
 extern LAPICTimerOnInterrupt
 ; void LAPICTimerOnInterrupt(const TaskContext& ctx_stack);
 
@@ -247,8 +254,11 @@ IntHandlerLAPICTimer:  ; void IntHandlerLAPICTimer();
     mov rsp, rbp
     pop rbp
     iretq
+; #@@range_end(inthandler_timer)
 
+; #@@range_begin(load_tr)
 global LoadTR
 LoadTR:  ; void LoadTR(uint16_t sel);
     ltr di
     ret
+; #@@range_end(load_tr)
