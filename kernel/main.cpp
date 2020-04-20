@@ -132,11 +132,9 @@ extern "C" void KernelMainNewStack(
 
   InitializeSegmentation();
   InitializePaging();
-  // #@@range_begin(call_init_tss)
   InitializeMemoryManager(memory_map);
   InitializeTSS();
   InitializeInterrupt();
-  // #@@range_end(call_init_tss)
 
   fat::Initialize(volume_image);
   InitializePCI();
