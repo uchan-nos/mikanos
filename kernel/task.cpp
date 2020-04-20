@@ -92,7 +92,6 @@ Task& TaskManager::NewTask() {
   return *tasks_.emplace_back(new Task{latest_id_});
 }
 
-// #@@range_begin(taskmgr_switchtask)
 void TaskManager::SwitchTask(const TaskContext& current_ctx) {
   TaskContext& task_ctx = task_manager->CurrentTask().Context();
   memcpy(&task_ctx, &current_ctx, sizeof(TaskContext));
@@ -101,9 +100,7 @@ void TaskManager::SwitchTask(const TaskContext& current_ctx) {
     RestoreContext(&CurrentTask().Context());
   }
 }
-// #@@range_end(taskmgr_switchtask)
 
-// #@@range_begin(taskmgr_sleep)
 void TaskManager::Sleep(Task* task) {
   if (!task->Running()) {
     return;
@@ -119,7 +116,6 @@ void TaskManager::Sleep(Task* task) {
 
   Erase(running_[task->Level()], task);
 }
-// #@@range_end(taskmgr_sleep)
 
 Error TaskManager::Sleep(uint64_t id) {
   auto it = std::find_if(tasks_.begin(), tasks_.end(),
@@ -206,7 +202,6 @@ void TaskManager::ChangeLevelRunning(Task* task, int level) {
   }
 }
 
-// #@@range_begin(taskmgr_rotate_runq)
 Task* TaskManager::RotateCurrentRunQueue(bool current_sleep) {
   auto& level_queue = running_[current_level_];
   Task* current_task = level_queue.front();
@@ -230,7 +225,6 @@ Task* TaskManager::RotateCurrentRunQueue(bool current_sleep) {
 
   return current_task;
 }
-// #@@range_end(taskmgr_rotate_runq)
 
 TaskManager* task_manager;
 
