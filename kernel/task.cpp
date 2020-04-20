@@ -93,11 +93,10 @@ Task& TaskManager::NewTask() {
 }
 
 // #@@range_begin(taskmgr_switchtask)
-void TaskManager::SwitchTask(const TaskContext& current_ctx,
-                             bool current_sleep) {
+void TaskManager::SwitchTask(const TaskContext& current_ctx) {
   TaskContext& task_ctx = task_manager->CurrentTask().Context();
   memcpy(&task_ctx, &current_ctx, sizeof(TaskContext));
-  Task* current_task = RotateCurrentRunQueue(current_sleep);
+  Task* current_task = RotateCurrentRunQueue(false);
   if (&CurrentTask() != current_task) {
     RestoreContext(&CurrentTask().Context());
   }
