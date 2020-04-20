@@ -66,7 +66,7 @@ class TaskManager {
 
   TaskManager();
   Task& NewTask();
-  void SwitchTask(const TaskContext& current_ctx, bool current_sleep = false);
+  void SwitchTask(const TaskContext& current_ctx);
 
   void Sleep(Task* task);
   Error Sleep(uint64_t id);
