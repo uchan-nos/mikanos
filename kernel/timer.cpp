@@ -85,7 +85,6 @@ bool TimerManager::Tick() {
 TimerManager* timer_manager;
 unsigned long lapic_timer_freq;
 
-// #@@range_begin(timer_on_interrupt)
 extern "C" void LAPICTimerOnInterrupt(const TaskContext& ctx_stack) {
   const bool task_timer_timeout = timer_manager->Tick();
   NotifyEndOfInterrupt();
@@ -94,4 +93,3 @@ extern "C" void LAPICTimerOnInterrupt(const TaskContext& ctx_stack) {
     task_manager->SwitchTask(ctx_stack);
   }
 }
-// #@@range_end(timer_on_interrupt)
