@@ -49,9 +49,7 @@ constexpr InterruptDescriptorAttribute MakeIDTAttr(
   return attr;
 }
 
-// #@@range_begin(ist_for_timer)
 const int kISTForTimer = 1; // index of the interrupt stack table
-// #@@range_end(ist_for_timer)
 
 void SetIDTEntry(InterruptDescriptor& desc,
                  InterruptDescriptorAttribute attr,
