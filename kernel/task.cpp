@@ -45,11 +45,9 @@ TaskContext& Task::Context() {
   return context_;
 }
 
-// #@@range_begin(task_os_stack_ptr)
 uint64_t& Task::OSStackPointer() {
   return os_stack_ptr_;
 }
-// #@@range_end(task_os_stack_ptr)
 
 uint64_t Task::ID() const {
   return id_;
@@ -242,3 +240,10 @@ void InitializeTask() {
       Timer{timer_manager->CurrentTick() + kTaskTimerPeriod, kTaskTimerValue});
   __asm__("sti");
 }
+
+// #@@range_begin(get_os_stack_ptr)
+__attribute__((no_caller_saved_registers))
+extern "C" uint64_t GetCurrentTaskOSStackPointer() {
+  return task_manager->CurrentTask().OSStackPointer();
+}
+// #@@range_end(get_os_stack_ptr)
