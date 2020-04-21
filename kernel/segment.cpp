@@ -11,7 +11,6 @@ namespace {
 
   static_assert((kTSS >> 3) + 1 < gdt.size());
 
-  // #@@range_begin(tss_util)
   void SetTSS(int index, uint64_t value) {
     tss[index]     = value & 0xffffffff;
     tss[index + 1] = value >> 32;
@@ -25,7 +24,6 @@ namespace {
     }
     return reinterpret_cast<uint64_t>(stk.Frame()) + num_4kframes * 4096;
   }
-  // #@@range_end(tss_util)
 }
 
 void SetCodeSegment(SegmentDescriptor& desc,
@@ -88,7 +86,6 @@ void InitializeSegmentation() {
   SetCSSS(kKernelCS, kKernelSS);
 }
 
-// #@@range_begin(init_tss)
 void InitializeTSS() {
   SetTSS(1, AllocateStackArea(8));
   SetTSS(7 + 2 * kISTForTimer, AllocateStackArea(8));
@@ -100,4 +97,3 @@ void InitializeTSS() {
 
   LoadTR(kTSS);
 }
-// #@@range_end(init_tss)
