@@ -106,13 +106,11 @@ void InitializeInterrupt() {
                 kKernelCS);
   };
   set_idt_entry(InterruptVector::kXHCI, IntHandlerXHCI);
-  // #@@range_begin(set_idt)
   SetIDTEntry(idt[InterruptVector::kLAPICTimer],
               MakeIDTAttr(DescriptorType::kInterruptGate, 0 /* DPL */,
                           true /* present */, kISTForTimer /* IST */),
               reinterpret_cast<uint64_t>(IntHandlerLAPICTimer),
               kKernelCS);
-  // #@@range_end(set_idt)
   set_idt_entry(0,  IntHandlerDE);
   set_idt_entry(1,  IntHandlerDB);
   set_idt_entry(3,  IntHandlerBP);
