@@ -173,8 +173,8 @@ RestoreContext:  ; void RestoreContext(void* task_context);
 
 ; #@@range_begin(call_app)
 global CallApp
-CallApp:  ; void CallApp(int argc, char** argv, uint16_t ss,
-          ;              uint64_t rip, uint64_t rsp, uint64_t* os_stack_ptr);
+CallApp:  ; int CallApp(int argc, char** argv, uint16_t ss,
+          ;             uint64_t rip, uint64_t rsp, uint64_t* os_stack_ptr);
     push rbx
     push rbp
     push r12
