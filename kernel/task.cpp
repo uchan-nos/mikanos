@@ -241,9 +241,7 @@ void InitializeTask() {
   __asm__("sti");
 }
 
-// #@@range_begin(get_os_stack_ptr)
 __attribute__((no_caller_saved_registers))
 extern "C" uint64_t GetCurrentTaskOSStackPointer() {
   return task_manager->CurrentTask().OSStackPointer();
 }
-// #@@range_end(get_os_stack_ptr)
