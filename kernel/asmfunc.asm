@@ -270,7 +270,6 @@ WriteMSR:  ; void WriteMSR(uint32_t msr, uint64_t value);
     wrmsr
     ret
 
-; #@@range_begin(syscall_entry)
 extern GetCurrentTaskOSStackPointer
 extern syscall_table
 global SyscallEntry
@@ -307,7 +306,6 @@ SyscallEntry:  ; void SyscallEntry(void);
     ; rax は戻り値用なので呼び出し側で保存しない
 
     mov rsp, rbp
-; #@@range_end(syscall_entry)
 
     pop rsi  ; システムコール番号を復帰
     cmp esi, 0x80000002
