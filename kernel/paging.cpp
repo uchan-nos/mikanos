@@ -31,8 +31,6 @@ void InitializePaging() {
   SetupIdentityPageTable();
 }
 
-// #@@range_begin(reset_cr3)
 void ResetCR3() {
   SetCR3(reinterpret_cast<uint64_t>(&pml4_table[0]));
 }
-// #@@range_end(reset_cr3)
