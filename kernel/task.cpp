@@ -128,7 +128,6 @@ Task& TaskManager::NewTask() {
   return *tasks_.emplace_back(new Task{latest_id_});
 }
 
-// #@@range_begin(switch_task)
 void TaskManager::SwitchTask(const TaskContext& current_ctx) {
   TaskContext& task_ctx = task_manager->CurrentTask().Context();
   memcpy(&task_ctx, &current_ctx, sizeof(TaskContext));
