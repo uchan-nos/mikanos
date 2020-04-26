@@ -304,7 +304,7 @@ SyscallEntry:  ; void SyscallEntry(void);
     o64 sysret
 
     ; #@@range_begin(exit_app)
-.exit
+.exit:
     mov rsp, rax
     mov eax, edx
 
