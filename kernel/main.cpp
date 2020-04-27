@@ -220,6 +220,9 @@ extern "C" void KernelMainNewStack(
   task_b_ctx.cs = kKernelCS;
   task_b_ctx.ss = kKernelSS;
   task_b_ctx.rsp = (task_b_stack_end & ~0xflu) - 8;
+
+  // MXCSR のすべての例外をマスクする
+  *reinterpret_cast<uint32_t*>(&task_b_ctx.fxsave_area[24]) = 0x1f80;
   // #@@range_end(init_taskb)
 
   char str[128];
