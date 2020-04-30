@@ -349,3 +349,8 @@ ExitApp:
     pop rbx
 
     ret  ; CallApp の次の行に飛ぶ
+
+global InvalidateTLB  ; void InvalidateTLB(uint64_t addr);
+InvalidateTLB:
+    invlpg [rdi]
+    ret
