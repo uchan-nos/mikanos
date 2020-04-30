@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "fat.hpp"
+#include "logger.hpp"
 
 extern const uint8_t _binary_hankaku_bin_start;
 extern const uint8_t _binary_hankaku_bin_end;
@@ -118,6 +119,10 @@ bool IsHankaku(char32_t c) {
 }
 
 WithError<FT_Face> NewFTFace() {
+  if (!nihongo_buf) {
+    return { 0, MAKE_ERROR(Error::kNoSuchEntry) };
+  }
+
   FT_Face face;
   if (int err = FT_New_Memory_Face(
         ft_library, nihongo_buf->data(), nihongo_buf->size(), 0, &face)) {
@@ -174,18 +179,21 @@ Error WriteUnicode(PixelWriter& writer, Vector2D<int> pos,
 
 void InitializeFont() {
   if (int err = FT_Init_FreeType(&ft_library)) {
+    Log(kError, "failed to initialize FreeType library\n");
     exit(1);
   }
 
   auto [ entry, pos_slash ] = fat::FindFile("/nihongo.ttf");
   if (entry == nullptr || pos_slash) {
-    exit(1);
+    Log(kWarn, "no nihongo.ttf\n");
+    return;
   }
 
   const size_t size = entry->file_size;
   nihongo_buf = new std::vector<uint8_t>(size);
   if (LoadFile(nihongo_buf->data(), size, *entry) != size) {
     delete nihongo_buf;
+    Log(kError, "failedto load nihongo.ttf");
     exit(1);
   }
 }
