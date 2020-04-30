@@ -153,6 +153,7 @@ Error SetPageContent(PageMapEntry* table, int part,
     const auto i = addr.Part(part);
     table[i].SetPointer(content);
     table[i].bits.writable = 1;
+    InvalidateTLB(addr.value);
     return MAKE_ERROR(Error::kSuccess);
   }
 
