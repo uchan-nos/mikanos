@@ -1,6 +1,9 @@
 #include "usb/memory.hpp"
 
 #include <cstdint>
+#include <cstring>
+#include "logger.hpp"
+#include "memory_manager.hpp"
 
 namespace {
   template <class T>
@@ -15,10 +18,30 @@ namespace {
 }
 
 namespace usb {
+#define USE_MEMMGR
+
+#ifdef USE_MEMMGR
+  void* memory_pool;
+  uintptr_t alloc_ptr;
+#else
   alignas(64) uint8_t memory_pool[kMemoryPoolSize];
   uintptr_t alloc_ptr = reinterpret_cast<uintptr_t>(memory_pool);
+#endif
 
   void* AllocMem(size_t size, unsigned int alignment, unsigned int boundary) {
+#ifdef USE_MEMMGR
+    if (!memory_pool) {
+      auto [ frame, err ] =
+        memory_manager->Allocate(kMemoryPoolSize / kBytesPerFrame);
+      if (err) {
+        Log(kError, "failed to allocate memory for USB: %s\n", err.Name());
+        return nullptr;
+      }
+      memory_pool = frame.Frame();
+      alloc_ptr = reinterpret_cast<uint64_t>(memory_pool);
+      memset(memory_pool, 0, kMemoryPoolSize);
+    }
+#endif
     if (alignment > 0) {
       alloc_ptr = Ceil(alloc_ptr, alignment);
     }
