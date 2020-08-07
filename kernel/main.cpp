@@ -108,11 +108,17 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   }
 
   // #@@range_begin(find_xhc)
+  // Intel 製を優先して xHC を探す
   pci::Device* xhc_dev = nullptr;
   for (int i = 0; i < pci::num_device; ++i) {
     if (pci::devices[i].class_code.Match(0x0cu, 0x03u, 0x30u)) {
       xhc_dev = &pci::devices[i];
-      break;
+
+      if (0x8086 == pci::ReadVendorId(xhc_dev->bus,
+                                      xhc_dev->device,
+                                      xhc_dev->function)) {
+        break;
+      }
     }
   }
 
