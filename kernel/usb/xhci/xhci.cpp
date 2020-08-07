@@ -279,6 +279,35 @@ namespace {
 
     return MAKE_ERROR(Error::kInvalidPhase);
   }
+
+  void RequestHCOwnership(uintptr_t mmio_base, HCCPARAMS1_Bitmap hccp) {
+    ExtendedRegisterList extregs{ mmio_base, hccp };
+
+    auto ext_usblegsup = std::find_if(
+        extregs.begin(), extregs.end(),
+        [](auto& reg) { return reg.Read().bits.capability_id == 1; });
+
+    if (ext_usblegsup == extregs.end()) {
+      return;
+    }
+
+    auto& reg =
+      reinterpret_cast<MemMapRegister<USBLEGSUP_Bitmap>&>(*ext_usblegsup);
+    auto r = reg.Read();
+    if (r.bits.hc_os_owned_semaphore) {
+      return;
+    }
+
+    r.bits.hc_os_owned_semaphore = 1;
+    Log(kDebug, "waiting until OS owns xHC...\n");
+    reg.Write(r);
+
+    do {
+      r = reg.Read();
+    } while (r.bits.hc_bios_owned_semaphore ||
+             !r.bits.hc_os_owned_semaphore);
+    Log(kDebug, "OS has owned xHC\n");
+  }
 }
 
 namespace usb::xhci {
@@ -296,6 +325,8 @@ namespace usb::xhci {
     if (auto err = devmgr_.Initialize(kDeviceSize)) {
       return err;
     }
+
+    RequestHCOwnership(mmio_base_, cap_->HCCPARAMS1.Read());
 
     auto usbcmd = op_->USBCMD.Read();
     usbcmd.bits.interrupter_enable = false;
