@@ -296,7 +296,6 @@ EFI_STATUS EFIAPI UefiMain(
 
   UINT64 entry_addr = *(UINT64*)(kernel_base_addr + 24);
 
-  // #@@range_begin(pass_frame_buffer_config)
   struct FrameBufferConfig config = {
     (UINT8*)gop->Mode->FrameBufferBase,
     gop->Mode->Info->PixelsPerScanLine,
@@ -319,7 +318,6 @@ EFI_STATUS EFIAPI UefiMain(
   typedef void EntryPointType(const struct FrameBufferConfig*);
   EntryPointType* entry_point = (EntryPointType*)entry_addr;
   entry_point(&config);
-  // #@@range_end(pass_frame_buffer_config)
 
   Print(L"All done\n");
 
