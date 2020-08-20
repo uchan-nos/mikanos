@@ -38,8 +38,8 @@ int WritePixel(const FrameBufferConfig& config,
 }
 // #@@range_end(write_pixel)
 
+// #@@range_begin(call_write_pixel)
 extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
-  // #@@range_begin(call_write_pixel)
   for (int x = 0; x < frame_buffer_config.horizontal_resolution; ++x) {
     for (int y = 0; y < frame_buffer_config.vertical_resolution; ++y) {
       WritePixel(frame_buffer_config, x, y, {255, 255, 255});
@@ -50,6 +50,6 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
       WritePixel(frame_buffer_config, 100 + x, 100 + y, {0, 255, 0});
     }
   }
-  // #@@range_end(call_write_pixel)
   while (1) __asm__("hlt");
 }
+// #@@range_end(call_write_pixel)
