@@ -53,6 +53,27 @@ void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
   mouse_cursor->MoveRelative({displacement_x, displacement_y});
 }
 
+void SwitchEhci2Xhci(const pci::Device& xhc_dev) {
+  bool intel_ehc_exist = false;
+  for (int i = 0; i < pci::num_device; ++i) {
+    if (pci::devices[i].class_code.Match(0x0cu, 0x03u, 0x20u) /* EHCI */ &&
+        0x8086 == pci::ReadVendorId(pci::devices[i])) {
+      intel_ehc_exist = true;
+      break;
+    }
+  }
+  if (!intel_ehc_exist) {
+    return;
+  }
+
+  uint32_t superspeed_ports = pci::ReadConfReg(xhc_dev, 0xdc); // USB3PRM
+  pci::WriteConfReg(xhc_dev, 0xd8, superspeed_ports); // USB3_PSSEN
+  uint32_t ehci2xhci_ports = pci::ReadConfReg(xhc_dev, 0xd4); // XUSB2PRM
+  pci::WriteConfReg(xhc_dev, 0xd0, ehci2xhci_ports); // XUSB2PR
+  Log(kDebug, "SwitchEhci2Xhci: SS = %02, xHCI = %02x\n",
+      superspeed_ports, ehci2xhci_ports);
+}
+
 extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   switch (frame_buffer_config.pixel_format) {
     case kPixelRGBResv8BitPerColor:
@@ -100,7 +121,7 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
 
   for (int i = 0; i < pci::num_device; ++i) {
     const auto& dev = pci::devices[i];
-    auto vendor_id = pci::ReadVendorId(dev.bus, dev.device, dev.function);
+    auto vendor_id = pci::ReadVendorId(dev);
     auto class_code = pci::ReadClassCode(dev.bus, dev.device, dev.function);
     Log(kDebug, "%d.%d.%d: vend %04x, class %08x, head %02x\n",
         dev.bus, dev.device, dev.function,
@@ -114,9 +135,7 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
     if (pci::devices[i].class_code.Match(0x0cu, 0x03u, 0x30u)) {
       xhc_dev = &pci::devices[i];
 
-      if (0x8086 == pci::ReadVendorId(xhc_dev->bus,
-                                      xhc_dev->device,
-                                      xhc_dev->function)) {
+      if (0x8086 == pci::ReadVendorId(*xhc_dev)) {
         break;
       }
     }
@@ -138,6 +157,9 @@ extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   // #@@range_begin(init_xhc)
   usb::xhci::Controller xhc{xhc_mmio_base};
 
+  if (0x8086 == pci::ReadVendorId(*xhc_dev)) {
+    SwitchEhci2Xhci(*xhc_dev);
+  }
   {
     auto err = xhc.Initialize();
     Log(kDebug, "xhc.Initialize: %s\n", err.Name());
