@@ -4,6 +4,7 @@
 #include "logger.hpp"
 #include "pci.hpp"
 #include "interrupt.hpp"
+#include "timer.hpp"
 #include "usb/setupdata.hpp"
 #include "usb/device.hpp"
 #include "usb/descriptor.hpp"
@@ -368,6 +369,11 @@ namespace usb::xhci {
     usbcmd = op_->USBCMD.Read();
     usbcmd.bits.host_controller_reset = true;
     op_->USBCMD.Write(usbcmd);
+
+    Log(kDebug, "xhci::Controller::Initialize: waiting 1ms...\n");
+    auto after_1ms = int(0.01 * kTimerFreq) + timer_manager->CurrentTick();
+    while (timer_manager->CurrentTick() <= after_1ms);
+
     while (op_->USBCMD.Read().bits.host_controller_reset);
     while (op_->USBSTS.Read().bits.controller_not_ready);
 
