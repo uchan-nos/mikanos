@@ -13,4 +13,4 @@
 -fno-exceptions
 -ffreestanding
 -fno-rtti
--std=c++2a
+-std=c++17
