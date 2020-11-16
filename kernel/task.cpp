@@ -4,6 +4,14 @@
 #include "segment.hpp"
 #include "timer.hpp"
 
+namespace {
+  template <class T, class U>
+  void Erase(T& c, const U& value) {
+    auto it = std::remove(c.begin(), c.end(), value);
+    c.erase(it, c.end());
+  }
+} // namespace
+
 Task::Task(uint64_t id) : id_{id}, msgs_{} {
 }
 
@@ -112,7 +120,7 @@ void TaskManager::Sleep(Task* task) {
     return;
   }
 
-  std::erase(running_[task->Level()], task);
+  Erase(running_[task->Level()], task);
 }
 
 Error TaskManager::Sleep(uint64_t id) {
@@ -179,7 +187,7 @@ void TaskManager::ChangeLevelRunning(Task* task, int level) {
 
   if (task != running_[current_level_].front()) {
     // change level of other task
-    std::erase(running_[task->Level()], task);
+    Erase(running_[task->Level()], task);
     running_[level].push_back(task);
     task->SetLevel(level);
     if (level > current_level_) {
