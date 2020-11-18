@@ -93,7 +93,8 @@ WithError<uint64_t> CopyLoadSegments(Elf64_Ehdr* ehdr) {
     LinearAddress4Level dest_addr;
     dest_addr.value = phdr[i].p_vaddr;
     last_addr = std::max(last_addr, phdr[i].p_vaddr + phdr[i].p_memsz);
-    const auto num_4kpages = (phdr[i].p_memsz + 4095) / 4096;
+    const auto num_4kpages =
+      ((phdr[i].p_vaddr & 4095) + phdr[i].p_memsz + 4095) / 4096;
 
     // setup pagemaps as readonly (writable = false)
     if (auto err = SetupPageMaps(dest_addr, num_4kpages, false)) {
