@@ -62,9 +62,9 @@ namespace pci {
   };
 
   /** @brief ScanAllBus() により発見された PCI デバイスの一覧 */
-  extern std::array<Device, 32> devices;
+  inline std::array<Device, 32> devices;
   /** @brief devices の有効な要素の数 */
-  extern int num_device;
+  inline int num_device;
   /** @brief PCI デバイスをすべて探索し devices に格納する
    *
    * バス 0 から再帰的に PCI デバイスを探索し，devices の先頭から詰めて書き込む．

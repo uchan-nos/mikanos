@@ -142,9 +142,6 @@ namespace pci {
     return (header_type & 0x80u) == 0;
   }
 
-  std::array<Device, 32> devices;
-  int num_device;
-
   Error ScanAllBus() {
     num_device = 0;
 
