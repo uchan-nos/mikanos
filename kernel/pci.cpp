@@ -12,8 +12,8 @@ namespace {
   using namespace pci;
 
   /** @brief CONFIG_ADDRESS 用の 32 ビット整数を生成する */
-  constexpr uint32_t MakeAddress(uint8_t bus, uint8_t device,
-                                 uint8_t function, uint8_t reg_addr) {
+  uint32_t MakeAddress(uint8_t bus, uint8_t device,
+                       uint8_t function, uint8_t reg_addr) {
     auto shl = [](uint32_t x, unsigned int bits) {
         return x << bits;
     };
