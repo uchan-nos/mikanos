@@ -1,21 +1,24 @@
-# mikanos
-MikanOS: An educational operating system running on legacy free architecture.
+# MikanOS
 
-## Files
+MikanOS はレガシーフリーなアーキテクチャ（UEFI BIOS、Intel 64 モード）で動作する教育用オペレーティングシステムです。
+
+## ファイル構成
 
 - MikanLoaderPkg
-    - The MikanOS loader as a UEFI Application
+    - UEFI アプリとして構成したブートローダ
 - kernel
-    - The MikanOS kernel
+    - MikanOS のカーネル
 - resource/nihongo.ttf
-    - IPA gothic font file
+    - IPA ゴシックのフォントファイル
 - IPA_Font_License_Agreement_v1.0.txt
-    - License agreement for IPA fonts
+    - IPA フォントのライセンス文書
 
-## Remarks
+## 教科書
 
-The 'master' branch of this repository is tend to be rebased.
-Sorry for your inconvenience.
+MikanOS の作り方を説明した教科書があります。
+[ゼロからのOS自作入門](https://zero.osdev.jp/)
 
-Although rebasing a master branch is generally a bad hobit, this repository
-should be maintained so as to make the commits history straight-forward.
+## スクリーンショット
+
+「ゼロからのOS自作入門」の最終章を終えたときの姿
+![30章後の姿](mikanos-after30-photo.png)
