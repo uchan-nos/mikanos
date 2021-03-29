@@ -12,6 +12,7 @@
 #include "usb/setupdata.hpp"
 #include "usb/endpoint.hpp"
 #include "usb/arraymap.hpp"
+#include "usb/descriptor.hpp"
 
 namespace usb {
   class ClassDriver;
@@ -48,6 +49,7 @@ namespace usb {
     std::array<ClassDriver*, 16> class_drivers_{};
 
     std::array<uint8_t, 256> buf_{};
+    DeviceDescriptor device_desc_;
 
     // following fields are used during initialization
     uint8_t num_configurations_;

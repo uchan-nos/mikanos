@@ -1,6 +1,5 @@
 #include "usb/device.hpp"
 
-#include "usb/descriptor.hpp"
 #include "usb/setupdata.hpp"
 #include "usb/classdriver/base.hpp"
 #include "usb/classdriver/keyboard.hpp"
@@ -71,6 +70,14 @@ namespace {
       }
     }
     return nullptr;
+  }
+
+  Error NewClassDriver(std::array<usb::ClassDriver*, 16>& class_drivers,
+                       usb::Device* dev,
+                       const usb::DeviceDescriptor& device_desc,
+                       const ConfigurationDescriptorReader& conf_reader) {
+    Log(kWarn, "creating class driver for class=%d\n", device_desc.device_class);
+    return MAKE_ERROR(Error::kNotImplemented);
   }
 
   void Log(LogLevel level, const usb::InterfaceDescriptor& if_desc) {
@@ -189,8 +196,12 @@ namespace usb {
   }
 
   Error Device::InitializePhase1(const uint8_t* buf, int len) {
-    const auto device_desc = DescriptorDynamicCast<DeviceDescriptor>(buf);
-    num_configurations_ = device_desc->num_configurations;
+    if (len != sizeof(DeviceDescriptor)) {
+      return MAKE_ERROR(Error::kInvalidDescriptor);
+    }
+
+    memcpy(&device_desc_, buf, len);
+    num_configurations_ = device_desc_.num_configurations;
     config_index_ = 0;
     initialize_phase_ = 2;
     Log(kDebug, "issuing GetDesc(Config): index=%d)\n", config_index_);
@@ -206,38 +217,46 @@ namespace usb {
     }
     ConfigurationDescriptorReader config_reader{buf, len};
 
-    ClassDriver* class_driver = nullptr;
-    while (auto if_desc = config_reader.Next<InterfaceDescriptor>()) {
-      Log(kDebug, *if_desc);
-
-      class_driver = NewClassDriver(this, *if_desc);
-      if (class_driver == nullptr) {
-        // 非対応デバイス．次の interface を調べる．
-        continue;
+    if (device_desc_.device_class != 0) {
+      if (auto err =
+          NewClassDriver(class_drivers_, this, device_desc_, config_reader)) {
+        return err;
       }
+    } else {
+      ClassDriver* class_driver = nullptr;
+      while (auto if_desc = config_reader.Next<InterfaceDescriptor>()) {
+        Log(kDebug, *if_desc);
 
-      num_ep_configs_ = 0;
-
-      while (num_ep_configs_ < if_desc->num_endpoints) {
-        auto desc = config_reader.Next();
-        if (auto ep_desc = DescriptorDynamicCast<EndpointDescriptor>(desc)) {
-          auto conf = MakeEPConfig(*ep_desc);
-          Log(kDebug, conf);
-
-          ep_configs_[num_ep_configs_] = conf;
-          ++num_ep_configs_;
-          class_drivers_[conf.ep_id.Number()] = class_driver;
-        } else if (auto hid_desc = DescriptorDynamicCast<HIDDescriptor>(desc)) {
-          Log(kDebug, *hid_desc);
+        class_driver = NewClassDriver(this, *if_desc);
+        if (class_driver == nullptr) {
+          // 非対応デバイス．次の interface を調べる．
+          continue;
         }
+
+        num_ep_configs_ = 0;
+
+        while (num_ep_configs_ < if_desc->num_endpoints) {
+          auto desc = config_reader.Next();
+          if (auto ep_desc = DescriptorDynamicCast<EndpointDescriptor>(desc)) {
+            auto conf = MakeEPConfig(*ep_desc);
+            Log(kDebug, conf);
+
+            ep_configs_[num_ep_configs_] = conf;
+            ++num_ep_configs_;
+            class_drivers_[conf.ep_id.Number()] = class_driver;
+          } else if (auto hid_desc = DescriptorDynamicCast<HIDDescriptor>(desc)) {
+            Log(kDebug, *hid_desc);
+          }
+        }
+
+        break;
       }
 
-      break;
+      if (!class_driver) {
+        return MAKE_ERROR(Error::kSuccess);
+      }
     }
 
-    if (!class_driver) {
-      return MAKE_ERROR(Error::kSuccess);
-    }
     initialize_phase_ = 3;
     Log(kDebug, "issuing SetConfiguration: conf_val=%d\n",
         conf_desc->configuration_value);
