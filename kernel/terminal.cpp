@@ -13,6 +13,7 @@
 #include "timer.hpp"
 #include "keyboard.hpp"
 #include "logger.hpp"
+#include "uefi.hpp"
 
 namespace {
 
@@ -507,6 +508,25 @@ void Terminal::ExecuteLine() {
     PrintToFD(*files_[1], "Phys total: %lu frames (%llu MiB)\n",
         p_stat.total_frames,
         p_stat.total_frames * kBytesPerFrame / 1024 / 1024);
+  } else if (strcmp(command, "date") == 0) {
+    EFI_TIME t;
+    uefi_rt->GetTime(&t, nullptr);
+    if (t.TimeZone == EFI_UNSPECIFIED_TIMEZONE) {
+      PrintToFD(*files_[1], "%d-%02d-%02d %02d:%02d:%02d\n",
+          t.Year, t.Month, t.Day, t.Hour, t.Minute, t.Second);
+    } else {
+      PrintToFD(*files_[1], "%d-%02d-%02d %02d:%02d:%02d ",
+          t.Year, t.Month, t.Day, t.Hour, t.Minute, t.Second);
+      if (t.TimeZone >= 0) {
+        PrintToFD(*files_[1], "+%02d%02d\n", t.TimeZone / 60, t.TimeZone % 60);
+      } else {
+        PrintToFD(*files_[1], "-%02d%02d\n", -t.TimeZone / 60, -t.TimeZone % 60);
+      }
+    }
+  } else if (strcmp(command, "reboot") == 0) {
+    uefi_rt->ResetSystem(EfiResetWarm, EFI_SUCCESS, 0, nullptr);
+  } else if (strcmp(command, "poweroff") == 0) {
+    uefi_rt->ResetSystem(EfiResetShutdown, EFI_SUCCESS, 0, nullptr);
   } else if (command[0] != 0) {
     auto file_entry = FindCommand(command);
     if (!file_entry) {

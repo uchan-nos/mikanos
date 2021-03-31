@@ -37,6 +37,7 @@
 #include "terminal.hpp"
 #include "fat.hpp"
 #include "syscall.hpp"
+#include "uefi.hpp"
 
 int printk(const char* format, ...) {
   va_list ap;
@@ -122,8 +123,10 @@ extern "C" void KernelMainNewStack(
     const FrameBufferConfig& frame_buffer_config_ref,
     const MemoryMap& memory_map_ref,
     const acpi::RSDP& acpi_table,
-    void* volume_image) {
+    void* volume_image,
+    EFI_RUNTIME_SERVICES* rt) {
   MemoryMap memory_map{memory_map_ref};
+  uefi_rt = rt;
 
   InitializeGraphics(frame_buffer_config_ref);
   InitializeConsole();
