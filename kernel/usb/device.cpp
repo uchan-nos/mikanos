@@ -2,6 +2,7 @@
 
 #include "usb/setupdata.hpp"
 #include "usb/classdriver/base.hpp"
+#include "usb/classdriver/cdc.hpp"
 #include "usb/classdriver/keyboard.hpp"
 #include "usb/classdriver/mouse.hpp"
 
@@ -52,34 +53,6 @@ namespace {
     return conf;
   }
 
-  usb::ClassDriver* NewClassDriver(usb::Device* dev, const usb::InterfaceDescriptor& if_desc) {
-    if (if_desc.interface_class == 3 &&
-        if_desc.interface_sub_class == 1) {  // HID boot interface
-      if (if_desc.interface_protocol == 1) {  // keyboard
-        auto keyboard_driver = new usb::HIDKeyboardDriver{dev, if_desc.interface_number};
-        if (usb::HIDKeyboardDriver::default_observer) {
-          keyboard_driver->SubscribeKeyPush(usb::HIDKeyboardDriver::default_observer);
-        }
-        return keyboard_driver;
-      } else if (if_desc.interface_protocol == 2) {  // mouse
-        auto mouse_driver = new usb::HIDMouseDriver{dev, if_desc.interface_number};
-        if (usb::HIDMouseDriver::default_observer) {
-          mouse_driver->SubscribeMouseMove(usb::HIDMouseDriver::default_observer);
-        }
-        return mouse_driver;
-      }
-    }
-    return nullptr;
-  }
-
-  Error NewClassDriver(std::array<usb::ClassDriver*, 16>& class_drivers,
-                       usb::Device* dev,
-                       const usb::DeviceDescriptor& device_desc,
-                       const ConfigurationDescriptorReader& conf_reader) {
-    Log(kWarn, "creating class driver for class=%d\n", device_desc.device_class);
-    return MAKE_ERROR(Error::kNotImplemented);
-  }
-
   void Log(LogLevel level, const usb::InterfaceDescriptor& if_desc) {
     Log(level, "Interface Descriptor: class=%d, sub=%d, protocol=%d\n",
         if_desc.interface_class,
@@ -104,6 +77,80 @@ namespace {
           hid_desc.GetClassDescriptor(i)->descriptor_length);
     }
     Log(level, "\n");
+  }
+
+  usb::ClassDriver* NewClassDriver(usb::Device* dev, const usb::InterfaceDescriptor& if_desc) {
+    if (if_desc.interface_class == 3 &&
+        if_desc.interface_sub_class == 1) {  // HID boot interface
+      if (if_desc.interface_protocol == 1) {  // keyboard
+        auto keyboard_driver = new usb::HIDKeyboardDriver{dev, if_desc.interface_number};
+        if (usb::HIDKeyboardDriver::default_observer) {
+          keyboard_driver->SubscribeKeyPush(usb::HIDKeyboardDriver::default_observer);
+        }
+        return keyboard_driver;
+      } else if (if_desc.interface_protocol == 2) {  // mouse
+        auto mouse_driver = new usb::HIDMouseDriver{dev, if_desc.interface_number};
+        if (usb::HIDMouseDriver::default_observer) {
+          mouse_driver->SubscribeMouseMove(usb::HIDMouseDriver::default_observer);
+        }
+        return mouse_driver;
+      }
+    }
+    return nullptr;
+  }
+
+  WithError<size_t> NewClassDriver(
+      std::array<usb::ClassDriver*, 16>& class_drivers,
+      std::array<usb::EndpointConfig, 16>& ep_configs,
+      usb::Device* dev,
+      const usb::DeviceDescriptor& device_desc,
+      ConfigurationDescriptorReader& conf_reader) {
+    using namespace usb::cdc;
+    Log(kWarn, "creating class driver for class=%d\n", device_desc.device_class);
+
+    size_t num_ep_configs = 0;
+
+    if (device_desc.device_class == 2) {
+      const usb::InterfaceDescriptor* if_comm = nullptr;
+      const usb::InterfaceDescriptor* if_data = nullptr;
+      while (auto if_desc = conf_reader.Next<usb::InterfaceDescriptor>()) {
+        Log(kWarn, *if_desc);
+        if (if_desc->interface_class == 2) {
+          if_comm = if_desc;
+        } else if (if_desc->interface_class == 10) {
+          if_data = if_desc;
+        }
+
+        for (int i = 0; i < if_desc->num_endpoints; ++i) {
+          auto desc = conf_reader.Next();
+          if (auto ep_desc = usb::DescriptorDynamicCast<usb::EndpointDescriptor>(desc)) {
+            auto conf = MakeEPConfig(*ep_desc);
+            Log(kWarn, conf);
+
+            ep_configs[num_ep_configs] = conf;
+            ++num_ep_configs;
+          } else if (auto cdc = FuncDescDynamicCast<HeaderDescriptor>(desc)) {
+            Log(kWarn, "kHeader: cdc=%04x\n", cdc->cdc);
+          } else if (auto call = FuncDescDynamicCast<CMDescriptor>(desc)) {
+            Log(kWarn, "kCM: cap=%x, dat_if=%d\n",
+                call->capabilities.data, call->data_interface);
+          } else if (auto acm = FuncDescDynamicCast<ACMDescriptor>(desc)) {
+            Log(kWarn, "kACM: cap=%x\n", acm->capabilities.data);
+          } else if (auto uni = FuncDescDynamicCast<UnionDescriptor>(desc)) {
+            Log(kWarn, "kUnion: ctr_if=%d\n", uni->control_interface);
+          } else {
+            Log(kWarn, "unknown descriptor. type = %d\n", desc[1]);
+          }
+        }
+      }
+
+      usb::cdc::driver = new usb::cdc::CDCDriver{dev, if_comm, if_data};
+      for (size_t i = 0; i < num_ep_configs; ++i) {
+        class_drivers[ep_configs[i].ep_id.Number()] = usb::cdc::driver;
+      }
+      return { num_ep_configs, MAKE_ERROR(Error::kSuccess) };
+    }
+    return { num_ep_configs, MAKE_ERROR(Error::kNotImplemented) };
   }
 }
 
@@ -132,6 +179,14 @@ namespace usb {
   }
 
   Error Device::InterruptOut(EndpointID ep_id, void* buf, int len) {
+    return MAKE_ERROR(Error::kSuccess);
+  }
+
+  Error Device::BulkIn(EndpointID ep_id, void* buf, int len) {
+    return MAKE_ERROR(Error::kSuccess);
+  }
+
+  Error Device::BulkOut(EndpointID ep_id, void* buf, int len) {
     return MAKE_ERROR(Error::kSuccess);
   }
 
@@ -218,9 +273,12 @@ namespace usb {
     ConfigurationDescriptorReader config_reader{buf, len};
 
     if (device_desc_.device_class != 0) {
-      if (auto err =
-          NewClassDriver(class_drivers_, this, device_desc_, config_reader)) {
+      if (auto [ num_ep_configs, err ] = NewClassDriver(
+            class_drivers_, ep_configs_, this, device_desc_, config_reader);
+          err) {
         return err;
+      } else {
+        num_ep_configs_ = num_ep_configs;
       }
     } else {
       ClassDriver* class_driver = nullptr;

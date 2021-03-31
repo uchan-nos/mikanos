@@ -232,6 +232,50 @@ namespace usb::xhci {
     return MAKE_ERROR(Error::kNotImplemented);
   }
 
+  Error Device::BulkIn(EndpointID ep_id, void* buf, int len) {
+    if (auto err = usb::Device::BulkIn(ep_id, buf, len)) {
+      return err;
+    }
+
+    const DeviceContextIndex dci{ep_id};
+    Ring* tr = transfer_rings_[dci.value - 1];
+    if (tr == nullptr) {
+      return MAKE_ERROR(Error::kTransferRingNotSet);
+    }
+
+    NormalTRB normal{};
+    normal.SetPointer(buf);
+    normal.bits.trb_transfer_length = len;
+    normal.bits.interrupt_on_short_packet = true;
+    normal.bits.interrupt_on_completion = true;
+
+    tr->Push(normal);
+    dbreg_->Ring(dci.value);
+    return MAKE_ERROR(Error::kSuccess);
+  }
+
+  Error Device::BulkOut(EndpointID ep_id, void* buf, int len) {
+    if (auto err = usb::Device::BulkOut(ep_id, buf, len)) {
+      return err;
+    }
+
+    const DeviceContextIndex dci{ep_id};
+    Ring* tr = transfer_rings_[dci.value - 1];
+    if (tr == nullptr) {
+      return MAKE_ERROR(Error::kTransferRingNotSet);
+    }
+
+    NormalTRB normal{};
+    normal.SetPointer(buf);
+    normal.bits.trb_transfer_length = len;
+    normal.bits.interrupt_on_short_packet = true;
+    normal.bits.interrupt_on_completion = true;
+
+    tr->Push(normal);
+    dbreg_->Ring(dci.value);
+    return MAKE_ERROR(Error::kSuccess);
+  }
+
   Error Device::OnTransferEventReceived(const TransferEventTRB& trb) {
     const auto residual_length = trb.bits.trb_transfer_length;
 

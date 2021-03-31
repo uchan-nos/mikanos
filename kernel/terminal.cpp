@@ -13,6 +13,7 @@
 #include "timer.hpp"
 #include "keyboard.hpp"
 #include "logger.hpp"
+#include "usb/classdriver/cdc.hpp"
 #include "usb/xhci/xhci.hpp"
 
 namespace {
@@ -522,6 +523,14 @@ void Terminal::ExecuteLine() {
                 dev->DeviceDesc().device_class,
                 dev->DeviceDesc().device_sub_class,
                 dev->DeviceDesc().device_protocol);
+    }
+  } else if (strcmp(command, "usbtest") == 0) {
+    if (!usb::cdc::driver) {
+      PrintToFD(*files_[2], "CDC device not exist\n");
+    } else if (first_arg && first_arg[0]) {
+      usb::cdc::driver->SendSerial(first_arg, 1);
+    } else {
+      usb::cdc::driver->SendSerial("a", 1);
     }
   } else if (command[0] != 0) {
     auto file_entry = FindCommand(command);

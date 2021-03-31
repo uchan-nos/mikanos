@@ -54,6 +54,8 @@ namespace usb::xhci {
                      const void* buf, int len, ClassDriver* issuer) override;
     Error InterruptIn(EndpointID ep_id, void* buf, int len) override;
     Error InterruptOut(EndpointID ep_id, void* buf, int len) override;
+    Error BulkIn(EndpointID ep_id, void* buf, int len) override;
+    Error BulkOut(EndpointID ep_id, void* buf, int len) override;
 
     Error OnTransferEventReceived(const TransferEventTRB& trb);
 
