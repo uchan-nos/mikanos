@@ -13,6 +13,14 @@ MikanOS はレガシーフリーなアーキテクチャ（UEFI BIOS、Intel 64 
 - IPA_Font_License_Agreement_v1.0.txt
     - IPA フォントのライセンス文書
 
+## ビルド方法
+
+[mikanos-build リポジトリ](https://github.com/uchan-nos/mikanos-build/) に MikanOS をビルドするためのスクリプトがあります。
+mikanos-build の手順に沿って開発ツールを導入した後、devenv/buildenv.sh を読み込むことでビルド可能です。
+（devenv/buildenv.sh により環境変数 CPPFLAGS などが適切に設定されます。）
+
+MikanOS の最新版をビルドするためには mikanos-build の最新版が必要です。
+
 ## 教科書
 
 MikanOS の作り方を説明した教科書があります。
