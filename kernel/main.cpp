@@ -119,6 +119,64 @@ void InputTextWindow(char c) {
 
 alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 
+// デスクトップの右下（タスクバーの右端）に現在時刻を表示する
+void TaskWallclock(uint64_t task_id, int64_t data) {
+  __asm__("cli");
+  Task& task = task_manager->CurrentTask();
+  auto clock_window = std::make_shared<Window>(
+      8 * 10, 16 * 2, screen_config.pixel_format);
+  const auto clock_window_layer_id = layer_manager->NewLayer()
+    .SetWindow(clock_window)
+    .SetDraggable(false)
+    .Move(ScreenSize() - clock_window->Size() - Vector2D<int>{4, 8})
+    .ID();
+  layer_manager->UpDown(clock_window_layer_id, 2);
+  __asm__("sti");
+
+  auto draw_current_time = [&]() {
+    EFI_TIME t;
+    uefi_rt->GetTime(&t, nullptr);
+
+    FillRectangle(*clock_window->Writer(),
+                  {0, 0}, clock_window->Size(), {0, 0, 0});
+
+    char s[64];
+    sprintf(s, "%04d-%02d-%02d", t.Year, t.Month, t.Day);
+    WriteString(*clock_window->Writer(), {0, 0}, s, {255, 255, 255});
+    sprintf(s, "%02d:%02d:%02d", t.Hour, t.Minute, t.Second);
+    WriteString(*clock_window->Writer(), {0, 16}, s, {255, 255, 255});
+
+    Message msg{Message::kLayer, task_id};
+    msg.arg.layer.layer_id = clock_window_layer_id;
+    msg.arg.layer.op = LayerOperation::Draw;
+
+    __asm__("cli");
+    task_manager->SendMessage(1, msg);
+    __asm__("sti");
+  };
+
+  draw_current_time();
+  timer_manager->AddTimer(
+      Timer{timer_manager->CurrentTick(), 1, task_id});
+
+  while (true) {
+    __asm__("cli");
+    auto msg = task.ReceiveMessage();
+    if (!msg) {
+      task.Sleep();
+      __asm__("sti");
+      continue;
+    }
+    __asm__("sti");
+
+    if (msg->type == Message::kTimerTimeout) {
+      draw_current_time();
+      timer_manager->AddTimer(
+          Timer{msg->arg.timer.timeout + kTimerFreq, 1, task_id});
+    }
+  }
+}
+
 extern "C" void KernelMainNewStack(
     const FrameBufferConfig& frame_buffer_config_ref,
     const MemoryMap& memory_map_ref,
@@ -169,6 +227,10 @@ extern "C" void KernelMainNewStack(
   app_loads = new std::map<fat::DirectoryEntry*, AppLoadInfo>;
   task_manager->NewTask()
     .InitContext(TaskTerminal, 0)
+    .Wakeup();
+
+  task_manager->NewTask()
+    .InitContext(TaskWallclock, 0)
     .Wakeup();
 
   char str[128];
