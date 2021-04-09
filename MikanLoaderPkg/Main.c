@@ -401,22 +401,6 @@ EFI_STATUS EFIAPI UefiMain(
     }
   }
 
-  status = gBS->ExitBootServices(image_handle, memmap.map_key);
-  if (EFI_ERROR(status)) {
-    status = GetMemoryMap(&memmap);
-    if (EFI_ERROR(status)) {
-      Print(L"failed to get memory map: %r\n", status);
-      Halt();
-    }
-    status = gBS->ExitBootServices(image_handle, memmap.map_key);
-    if (EFI_ERROR(status)) {
-      Print(L"Could not exit boot service: %r\n", status);
-      Halt();
-    }
-  }
-
-  UINT64 entry_addr = *(UINT64*)(kernel_first_addr + 24);
-
   struct FrameBufferConfig config = {
     (UINT8*)gop->Mode->FrameBufferBase,
     gop->Mode->Info->PixelsPerScanLine,
@@ -435,6 +419,22 @@ EFI_STATUS EFIAPI UefiMain(
       Print(L"Unimplemented pixel format: %d\n", gop->Mode->Info->PixelFormat);
       Halt();
   }
+
+  status = gBS->ExitBootServices(image_handle, memmap.map_key);
+  if (EFI_ERROR(status)) {
+    status = GetMemoryMap(&memmap);
+    if (EFI_ERROR(status)) {
+      Print(L"failed to get memory map: %r\n", status);
+      Halt();
+    }
+    status = gBS->ExitBootServices(image_handle, memmap.map_key);
+    if (EFI_ERROR(status)) {
+      Print(L"Could not exit boot service: %r\n", status);
+      Halt();
+    }
+  }
+
+  UINT64 entry_addr = *(UINT64*)(kernel_first_addr + 24);
 
   VOID* acpi_table = NULL;
   for (UINTN i = 0; i < system_table->NumberOfTableEntries; ++i) {
