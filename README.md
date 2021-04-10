@@ -34,6 +34,7 @@ MikanOS の作り方を説明した教科書があります。
 ## 開発への参加
 
 MikanOS への機能追加、バグ修正の提案は Pull Request にてお願いします。
+Pull Request の出し方はこちらで説明しています。 [プルリクエストの送り方](https://github.com/uchan-nos/mikanos/blob/master/docs/how-to-send-pull-request.md)
 
 実装が伴わない「単なる要望」は基本的に受け付けません。
 実装をきちんと作ってから Pull Request を提出してください。
