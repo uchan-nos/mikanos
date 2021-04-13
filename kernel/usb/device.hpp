@@ -34,6 +34,7 @@ namespace usb {
     Error OnEndpointsConfigured();
 
     uint8_t* Buffer() { return buf_.data(); }
+    const DeviceDescriptor& DeviceDesc() const { return device_desc_; }
 
    protected:
     Error OnControlCompleted(EndpointID ep_id, SetupData setup_data,

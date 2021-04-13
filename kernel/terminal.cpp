@@ -13,6 +13,7 @@
 #include "timer.hpp"
 #include "keyboard.hpp"
 #include "logger.hpp"
+#include "usb/xhci/xhci.hpp"
 
 namespace {
 
@@ -507,6 +508,21 @@ void Terminal::ExecuteLine() {
     PrintToFD(*files_[1], "Phys total: %lu frames (%llu MiB)\n",
         p_stat.total_frames,
         p_stat.total_frames * kBytesPerFrame / 1024 / 1024);
+  } else if (strcmp(command, "lsusb") == 0) {
+    auto devmgr = usb::xhci::controller->DeviceManager();
+    for (int slot = 1; slot < 256; ++slot) {
+      auto dev = devmgr->FindBySlot(slot);
+      if (!dev) {
+        continue;
+      }
+      PrintToFD(*files_[1], "Slot %d: ID %04x:%04x Class %d.%d.%d\n",
+                slot,
+                dev->DeviceDesc().vendor_id,
+                dev->DeviceDesc().product_id,
+                dev->DeviceDesc().device_class,
+                dev->DeviceDesc().device_sub_class,
+                dev->DeviceDesc().device_protocol);
+    }
   } else if (command[0] != 0) {
     auto file_entry = FindCommand(command);
     if (!file_entry) {
