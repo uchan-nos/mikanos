@@ -44,7 +44,7 @@ namespace usb {
         this, initialize_phase_, len);
     if (initialize_phase_ == 1) {
       initialize_phase_ = 2;
-      return ParentDevice()->InterruptIn(ep_interrupt_in_, buf_.data(), in_packet_size_);
+      return ParentDevice()->NormalIn(ep_interrupt_in_, buf_.data(), in_packet_size_);
     }
 
     return MAKE_ERROR(Error::kNotImplemented);
@@ -54,7 +54,7 @@ namespace usb {
     if (ep_id.IsIn()) {
       OnDataReceived();
       std::copy_n(buf_.begin(), len, previous_buf_.begin());
-      return ParentDevice()->InterruptIn(ep_interrupt_in_, buf_.data(), in_packet_size_);
+      return ParentDevice()->NormalIn(ep_interrupt_in_, buf_.data(), in_packet_size_);
     }
 
     return MAKE_ERROR(Error::kNotImplemented);

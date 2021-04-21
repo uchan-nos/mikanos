@@ -174,19 +174,11 @@ namespace usb {
     return MAKE_ERROR(Error::kSuccess);
   }
 
-  Error Device::InterruptIn(EndpointID ep_id, void* buf, int len) {
+  Error Device::NormalIn(EndpointID ep_id, void* buf, int len) {
     return MAKE_ERROR(Error::kSuccess);
   }
 
-  Error Device::InterruptOut(EndpointID ep_id, void* buf, int len) {
-    return MAKE_ERROR(Error::kSuccess);
-  }
-
-  Error Device::BulkIn(EndpointID ep_id, void* buf, int len) {
-    return MAKE_ERROR(Error::kSuccess);
-  }
-
-  Error Device::BulkOut(EndpointID ep_id, void* buf, int len) {
+  Error Device::NormalOut(EndpointID ep_id, const void* buf, int len) {
     return MAKE_ERROR(Error::kSuccess);
   }
 

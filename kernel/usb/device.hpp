@@ -24,10 +24,8 @@ namespace usb {
                             void* buf, int len, ClassDriver* issuer);
     virtual Error ControlOut(EndpointID ep_id, SetupData setup_data,
                              const void* buf, int len, ClassDriver* issuer);
-    virtual Error InterruptIn(EndpointID ep_id, void* buf, int len);
-    virtual Error InterruptOut(EndpointID ep_id, void* buf, int len);
-    virtual Error BulkIn(EndpointID ep_id, void* buf, int len);
-    virtual Error BulkOut(EndpointID ep_id, void* buf, int len);
+    virtual Error NormalIn(EndpointID ep_id, void* buf, int len);
+    virtual Error NormalOut(EndpointID ep_id, const void* buf, int len);
 
     Error StartInitialize();
     bool IsInitialized() { return is_initialized_; }

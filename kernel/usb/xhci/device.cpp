@@ -198,82 +198,18 @@ namespace usb::xhci {
     return MAKE_ERROR(Error::kSuccess);
   }
 
-  Error Device::InterruptIn(EndpointID ep_id, void* buf, int len) {
-    if (auto err = usb::Device::InterruptIn(ep_id, buf, len)) {
+  Error Device::NormalIn(EndpointID ep_id, void* buf, int len) {
+    if (auto err = usb::Device::NormalIn(ep_id, buf, len)) {
       return err;
     }
-
-    const DeviceContextIndex dci{ep_id};
-
-    Ring* tr = transfer_rings_[dci.value - 1];
-
-    if (tr == nullptr) {
-      return MAKE_ERROR(Error::kTransferRingNotSet);
-    }
-
-    NormalTRB normal{};
-    normal.SetPointer(buf);
-    normal.bits.trb_transfer_length = len;
-    normal.bits.interrupt_on_short_packet = true;
-    normal.bits.interrupt_on_completion = true;
-
-    tr->Push(normal);
-    dbreg_->Ring(dci.value);
-    return MAKE_ERROR(Error::kSuccess);
+    return PushOneTransaction(ep_id, buf, len);
   }
 
-  Error Device::InterruptOut(EndpointID ep_id, void* buf, int len) {
-    if (auto err = usb::Device::InterruptOut(ep_id, buf, len)) {
+  Error Device::NormalOut(EndpointID ep_id, const void* buf, int len) {
+    if (auto err = usb::Device::NormalOut(ep_id, buf, len)) {
       return err;
     }
-
-    Log(kDebug, "Device::InterrutpOut: ep addr %d, buf %08lx, len %d, dev %08lx\n",
-        ep_id.Address(), buf, len, this);
-    return MAKE_ERROR(Error::kNotImplemented);
-  }
-
-  Error Device::BulkIn(EndpointID ep_id, void* buf, int len) {
-    if (auto err = usb::Device::BulkIn(ep_id, buf, len)) {
-      return err;
-    }
-
-    const DeviceContextIndex dci{ep_id};
-    Ring* tr = transfer_rings_[dci.value - 1];
-    if (tr == nullptr) {
-      return MAKE_ERROR(Error::kTransferRingNotSet);
-    }
-
-    NormalTRB normal{};
-    normal.SetPointer(buf);
-    normal.bits.trb_transfer_length = len;
-    normal.bits.interrupt_on_short_packet = true;
-    normal.bits.interrupt_on_completion = true;
-
-    tr->Push(normal);
-    dbreg_->Ring(dci.value);
-    return MAKE_ERROR(Error::kSuccess);
-  }
-
-  Error Device::BulkOut(EndpointID ep_id, void* buf, int len) {
-    if (auto err = usb::Device::BulkOut(ep_id, buf, len)) {
-      return err;
-    }
-
-    const DeviceContextIndex dci{ep_id};
-    Ring* tr = transfer_rings_[dci.value - 1];
-    if (tr == nullptr) {
-      return MAKE_ERROR(Error::kTransferRingNotSet);
-    }
-
-    NormalTRB normal{};
-    normal.SetPointer(buf);
-    normal.bits.trb_transfer_length = len;
-    normal.bits.interrupt_on_short_packet = true;
-    normal.bits.interrupt_on_completion = true;
-
-    tr->Push(normal);
-    dbreg_->Ring(dci.value);
-    return MAKE_ERROR(Error::kSuccess);
+    return PushOneTransaction(ep_id, buf, len);
   }
 
   Error Device::OnTransferEventReceived(const TransferEventTRB& trb) {
@@ -326,5 +262,23 @@ namespace usb::xhci {
     }
     return this->OnControlCompleted(
         trb.EndpointID(), setup_data, data_stage_buffer, transfer_length);
+  }
+
+  Error Device::PushOneTransaction(EndpointID ep_id, const void* buf, int len) {
+    const DeviceContextIndex dci{ep_id};
+    Ring* tr = transfer_rings_[dci.value - 1];
+    if (tr == nullptr) {
+      return MAKE_ERROR(Error::kTransferRingNotSet);
+    }
+
+    NormalTRB normal{};
+    normal.SetPointer(buf);
+    normal.bits.trb_transfer_length = len;
+    normal.bits.interrupt_on_short_packet = true;
+    normal.bits.interrupt_on_completion = true;
+
+    tr->Push(normal);
+    dbreg_->Ring(dci.value);
+    return MAKE_ERROR(Error::kSuccess);
   }
 }
