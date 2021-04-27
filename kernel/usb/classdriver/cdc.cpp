@@ -1,6 +1,8 @@
 #include "usb/classdriver/cdc.hpp"
 
+#include <algorithm>
 #include <cstdlib>
+#include <iterator>
 
 #include "logger.hpp"
 #include "usb/device.hpp"
@@ -35,7 +37,12 @@ namespace usb::cdc {
   }
 
   Error CDCDriver::OnInterruptCompleted(EndpointID ep_id, const void* buf, int len) {
-    Log(kWarn, "cdc intr compl: buf='%.*s'\n", len, buf);
+    Log(kDebug, "CDCDriver::OnInterruptCompleted: buf='%.*s'\n", len, buf);
+    auto buf8 = reinterpret_cast<const uint8_t*>(buf);
+    if (ep_id == ep_bulk_in_) {
+      std::copy_n(buf8, len, std::back_inserter(receive_buf_));
+    }
+    delete[] buf8;
     return MAKE_ERROR(Error::kSuccess);
   }
 
@@ -53,5 +60,15 @@ namespace usb::cdc {
       return err;
     }
     return MAKE_ERROR(Error::kSuccess);
+  }
+
+  int CDCDriver::ReceiveSerial(void* buf, int len) {
+    const auto recv_len = std::min(len, static_cast<int>(receive_buf_.size()));
+    auto buf8 = reinterpret_cast<uint8_t*>(buf);
+    for (int i = 0; i < recv_len; ++i) {
+      buf8[i] = receive_buf_.front();
+      receive_buf_.pop_front();
+    }
+    return recv_len;
   }
 }

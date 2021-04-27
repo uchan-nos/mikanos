@@ -62,4 +62,8 @@ namespace usb {
     /** このエンドポイントの制御周期（125*2^(interval-1) マイクロ秒） */
     int interval;
   };
+
+  inline bool operator==(EndpointID lhs, EndpointID rhs) {
+    return lhs.Address() == rhs.Address();
+  }
 }

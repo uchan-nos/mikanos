@@ -7,6 +7,7 @@
 #pragma once
 
 #include <cstdint>
+#include <deque>
 
 #include "usb/classdriver/base.hpp"
 #include "usb/descriptor.hpp"
@@ -101,9 +102,11 @@ namespace usb::cdc {
     virtual Error OnInterruptCompleted(EndpointID ep_id, const void* buf, int len) override;
 
     Error SendSerial(const void* buf, int len);
+    int ReceiveSerial(void* buf, int len);
 
    private:
     EndpointID ep_interrupt_in_, ep_bulk_in_, ep_bulk_out_;
+    std::deque<uint8_t> receive_buf_;
   };
 
   inline CDCDriver* driver = nullptr;

@@ -2,6 +2,7 @@
 
 #include <cstring>
 #include <limits>
+#include <vector>
 
 #include "font.hpp"
 #include "layer.hpp"
@@ -525,13 +526,29 @@ void Terminal::ExecuteLine() {
                 dev->DeviceDesc().device_protocol);
     }
   } else if (strcmp(command, "usbtest") == 0) {
-    if (!usb::cdc::driver) {
-      PrintToFD(*files_[2], "CDC device not exist\n");
-    } else if (first_arg && first_arg[0]) {
-      usb::cdc::driver->SendSerial(first_arg, 1);
-    } else {
-      usb::cdc::driver->SendSerial("a", 1);
-    }
+    [&]{
+      if (!usb::cdc::driver) {
+        PrintToFD(*files_[2], "CDC device not exist\n");
+        exit_code = 1;
+        return;
+      }
+
+      size_t send_len;
+      if (first_arg && first_arg[0]) {
+        send_len = strlen(first_arg);
+        usb::cdc::driver->SendSerial(first_arg, send_len);
+      } else {
+        send_len = 1;
+        usb::cdc::driver->SendSerial("a", 1);
+      }
+
+      std::vector<uint8_t> buf(send_len);
+      int recv_len = usb::cdc::driver->ReceiveSerial(buf.data(), send_len);
+      while (recv_len == 0) {
+        recv_len = usb::cdc::driver->ReceiveSerial(buf.data(), send_len);
+      }
+      PrintToFD(*files_[1], "%.*s\n", recv_len, buf.data());
+    }();
   } else if (command[0] != 0) {
     auto file_entry = FindCommand(command);
     if (!file_entry) {
