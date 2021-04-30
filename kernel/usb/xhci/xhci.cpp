@@ -451,8 +451,7 @@ namespace usb::xhci {
   }
 
   Error ConfigureEndpoints(Controller& xhc, Device& dev) {
-    const auto configs = dev.EndpointConfigs();
-    const auto len = dev.NumEndpointConfigs();
+    auto& ep_configs = dev.EndpointConfigs();
 
     memset(&dev.InputContext()->input_control_context, 0, sizeof(InputControlContext));
     memcpy(&dev.InputContext()->slot_context,
@@ -476,25 +475,25 @@ namespace usb::xhci {
         return interval - 1;
       }};
 
-    for (int i = 0; i < len; ++i) {
-      const DeviceContextIndex ep_dci{configs[i].ep_id};
+    for (auto& ep_config : ep_configs) {
+      const DeviceContextIndex ep_dci{ep_config.ep_id};
       auto ep_ctx = dev.InputContext()->EnableEndpoint(ep_dci);
-      switch (configs[i].ep_type) {
+      switch (ep_config.ep_type) {
       case EndpointType::kControl:
         ep_ctx->bits.ep_type = 4;
         break;
       case EndpointType::kIsochronous:
-        ep_ctx->bits.ep_type = configs[i].ep_id.IsIn() ? 5 : 1;
+        ep_ctx->bits.ep_type = ep_config.ep_id.IsIn() ? 5 : 1;
         break;
       case EndpointType::kBulk:
-        ep_ctx->bits.ep_type = configs[i].ep_id.IsIn() ? 6 : 2;
+        ep_ctx->bits.ep_type = ep_config.ep_id.IsIn() ? 6 : 2;
         break;
       case EndpointType::kInterrupt:
-        ep_ctx->bits.ep_type = configs[i].ep_id.IsIn() ? 7 : 3;
+        ep_ctx->bits.ep_type = ep_config.ep_id.IsIn() ? 7 : 3;
         break;
       }
-      ep_ctx->bits.max_packet_size = configs[i].max_packet_size;
-      ep_ctx->bits.interval = convert_interval(configs[i].ep_type, configs[i].interval);
+      ep_ctx->bits.max_packet_size = ep_config.max_packet_size;
+      ep_ctx->bits.interval = convert_interval(ep_config.ep_type, ep_config.interval);
       ep_ctx->bits.average_trb_length = 1;
 
       auto tr = dev.AllocTransferRing(ep_dci, 32);

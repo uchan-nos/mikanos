@@ -13,7 +13,7 @@ namespace usb {
    public:
     HIDBaseDriver(Device* dev, int interface_index, int in_packet_size);
     Error Initialize() override;
-    Error SetEndpoint(const EndpointConfig& config) override;
+    Error SetEndpoint(const std::vector<EndpointConfig>& configs) override;
     Error OnEndpointsConfigured() override;
     Error OnControlCompleted(EndpointID ep_id, SetupData setup_data,
                              const void* buf, int len) override;

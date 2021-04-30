@@ -16,13 +16,15 @@ namespace usb::cdc {
     return MAKE_ERROR(Error::kNotImplemented);
   }
 
-  Error CDCDriver::SetEndpoint(const EndpointConfig& config) {
-    if (config.ep_type == EndpointType::kInterrupt && config.ep_id.IsIn()) {
-      ep_interrupt_in_ = config.ep_id;
-    } else if (config.ep_type == EndpointType::kBulk && config.ep_id.IsIn()) {
-      ep_bulk_in_ = config.ep_id;
-    } else if (config.ep_type == EndpointType::kBulk && !config.ep_id.IsIn()) {
-      ep_bulk_out_ = config.ep_id;
+  Error CDCDriver::SetEndpoint(const std::vector<EndpointConfig>& configs) {
+    for (const auto& config : configs) {
+      if (config.ep_type == EndpointType::kInterrupt && config.ep_id.IsIn()) {
+        ep_interrupt_in_ = config.ep_id;
+      } else if (config.ep_type == EndpointType::kBulk && config.ep_id.IsIn()) {
+        ep_bulk_in_ = config.ep_id;
+      } else if (config.ep_type == EndpointType::kBulk && !config.ep_id.IsIn()) {
+        ep_bulk_out_ = config.ep_id;
+      }
     }
     return MAKE_ERROR(Error::kSuccess);
   }
@@ -41,6 +43,9 @@ namespace usb::cdc {
     auto buf8 = reinterpret_cast<const uint8_t*>(buf);
     if (ep_id == ep_bulk_in_) {
       std::copy_n(buf8, len, std::back_inserter(receive_buf_));
+    } else if (ep_id == ep_bulk_out_) {
+    } else {
+      return MAKE_ERROR(Error::kEndpointNotInCharge);
     }
     delete[] buf8;
     return MAKE_ERROR(Error::kSuccess);

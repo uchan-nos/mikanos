@@ -15,11 +15,13 @@ namespace usb {
     return MAKE_ERROR(Error::kNotImplemented);
   }
 
-  Error HIDBaseDriver::SetEndpoint(const EndpointConfig& config) {
-    if (config.ep_type == EndpointType::kInterrupt && config.ep_id.IsIn()) {
-      ep_interrupt_in_ = config.ep_id;
-    } else if (config.ep_type == EndpointType::kInterrupt && !config.ep_id.IsIn()) {
-      ep_interrupt_out_ = config.ep_id;
+  Error HIDBaseDriver::SetEndpoint(const std::vector<EndpointConfig>& configs) {
+    for (const auto& config : configs) {
+      if (config.ep_type == EndpointType::kInterrupt && config.ep_id.IsIn()) {
+        ep_interrupt_in_ = config.ep_id;
+      } else if (config.ep_type == EndpointType::kInterrupt && !config.ep_id.IsIn()) {
+        ep_interrupt_out_ = config.ep_id;
+      }
     }
     return MAKE_ERROR(Error::kSuccess);
   }
@@ -57,7 +59,7 @@ namespace usb {
       return ParentDevice()->NormalIn(ep_interrupt_in_, buf_.data(), in_packet_size_);
     }
 
-    return MAKE_ERROR(Error::kNotImplemented);
+    return MAKE_ERROR(Error::kEndpointNotInCharge);
   }
 }
 
