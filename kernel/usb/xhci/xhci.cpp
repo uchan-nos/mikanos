@@ -355,7 +355,7 @@ namespace {
     pci::WriteConfReg(xhc_dev, 0xd8, superspeed_ports); // USB3_PSSEN
     uint32_t ehci2xhci_ports = pci::ReadConfReg(xhc_dev, 0xd4); // XUSB2PRM
     pci::WriteConfReg(xhc_dev, 0xd0, ehci2xhci_ports); // XUSB2PR
-    Log(kDebug, "SwitchEhci2Xhci: SS = %02, xHCI = %02x\n",
+    Log(kDebug, "SwitchEhci2Xhci: SS = %02x, xHCI = %02x\n",
         superspeed_ports, ehci2xhci_ports);
   }
 } // namespace

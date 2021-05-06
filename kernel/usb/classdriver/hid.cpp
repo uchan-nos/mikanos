@@ -42,8 +42,8 @@ namespace usb {
 
   Error HIDBaseDriver::OnControlCompleted(EndpointID ep_id, SetupData setup_data,
                                           const void* buf, int len) {
-    Log(kDebug, "HIDBaseDriver::OnControlCompleted: dev %08x, phase = %d, len = %d\n",
-        this, initialize_phase_, len);
+    Log(kDebug, "HIDBaseDriver::OnControlCompleted: dev %08lx, phase = %d, len = %d\n",
+        reinterpret_cast<uintptr_t>(this), initialize_phase_, len);
     if (initialize_phase_ == 1) {
       initialize_phase_ = 2;
       return ParentDevice()->NormalIn(ep_interrupt_in_, buf_.data(), in_packet_size_);

@@ -190,8 +190,8 @@ namespace usb {
 
   Error Device::OnControlCompleted(EndpointID ep_id, SetupData setup_data,
                                    const void* buf, int len) {
-    Log(kDebug, "Device::OnControlCompleted: buf 0x%08x, len %d, dir %d\n",
-        buf, len, setup_data.request_type.bits.direction);
+    Log(kDebug, "Device::OnControlCompleted: buf 0x%08lx, len %d, dir %d\n",
+        reinterpret_cast<uintptr_t>(buf), len, setup_data.request_type.bits.direction);
     if (is_initialized_) {
       if (auto w = event_waiters_.Get(setup_data)) {
         return w.value()->OnControlCompleted(ep_id, setup_data, buf, len);
