@@ -193,7 +193,7 @@ void InitializeFont() {
   nihongo_buf = new std::vector<uint8_t>(size);
   if (LoadFile(nihongo_buf->data(), size, *entry) != size) {
     delete nihongo_buf;
-    Log(kError, "failedto load nihongo.ttf");
+    Log(kError, "failed to load nihongo.ttf");
     exit(1);
   }
 }
