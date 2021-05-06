@@ -69,8 +69,8 @@ class Error {
     "kInvalidFile",
     "kIsDirectory",
     "kNoSuchEntry",
-    "kEndpointNotInCharge",
     "kFreeTypeError",
+    "kEndpointNotInCharge",
   };
   static_assert(Error::Code::kLastOfCode == code_names_.size());
 
