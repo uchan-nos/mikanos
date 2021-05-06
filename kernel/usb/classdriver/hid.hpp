@@ -17,7 +17,7 @@ namespace usb {
     Error OnEndpointsConfigured() override;
     Error OnControlCompleted(EndpointID ep_id, SetupData setup_data,
                              const void* buf, int len) override;
-    Error OnInterruptCompleted(EndpointID ep_id, const void* buf, int len) override;
+    Error OnNormalCompleted(EndpointID ep_id, const void* buf, int len) override;
 
     virtual Error OnDataReceived() = 0;
     const static size_t kBufferSize = 1024;

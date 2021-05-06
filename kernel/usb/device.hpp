@@ -38,7 +38,7 @@ namespace usb {
    protected:
     Error OnControlCompleted(EndpointID ep_id, SetupData setup_data,
                              const void* buf, int len);
-    Error OnInterruptCompleted(EndpointID ep_id, const void* buf, int len);
+    Error OnNormalCompleted(EndpointID ep_id, const void* buf, int len);
 
    private:
     std::vector<ClassDriver*> class_drivers_{};

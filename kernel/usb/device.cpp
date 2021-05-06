@@ -222,10 +222,10 @@ namespace usb {
     return MAKE_ERROR(Error::kNotImplemented);
   }
 
-  Error Device::OnInterruptCompleted(EndpointID ep_id, const void* buf, int len) {
-    Log(kDebug, "Device::OnInterruptCompleted: ep addr %d\n", ep_id.Address());
+  Error Device::OnNormalCompleted(EndpointID ep_id, const void* buf, int len) {
+    Log(kDebug, "Device::OnNormalCompleted: ep addr %d\n", ep_id.Address());
     for (auto class_driver : class_drivers_) {
-      auto err = class_driver->OnInterruptCompleted(ep_id, buf, len);
+      auto err = class_driver->OnNormalCompleted(ep_id, buf, len);
       if (err.Cause() == Error::kEndpointNotInCharge) {
         continue;
       } else if (err) {

@@ -99,7 +99,7 @@ namespace usb::cdc {
     Error OnEndpointsConfigured() override;
     Error OnControlCompleted(EndpointID ep_id, SetupData setup_data,
                              const void* buf, int len) override;
-    Error OnInterruptCompleted(EndpointID ep_id, const void* buf, int len) override;
+    Error OnNormalCompleted(EndpointID ep_id, const void* buf, int len) override;
 
     Error SendSerial(const void* buf, int len);
     int ReceiveSerial(void* buf, int len);

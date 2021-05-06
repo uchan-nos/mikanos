@@ -37,6 +37,28 @@ namespace {
    * 他の処理を挟まず，そのポートについての処理だけをしなければならない．
    * kWaitingAddressed はリセット（kResettingPort）からアドレス割り当て
    * （kAddressingDevice）までの一連の処理の実行を待っている状態．
+   *
+   * ============================
+   * 状態遷移（代表的なパターン）
+   * ============================
+   *
+   * ResetPort()
+   *   kNotConnected --> kResettingPort
+   *
+   * EnableSlot()
+   *   kResettingPort --> kEnablingSlot
+   *
+   * AddressDevice()
+   *   kEnablingSlot --> kAddressingDevice
+   *
+   * InitializeDevice()
+   *   kAddressingDevice --> kInitializingDevice
+   *
+   * ConfigureEndpoints()
+   *   kInitializingDevice --> kConfiguringEndpoints
+   *
+   * CompleteConfiguration()
+   *   kConfiguringEndpoints --> kConfigured
    */
 
   std::array<volatile ConfigPhase, 256> port_config_phase{};  // index: port number
@@ -219,6 +241,9 @@ namespace {
     if (auto err = dev->OnTransferEventReceived(trb)) {
       return err;
     }
+
+    // デバイスの初期化が終わると dev->OnTransferEventReceived(trb) の中で
+    // dev->IsInitialized() が真になり、下の ConfigureEndpoints() が実行される。
 
     const auto port_id = dev->DeviceContext()->slot_context.bits.root_hub_port_num;
     if (dev->IsInitialized() &&

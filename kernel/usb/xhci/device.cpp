@@ -226,7 +226,7 @@ namespace usb::xhci {
     if (auto normal_trb = TRBDynamicCast<NormalTRB>(issuer_trb)) {
       const auto transfer_length =
         normal_trb->bits.trb_transfer_length - residual_length;
-      return this->OnInterruptCompleted(
+      return this->OnNormalCompleted(
           trb.EndpointID(), normal_trb->Pointer(), transfer_length);
     }
 

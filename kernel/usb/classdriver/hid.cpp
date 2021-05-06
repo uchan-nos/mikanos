@@ -52,7 +52,7 @@ namespace usb {
     return MAKE_ERROR(Error::kNotImplemented);
   }
 
-  Error HIDBaseDriver::OnInterruptCompleted(EndpointID ep_id, const void* buf, int len) {
+  Error HIDBaseDriver::OnNormalCompleted(EndpointID ep_id, const void* buf, int len) {
     if (ep_id.IsIn()) {
       OnDataReceived();
       std::copy_n(buf_.begin(), len, previous_buf_.begin());

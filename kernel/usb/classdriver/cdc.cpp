@@ -38,8 +38,8 @@ namespace usb::cdc {
     return MAKE_ERROR(Error::kNotImplemented);
   }
 
-  Error CDCDriver::OnInterruptCompleted(EndpointID ep_id, const void* buf, int len) {
-    Log(kDebug, "CDCDriver::OnInterruptCompleted: buf='%.*s'\n", len, buf);
+  Error CDCDriver::OnNormalCompleted(EndpointID ep_id, const void* buf, int len) {
+    Log(kDebug, "CDCDriver::OnNormalCompleted: buf='%.*s'\n", len, buf);
     auto buf8 = reinterpret_cast<const uint8_t*>(buf);
     if (ep_id == ep_bulk_in_) {
       std::copy_n(buf8, len, std::back_inserter(receive_buf_));
