@@ -37,6 +37,28 @@ namespace {
    * 他の処理を挟まず，そのポートについての処理だけをしなければならない．
    * kWaitingAddressed はリセット（kResettingPort）からアドレス割り当て
    * （kAddressingDevice）までの一連の処理の実行を待っている状態．
+   *
+   * ============================
+   * 状態遷移（代表的なパターン）
+   * ============================
+   *
+   * ResetPort()
+   *   kNotConnected --> kResettingPort
+   *
+   * EnableSlot()
+   *   kResettingPort --> kEnablingSlot
+   *
+   * AddressDevice()
+   *   kEnablingSlot --> kAddressingDevice
+   *
+   * InitializeDevice()
+   *   kAddressingDevice --> kInitializingDevice
+   *
+   * ConfigureEndpoints()
+   *   kInitializingDevice --> kConfiguringEndpoints
+   *
+   * CompleteConfiguration()
+   *   kConfiguringEndpoints --> kConfigured
    */
 
   std::array<volatile ConfigPhase, 256> port_config_phase{};  // index: port number
@@ -219,6 +241,9 @@ namespace {
     if (auto err = dev->OnTransferEventReceived(trb)) {
       return err;
     }
+
+    // デバイスの初期化が終わると dev->OnTransferEventReceived(trb) の中で
+    // dev->IsInitialized() が真になり、下の ConfigureEndpoints() が実行される。
 
     const auto port_id = dev->DeviceContext()->slot_context.bits.root_hub_port_num;
     if (dev->IsInitialized() &&
@@ -451,8 +476,7 @@ namespace usb::xhci {
   }
 
   Error ConfigureEndpoints(Controller& xhc, Device& dev) {
-    const auto configs = dev.EndpointConfigs();
-    const auto len = dev.NumEndpointConfigs();
+    auto& ep_configs = dev.EndpointConfigs();
 
     memset(&dev.InputContext()->input_control_context, 0, sizeof(InputControlContext));
     memcpy(&dev.InputContext()->slot_context,
@@ -476,25 +500,25 @@ namespace usb::xhci {
         return interval - 1;
       }};
 
-    for (int i = 0; i < len; ++i) {
-      const DeviceContextIndex ep_dci{configs[i].ep_id};
+    for (auto& ep_config : ep_configs) {
+      const DeviceContextIndex ep_dci{ep_config.ep_id};
       auto ep_ctx = dev.InputContext()->EnableEndpoint(ep_dci);
-      switch (configs[i].ep_type) {
+      switch (ep_config.ep_type) {
       case EndpointType::kControl:
         ep_ctx->bits.ep_type = 4;
         break;
       case EndpointType::kIsochronous:
-        ep_ctx->bits.ep_type = configs[i].ep_id.IsIn() ? 5 : 1;
+        ep_ctx->bits.ep_type = ep_config.ep_id.IsIn() ? 5 : 1;
         break;
       case EndpointType::kBulk:
-        ep_ctx->bits.ep_type = configs[i].ep_id.IsIn() ? 6 : 2;
+        ep_ctx->bits.ep_type = ep_config.ep_id.IsIn() ? 6 : 2;
         break;
       case EndpointType::kInterrupt:
-        ep_ctx->bits.ep_type = configs[i].ep_id.IsIn() ? 7 : 3;
+        ep_ctx->bits.ep_type = ep_config.ep_id.IsIn() ? 7 : 3;
         break;
       }
-      ep_ctx->bits.max_packet_size = configs[i].max_packet_size;
-      ep_ctx->bits.interval = convert_interval(configs[i].ep_type, configs[i].interval);
+      ep_ctx->bits.max_packet_size = ep_config.max_packet_size;
+      ep_ctx->bits.interval = convert_interval(ep_config.ep_type, ep_config.interval);
       ep_ctx->bits.average_trb_length = 1;
 
       auto tr = dev.AllocTransferRing(ep_dci, 32);
