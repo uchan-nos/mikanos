@@ -10,6 +10,7 @@
 
 [Sources]
   Main.c
+  menu.c
 
 [Packages]
   MdePkg/MdePkg.dec
