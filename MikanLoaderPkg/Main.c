@@ -270,25 +270,9 @@ EFI_STATUS EFIAPI UefiMain(
     EFI_SYSTEM_TABLE* system_table) {
   EFI_STATUS status;
 
+  /* Print(L"Hello, Mikan World!\n"); */
+  boot_menu();
 
-  Print(L"Hello, Mikan World!\n");
-
-  /* 改変箇所 */
-  gST->BootServices->SetWatchdogTimer(0, 0, 0, NULL);
-  boot_menu_print();
-  /* ぽーりんぐのテスト */
-  EFI_INPUT_KEY key = {0, 0};
-      key = poling_key();
-      Print(L"%c", key.UnicodeChar);
-
-  while (1) {
-      /* Halt(); */
-            key = poling_key();
-      Print(L"%c", key.UnicodeChar);
-          }
-  
-
-  
   CHAR8 memmap_buf[4096 * 4];
   struct MemoryMap memmap = {sizeof(memmap_buf), memmap_buf, 0, 0, 0, 0};
   status = GetMemoryMap(&memmap);
