@@ -12,8 +12,8 @@
 #include  <Guid/FileInfo.h>
 #include  "frame_buffer_config.hpp"
 #include  "memory_map.hpp"
-#include "elf.hpp"
-#include "menu.h"
+#include  "elf.hpp"
+#include  "menu.h"
 
 EFI_STATUS GetMemoryMap(struct MemoryMap* map) {
   if (map->buffer == NULL) {
