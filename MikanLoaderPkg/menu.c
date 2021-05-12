@@ -1,6 +1,6 @@
 #include <Uefi.h>
 #include <Library/UefiLib.h>
-#include  <Library/UefiBootServicesTableLib.h>
+#include <Library/UefiBootServicesTableLib.h>
 #include "menu.h"
 
 EFI_INPUT_KEY poling_key();
@@ -11,12 +11,15 @@ void set_cursor(int cursor_x, int cursor_y);
 void boot_menu();
 void print_device_information();
 void boot_menu_print();
+void print_uefi_information();
+
 
 static EFI_INPUT_KEY get_key = {0, 0};
 
-/* Optionで別画面を開くには、戻ってきた時に再度boot_menu_printをすればいい。 */
+
 void boot_menu(){
     gST->BootServices->SetWatchdogTimer(0, 0, 0, NULL);
+    clear();
     while (1) {
         boot_menu_print();
         get_key = poling_key();
@@ -30,11 +33,23 @@ void boot_menu(){
     }
 }
 
-/*  */
+/* ここに各種情報を記載する */
 void print_device_information(){
     EFI_INPUT_KEY exit_key = {0, 0};
     clear();
-    Print(L"UEFI information \n");
+    print_uefi_information();
+    Print(L"\n\n  Return boot menu: Press q\n");
+    while (1) {
+        exit_key = poling_key();
+        if (exit_key.UnicodeChar == 'q'){
+            clear();
+            return;
+        }
+    }
+}
+
+void print_uefi_information(){
+        Print(L"UEFI information \n");
     Print(L"UEFI Vendor information: %s\n", gST->FirmwareVendor);
     Print(L"UEFI Firmware version: 0x%x\n", gST->FirmwareRevision);
     Print(L"Support UEFI Specification: UEFI");
@@ -79,21 +94,14 @@ void print_device_information(){
         Print(L"%x", gST->Hdr.Revision);
     }
     Print(L"supported\n");
-    set_cursor(1, 15);
-    Print(L"Return boot menu: Press q\n");
-    while (1) {
-        exit_key = poling_key();
-        if (exit_key.UnicodeChar == 'q'){
-            return;
-        }
-    }
 }
 
+
 /* メニューに追加を行う場合、ここに画面に表示をするメニューを描く必要があります。*/
-/* menuadd関数にメニューのキーと表示名、メインメニューかOptionメニューか？を追加すれば追加されます、 */
+/* menuadd関数にメニューのキーと表示名、メインメニュー(1)かOptionメニュー(2)かのフラグを設定すすれば追加されます、 */
 /* ですが、Optionsは場所が不安定なので、setcursorをいちいちする必要があります。 */
 void boot_menu_print(){
-    clear();
+    /* clear(); */
     logo_print(0, 0);
     set_cursor(0, 10);
     Print(L"Hello, Mikan World!\n");
@@ -116,10 +124,10 @@ void boot_menu_print(){
 void menu_add(int menu_number, EFI_STRING menu_name, int menu_type){
     if (menu_type == 1){
         set_cursor(5, 12 + menu_number);
-        Print(L"%d, ", menu_number);
+        Print(L"%d. ", menu_number);
         Print(L"%s\n", menu_name);
     } else if (menu_type == 2) {
-        Print(L"%d, ", menu_number);
+        Print(L"%d. ", menu_number);
         Print(L"%s\n", menu_name);
     } else {
         Print(L"bad menu type\n");
@@ -142,7 +150,6 @@ EFI_INPUT_KEY poling_key(){
     EFI_STATUS status;
     UINTN index = 0;
 
-    /* status = gBS->WaitForEvent(1, &(gST->ConIn->WaitForKey), &index); */
 
     status = gBS->WaitForEvent(1, &(gST->ConIn->WaitForKey), &index);
 
