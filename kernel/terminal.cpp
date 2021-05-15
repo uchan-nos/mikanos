@@ -618,8 +618,8 @@ WithError<int> Terminal::ExecuteFile(fat::DirectoryEntry& file_entry,
   }
   auto argv = reinterpret_cast<char**>(args_frame_addr.value);
   int argv_len = 32; // argv = 8x32 = 256 bytes
-  auto argbuf = reinterpret_cast<char*>(args_frame_addr.value + sizeof(char**) * argv_len);
-  int argbuf_len = 4096 - sizeof(char**) * argv_len;
+  auto argbuf = reinterpret_cast<char*>(args_frame_addr.value + sizeof(char*) * argv_len);
+  int argbuf_len = 4096 - sizeof(char*) * argv_len;
   auto argc = MakeArgVector(command, first_arg, argv, argv_len, argbuf, argbuf_len);
   if (argc.error) {
     return { 0, argc.error };
