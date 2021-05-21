@@ -97,6 +97,15 @@ void FrameBuffer::Move(Vector2D<int> dst_pos, const Rectangle<int>& src) {
       dst_buf += bytes_per_scan_line;
       src_buf += bytes_per_scan_line;
     }
+  } else if (dst_pos.y == src.pos.y) { // move left or move right
+    uint8_t* dst_buf = FrameAddrAt(dst_pos, config_);
+    const uint8_t* src_buf = FrameAddrAt(src.pos, config_);
+    for (int y = 0; y < src.size.y; ++y) {
+      // dst_buf and src_buf may overlap, we must use memmove
+      memmove(dst_buf, src_buf, bytes_per_pixel * src.size.x);
+      dst_buf += bytes_per_scan_line;
+      src_buf += bytes_per_scan_line;
+    }
   } else { // move down
     uint8_t* dst_buf = FrameAddrAt(dst_pos + Vector2D<int>{0, src.size.y - 1}, config_);
     const uint8_t* src_buf = FrameAddrAt(src.pos + Vector2D<int>{0, src.size.y - 1}, config_);
