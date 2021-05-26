@@ -340,7 +340,7 @@ EFI_STATUS EFIAPI UefiMain(
   VOID* kernel_buffer;
   status = ReadFile(kernel_file, &kernel_buffer);
   if (EFI_ERROR(status)) {
-    Print(L"error: %r", status);
+    Print(L"error: %r\n", status);
     Halt();
   }
 
@@ -374,7 +374,7 @@ EFI_STATUS EFIAPI UefiMain(
   if (status == EFI_SUCCESS) {
     status = ReadFile(volume_file, &volume_image);
     if (EFI_ERROR(status)) {
-      Print(L"failed to read volume file: %r", status);
+      Print(L"failed to read volume file: %r\n", status);
       Halt();
     }
   } else {

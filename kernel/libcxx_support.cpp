@@ -1,7 +1,8 @@
 #include <new>
 #include <cerrno>
 
-int printk(const char* format, ...);
+int printk(const char* format, ...)
+    __attribute__((format(printf, 1, 2)));
 
 std::new_handler std::get_new_handler() noexcept {
   return [] {

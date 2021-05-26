@@ -330,8 +330,9 @@ void InitializePCI() {
     const auto& dev = pci::devices[i];
     auto vendor_id = pci::ReadVendorId(dev);
     auto class_code = pci::ReadClassCode(dev.bus, dev.device, dev.function);
-    Log(kDebug, "%d.%d.%d: vend %04x, class %08x, head %02x\n",
+    Log(kDebug, "%d.%d.%d: vend %04x, class %02x.%02x.%02x, head %02x\n",
         dev.bus, dev.device, dev.function,
-        vendor_id, class_code, dev.header_type);
+        vendor_id, class_code.base, class_code.sub, class_code.interface,
+        dev.header_type);
   }
 }
