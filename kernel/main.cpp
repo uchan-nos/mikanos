@@ -23,7 +23,7 @@ void operator delete(void* obj) noexcept {
 const PixelColor kDesktopBGColor{45, 118, 237};
 const PixelColor kDesktopFGColor{255, 255, 255};
 
-// #@@range_begin(mosue_cursor_shape)
+// #@@range_begin(mouse_cursor_shape)
 const int kMouseCursorWidth = 15;
 const int kMouseCursorHeight = 24;
 const char mouse_cursor_shape[kMouseCursorHeight][kMouseCursorWidth + 1] = {
@@ -52,7 +52,7 @@ const char mouse_cursor_shape[kMouseCursorHeight][kMouseCursorWidth + 1] = {
   "         @.@   ",
   "         @@@   ",
 };
-// #@@range_end(mosue_cursor_shape)
+// #@@range_end(mouse_cursor_shape)
 
 char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
 PixelWriter* pixel_writer;
