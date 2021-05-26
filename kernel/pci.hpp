@@ -71,7 +71,7 @@ namespace pci {
   /** @brief PCI デバイスをすべて探索し devices に格納する
    *
    * バス 0 から再帰的に PCI デバイスを探索し，devices の先頭から詰めて書き込む．
-   * 発見したデバイスの数を num_devices に設定する．
+   * 発見したデバイスの数を num_device に設定する．
    */
   Error ScanAllBus();
   // #@@range_end(var_devices)
