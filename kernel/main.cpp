@@ -55,7 +55,7 @@ void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
 }
 // #@@range_end(mouse_observer)
 
-// #@@range_begin(switch_echi2xhci)
+// #@@range_begin(switch_ehci2xhci)
 void SwitchEhci2Xhci(const pci::Device& xhc_dev) {
   bool intel_ehc_exist = false;
   for (int i = 0; i < pci::num_device; ++i) {
@@ -76,7 +76,7 @@ void SwitchEhci2Xhci(const pci::Device& xhc_dev) {
   Log(kDebug, "SwitchEhci2Xhci: SS = %02, xHCI = %02x\n",
       superspeed_ports, ehci2xhci_ports);
 }
-// #@@range_end(switch_echi2xhci)
+// #@@range_end(switch_ehci2xhci)
 
 extern "C" void KernelMain(const FrameBufferConfig& frame_buffer_config) {
   switch (frame_buffer_config.pixel_format) {
