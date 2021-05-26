@@ -39,7 +39,7 @@
 #include "syscall.hpp"
 #include "uefi.hpp"
 
- __attribute__((format(printf, 1, 2)))int printk(const char* format, ...) {
+__attribute__((format(printf, 1, 2))) int printk(const char* format, ...) {
   va_list ap;
   int result;
   char s[1024];
