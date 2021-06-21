@@ -102,6 +102,20 @@ int MandelConverge(std::complex<double> z) {
   return n;
 }
 
+void WaitEvent() {
+  AppEvent events[1];
+  while (true) {
+    auto [ n, err ] = SyscallReadEvent(events, 1);
+    if (err) {
+      fprintf(stderr, "ReadEvent failed: %s\n", strerror(err));
+      return;
+    }
+    if (events[0].type == AppEvent::kQuit) {
+      return;
+    }
+  }
+}
+
 constexpr int kWidth = 78*4, kHeight = 52*4;
 
 extern "C" void main(int argc, char** argv) {
@@ -128,6 +142,9 @@ extern "C" void main(int argc, char** argv) {
     }
   }
   SyscallWinRedraw(layer_id);
+
+  WaitEvent();
+  SyscallCloseWindow(layer_id);
 
   exit(0);
 }
