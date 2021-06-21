@@ -4,6 +4,20 @@
 
 static constexpr int kWidth = 100, kHeight = 100;
 
+void WaitEvent() {
+  AppEvent events[1];
+  while (true) {
+    auto [ n, err ] = SyscallReadEvent(events, 1);
+    if (err) {
+      fprintf(stderr, "ReadEvent failed: %s\n", strerror(err));
+      return;
+    }
+    if (events[0].type == AppEvent::kQuit) {
+      return;
+    }
+  }
+}
+
 extern "C" void main(int argc, char** argv) {
   auto [layer_id, err_openwin]
     = SyscallOpenWindow(kWidth + 8, kHeight + 28, 10, 10, "stars");
@@ -35,6 +49,9 @@ extern "C" void main(int argc, char** argv) {
   printf("%d stars in %lu ms.\n",
          num_stars,
          (tick_end.value - tick_start) * 1000 / timer_freq);
+
+  WaitEvent();
+  SyscallCloseWindow(layer_id);
 
   exit(0);
 }
