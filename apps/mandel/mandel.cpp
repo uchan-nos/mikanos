@@ -1,7 +1,8 @@
-#include <cstdlib>
-#include <cstdio>
-#include <array>
 #include <algorithm>
+#include <array>
+#include <complex>
+#include <cstdio>
+#include <cstdlib>
 
 #include "../syscall.h"
 
@@ -9,7 +10,7 @@ struct RGBColor {
   double r, g, b;
 };
 
-const std::array<RGBColor, 41> rgb_table{{
+constexpr std::array<RGBColor, 41> rgb_table{{
   {0.06076 ,0.00000 ,0.11058},  // 波長： 380 nm
   {0.08700 ,0.00000 ,0.16790},  // 390
   {0.13772 ,0.00000 ,0.26354},  // 400
@@ -89,18 +90,13 @@ uint32_t WaveLenToColor(int wlen) {
   return conv_to_uint32_t(ret);
 }
 
-int MandelConverge(double real, double imag) {
-  const double creal = real, cimag = imag;
+int MandelConverge(std::complex<double> z) {
+  const auto c = z;
   int n = 0;
   const int nmax = 100;
 
-  while (n <= nmax && real*real + imag*imag <= 4) {
-    // 複素数 z = real + imag*i, c = creal + cimag*i について、
-    // z = z^2 + c と更新する
-    const double real_tmp = real;
-    real = real*real - imag*imag + creal;
-    imag = 2*real_tmp*imag + cimag;
-    ++n;
+  for (; n < nmax && std::norm(z) <= 4; ++n) {
+    z = z*z + c;
   }
 
   return n;
@@ -122,7 +118,7 @@ extern "C" void main(int argc, char** argv) {
   for (int y = 0; y < kHeight; ++y) {
     for (int x = 0; x < kWidth; ++x) {
       // 漸化式の計算が収束するまでの再帰回数 depth (100 を上限とする) を得る
-      int depth = MandelConverge(xmin + xstep*x, ymin + ystep*y);
+      int depth = MandelConverge({xmin + xstep*x, ymin + ystep*y});
 
       SyscallWinFillRectangle(
         layer_id | LAYER_NO_REDRAW,
