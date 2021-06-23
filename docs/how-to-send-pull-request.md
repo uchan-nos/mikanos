@@ -41,15 +41,14 @@ mikanos リポジトリを GitHub で開くと、「Fork」と書かれたボタ
 Fork 先に複数の選択肢が出るかもしれませんが、特にこだわりが無ければ自分のアカウントへ Fork すれば OK です。
 
 Fork は通常、数秒だけ時間がかかります。Fork 中は次のような表示になりますから、終わるまで待ちましょう。
-（なお、この先の説明に登場する画像は osdev-jp/elf_haribote を uchan-nos アカウントへ Fork する際の表示です。
-自分のリポジトリを Fork することができないので、仕方なく他人（osdev-jp）のリポジトリを Fork しています。
-どなたか、mikanos リポジトリに関して本記事の手順を実行し、スクリーンショットを提供していただけませんか？）
 
 ![GitHub Fork Progress](./images/github-fork-progress.png)
 
 Fork が完了すると、自分のアカウントに mikanos リポジトリが複製され、「forked from uchan-nos/mikanos」と Fork 元が表示されます。
 
-![GitHub Fork Progress](./images/github-fork-progress.png)
+![GitHub Fork Finished](./images/github-forked-from.png)
+
+（画像は sudabon さんが、ご自身のリポジトリへ Fork したときの表示です。sudabon さん、画像提供ありがとうございました！）
 
 ### Fork したリポジトリに対して変更をコミットする
 
