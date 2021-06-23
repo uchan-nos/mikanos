@@ -13,6 +13,7 @@
 #include  "frame_buffer_config.hpp"
 #include  "memory_map.hpp"
 #include  "elf.hpp"
+#include  "menu.h"
 
 EFI_STATUS GetMemoryMap(struct MemoryMap* map) {
   if (map->buffer == NULL) {
@@ -269,7 +270,8 @@ EFI_STATUS EFIAPI UefiMain(
     EFI_SYSTEM_TABLE* system_table) {
   EFI_STATUS status;
 
-  Print(L"Hello, Mikan World!\n");
+  /* Print(L"Hello, Mikan World!\n"); */
+  boot_menu();
 
   CHAR8 memmap_buf[4096 * 4];
   struct MemoryMap memmap = {sizeof(memmap_buf), memmap_buf, 0, 0, 0, 0};
