@@ -276,6 +276,10 @@ Terminal::Terminal(Task& task, const TerminalDescriptor* term_desc)
 Rectangle<int> Terminal::BlinkCursor() {
   cursor_visible_ = !cursor_visible_;
   DrawCursor(cursor_visible_);
+  if (linebuf_index_ < linebuf_len_) {
+    const auto character = linebuf_[linebuf_index_];
+    WriteAscii(*window_->Writer(), CalcCursorPos(), character, {255, 255, 255});
+  }
 
   return {CalcCursorPos(), {7, 15}};
 }
@@ -299,12 +303,17 @@ Rectangle<int> Terminal::InputKey(
   Rectangle<int> draw_area{CalcCursorPos(), {8*2, 16}};
 
   if (ascii == '\n') {
-    linebuf_[linebuf_index_] = 0;
+    linebuf_[linebuf_len_] = 0;
     if (linebuf_index_ > 0) {
       cmd_history_.pop_back();
       cmd_history_.push_front(linebuf_);
     }
+
+    const auto character = linebuf_[linebuf_index_]; // カーソルで消えてしまった文字を再描画
+    WriteAscii(*window_->Writer(), CalcCursorPos(), character, {255, 255, 255});
+
     linebuf_index_ = 0;
+    linebuf_len_ = 0;
     cmd_history_index_ = -1;
 
     cursor_.x = 0;
@@ -318,32 +327,66 @@ Rectangle<int> Terminal::InputKey(
     draw_area.pos = ToplevelWindow::kTopLeftMargin;
     draw_area.size = window_->InnerSize();
   } else if (ascii == '\b') {
-    if (cursor_.x > 0) {
-      --cursor_.x;
-      if (show_window_) {
+    if (cursor_.x > 1 && show_window_) {
+      for (int i = linebuf_index_;i < linebuf_len_;++i) { // 左にずらしたい
+        linebuf_[i - 1] = linebuf_[i];
+        cursor_.x = i + 1;
+        const auto character = linebuf_[i - 1];
         FillRectangle(*window_->Writer(), CalcCursorPos(), {8, 16}, {0, 0, 0});
+        WriteAscii(*window_->Writer(), CalcCursorPos(), character, {255, 255, 255});
       }
+      cursor_.x = linebuf_len_;
+      FillRectangle(*window_->Writer(), CalcCursorPos(), {8, 16}, {0, 0, 0});
+      cursor_.x = linebuf_index_ + 1;
+      --cursor_.x;
       draw_area.pos = CalcCursorPos();
 
       if (linebuf_index_ > 0) {
         --linebuf_index_;
+        --linebuf_len_;
       }
     }
   } else if (ascii != 0) {
     if (cursor_.x < kColumns - 1 && linebuf_index_ < kLineMax - 1) {
+      draw_area.pos = ToplevelWindow::kTopLeftMargin;
+      draw_area.size = window_->InnerSize();
+      for (int i = linebuf_len_;i > linebuf_index_;--i) { // 右にずらしたい
+        linebuf_[i] = linebuf_[i-1];
+        cursor_.x = i + 1;
+        const auto character = linebuf_[i - 1];
+        FillRectangle(*window_->Writer(), CalcCursorPos(), {8, 16}, {0, 0, 0});
+        WriteAscii(*window_->Writer(), CalcCursorPos(), character, {255, 255, 255});
+      }
       linebuf_[linebuf_index_] = ascii;
       ++linebuf_index_;
+      ++linebuf_len_;
+      cursor_.x = linebuf_index_;
       if (show_window_) {
         WriteAscii(*window_->Writer(), CalcCursorPos(), ascii, {255, 255, 255});
       }
-      ++cursor_.x;
+      cursor_.x = linebuf_index_ + 1;
     }
+  } else if (keycode == 0x4f && linebuf_index_ < linebuf_len_) { // right arrow
+    const auto character = linebuf_[linebuf_index_]; // カーソルで消えてしまった文字を再描画
+    WriteAscii(*window_->Writer(), CalcCursorPos(), character, {255, 255, 255});
+    ++cursor_.x;
+    ++linebuf_index_;
+    draw_area.pos = ToplevelWindow::kTopLeftMargin;
+    draw_area.size = window_->InnerSize();
+  } else if (keycode == 0x50 && linebuf_index_ > 0) { // left arrow
+    if (linebuf_index_ != linebuf_len_) {
+      const auto character = linebuf_[linebuf_index_]; // カーソルで消えてしまった文字を再描画
+      WriteAscii(*window_->Writer(), CalcCursorPos(), character, {255, 255, 255});
+    }
+    --cursor_.x;
+    --linebuf_index_;
+    draw_area.pos = ToplevelWindow::kTopLeftMargin;
+    draw_area.size = window_->InnerSize();
   } else if (keycode == 0x51) { // down arrow
     draw_area = HistoryUpDown(-1);
   } else if (keycode == 0x52) { // up arrow
     draw_area = HistoryUpDown(1);
   }
-
   DrawCursor(true);
 
   return draw_area;
@@ -597,6 +640,7 @@ void Terminal::ExecuteLine() {
     exit_code = ec;
   }
 
+  linebuf_len_ = 0;
   last_exit_code_ = exit_code;
   files_[1] = original_stdout;
 }
@@ -748,6 +792,7 @@ Rectangle<int> Terminal::HistoryUpDown(int direction) {
 
   strcpy(&linebuf_[0], history);
   linebuf_index_ = strlen(history);
+  linebuf_len_ = linebuf_index_;
 
   WriteString(*window_->Writer(), first_pos, history, {255, 255, 255});
   cursor_.x = linebuf_index_ + 1;

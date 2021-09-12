@@ -57,6 +57,7 @@ class Terminal {
   Vector2D<int> CalcCursorPos() const;
 
   int linebuf_index_{0};
+  int linebuf_len_{0};
   std::array<char, kLineMax> linebuf_{};
   void Scroll1();
 
