@@ -328,22 +328,20 @@ Rectangle<int> Terminal::InputKey(
     draw_area.size = window_->InnerSize();
   } else if (ascii == '\b') {
     if (cursor_.x > 1 && show_window_) {
-      for (int i = linebuf_index_;i < linebuf_len_;++i) { // 左にずらしたい
-        linebuf_[i - 1] = linebuf_[i];
-        cursor_.x = i + 1;
-        const auto character = linebuf_[i - 1];
-        FillRectangle(*window_->Writer(), CalcCursorPos(), {8, 16}, {0, 0, 0});
-        WriteAscii(*window_->Writer(), CalcCursorPos(), character, {255, 255, 255});
-      }
-      cursor_.x = linebuf_len_;
-      FillRectangle(*window_->Writer(), CalcCursorPos(), {8, 16}, {0, 0, 0});
-      cursor_.x = linebuf_index_ + 1;
-      --cursor_.x;
-      draw_area.pos = CalcCursorPos();
-
       if (linebuf_index_ > 0) {
         --linebuf_index_;
+        for (int i = linebuf_index_;i < linebuf_len_;++i) { // 左にずらしたい
+          cursor_.x = i + 1; // >のため+1
+          const auto character = linebuf_[i + 1];
+          FillRectangle(*window_->Writer(), CalcCursorPos(), {8, 16}, {0, 0, 0});
+          WriteAscii(*window_->Writer(), CalcCursorPos(), character, {255, 255, 255});
+          linebuf_[i] = linebuf_[i + 1];
+        }
+        cursor_.x = linebuf_len_;
+        FillRectangle(*window_->Writer(), CalcCursorPos(), {8, 16}, {0, 0, 0});
         --linebuf_len_;
+        cursor_.x = 1 + linebuf_index_;
+        draw_area.pos = CalcCursorPos();
       }
     }
   } else if (ascii != 0) {
