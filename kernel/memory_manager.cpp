@@ -110,7 +110,8 @@ void InitializeMemoryManager(const MemoryMap& memory_map) {
     if (available_end < desc->physical_start) {
       memory_manager->MarkAllocated(
           FrameID{available_end / kBytesPerFrame},
-          (desc->physical_start - available_end) / kBytesPerFrame);
+          desc->physical_start / kBytesPerFrame - available_end / kBytesPerFrame + (desc->physical_start % kBytesPerFrame ? 1 : 0)
+      );
     }
 
     const auto physical_end =
@@ -120,7 +121,8 @@ void InitializeMemoryManager(const MemoryMap& memory_map) {
     } else {
       memory_manager->MarkAllocated(
           FrameID{desc->physical_start / kBytesPerFrame},
-          desc->number_of_pages * kUEFIPageSize / kBytesPerFrame);
+          physical_end / kBytesPerFrame - desc->physical_start / kBytesPerFrame + (physical_end % kBytesPerFrame ? 1 : 0)
+      );
     }
   }
   memory_manager->SetMemoryRange(FrameID{1}, FrameID{available_end / kBytesPerFrame});
