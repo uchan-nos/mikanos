@@ -89,6 +89,27 @@ namespace usb::cdc {
     return nullptr;
   }
 
+  enum class CharFormat : uint8_t {
+    kStopBit1,
+    kStopBit15,
+    kStopBit2
+  };
+
+  enum class ParityType : uint8_t {
+    kNone,
+    kOdd,
+    kEven,
+    kMark,
+    kSpace
+  };
+
+  struct LineCoding {
+    uint32_t dte_rate;
+    CharFormat char_format;
+    ParityType parity_type;
+    uint8_t data_bits; // 5, 6, 7, 8, 16
+  } __attribute__((packed));
+
   class CDCDriver : public ClassDriver {
    public:
     CDCDriver(Device* dev, const InterfaceDescriptor* if_comm,
@@ -103,10 +124,13 @@ namespace usb::cdc {
 
     Error SendSerial(const void* buf, int len);
     int ReceiveSerial(void* buf, int len);
+    Error SetLineCoding(const LineCoding& value);
 
    private:
     EndpointID ep_interrupt_in_, ep_bulk_in_, ep_bulk_out_;
     std::deque<uint8_t> receive_buf_;
+    uint8_t if_data_index_;
+    LineCoding line_coding_;
   };
 
   inline CDCDriver* driver = nullptr;

@@ -44,9 +44,13 @@ namespace usb {
     const int kSetSel = 48;
     const int kSetIsochDelay = 49;
 
-    // HID class specific report values
+    // HID class specific request values
     const int kGetReport = 1;
     const int kSetProtocol = 11;
+
+    // CDC class specific request values
+    const int kSetLineCoding = 0x20;
+    const int kGetLineCoding = 0x21;
   }
 
   namespace descriptor_type {
@@ -90,4 +94,3 @@ namespace usb {
       lhs.length == rhs.length;
   }
 }
-

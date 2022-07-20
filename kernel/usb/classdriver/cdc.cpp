@@ -9,7 +9,10 @@
 
 namespace usb::cdc {
   CDCDriver::CDCDriver(Device* dev, const InterfaceDescriptor* if_comm,
-                       const InterfaceDescriptor* if_data) : ClassDriver{dev} {
+                       const InterfaceDescriptor* if_data)
+    : ClassDriver{dev},
+      if_data_index_{if_data->interface_number}
+  {
   }
 
   Error CDCDriver::Initialize() {
@@ -34,8 +37,10 @@ namespace usb::cdc {
   }
 
   Error CDCDriver::OnControlCompleted(EndpointID ep_id, SetupData setup_data,
-                           const void* buf, int len) {
-    return MAKE_ERROR(Error::kNotImplemented);
+                                      const void* buf, int len) {
+    Log(kDebug, "CDCDriver::OnControlCompleted: req_type=0x%02x req=0x%02x len=%u\n",
+        setup_data.request_type.data, setup_data.request, len);
+    return MAKE_ERROR(Error::kSuccess);
   }
 
   Error CDCDriver::OnNormalCompleted(EndpointID ep_id, const void* buf, int len) {
@@ -75,5 +80,22 @@ namespace usb::cdc {
       receive_buf_.pop_front();
     }
     return recv_len;
+  }
+
+  Error CDCDriver::SetLineCoding(const LineCoding& value) {
+    SetupData setup_data{};
+    setup_data.request_type.bits.direction = request_type::kOut;
+    setup_data.request_type.bits.type = request_type::kClass;
+    setup_data.request_type.bits.recipient = request_type::kInterface;
+    setup_data.request = request::kSetLineCoding;
+    setup_data.value = 0;
+    setup_data.index = if_data_index_;
+    setup_data.length = sizeof(LineCoding);
+
+    line_coding_ = value;
+
+    return ParentDevice()->ControlOut(
+        kDefaultControlPipeID, setup_data,
+        &line_coding_, sizeof(LineCoding), this);
   }
 }

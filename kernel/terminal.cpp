@@ -569,6 +569,69 @@ void Terminal::ExecuteLine() {
       }
       PrintToFD(*files_[1], "%.*s\n", recv_len, buf.data());
     }();
+  } else if (strcmp(command, "setbaud") == 0) {
+    [&]{
+      usb::cdc::LineCoding line_coding{
+        9600,
+        usb::cdc::CharFormat::kStopBit1,
+        usb::cdc::ParityType::kNone,
+        8
+      };
+
+      if (first_arg && first_arg[0]) {
+        char *endp;
+        line_coding.dte_rate = strtol(first_arg, &endp, 0);
+        if (*endp != '\0') {
+          PrintToFD(*files_[2], "Baud rate must be an integer");
+          exit_code = 1;
+          return;
+        }
+      }
+
+      if (!usb::cdc::driver) {
+        PrintToFD(*files_[2], "CDC device not exist\n");
+        exit_code = 1;
+        return;
+      }
+
+      PrintToFD(*files_[2], "Setting baud rate to %u\n", line_coding.dte_rate);
+      usb::cdc::driver->SetLineCoding(line_coding);
+    }();
+  } else if (strcmp(command, "comproc") == 0) {
+    [&]{
+      if (!usb::cdc::driver) {
+        PrintToFD(*files_[2], "CDC device not exist\n");
+        exit_code = 1;
+        return;
+      }
+
+      const uint8_t insn[14 * 2] = {
+        0x00, 0x20,
+        0xC1, 0x00,
+        0xA3, 0x03,
+        0x94, 0x02,
+        0xA0, 0x00,
+        0xC2, 0x21,
+        0xC0, 0x20,
+        0x00, 0x20,
+        0xB0, 0x02,
+        0xC1, 0x00,
+        0x00, 0x21,
+        0xC3, 0x20,
+        0xA4, 0x00,
+        0xFF, 0xFF,
+      };
+      PrintToFD(*files_[1], "Sending instructions to ComProc CPU\n");
+      usb::cdc::driver->SendSerial(insn, 14 * 2);
+
+      PrintToFD(*files_[1], "Receiving exit code from ComProc CPU\n");
+      uint8_t code = 0;
+      int recv_len = usb::cdc::driver->ReceiveSerial(&code, 1);
+      while (recv_len == 0) {
+        recv_len = usb::cdc::driver->ReceiveSerial(&code, 1);
+      }
+      PrintToFD(*files_[1], "exit_code=%d\n", code);
+    }();
   } else if (command[0] != 0) {
     auto file_entry = FindCommand(command);
     if (!file_entry) {
