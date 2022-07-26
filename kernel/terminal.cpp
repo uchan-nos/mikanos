@@ -760,8 +760,13 @@ void Terminal::Print(const char* s, std::optional<size_t> len) {
 
   while (s[i] && i < len_) {
     const auto [ u32, bytes ] = ConvertUTF8To32(&s[i]);
-    Print(u32);
-    i += bytes;
+    if (bytes > 0) {
+      Print(u32);
+      i += bytes;
+    } else { // UTF-8 文字ではない
+      Print('?');
+      i++;
+    }
   }
 
   DrawCursor(true);
