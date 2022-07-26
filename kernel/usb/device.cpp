@@ -54,7 +54,9 @@ namespace {
   }
 
   void Log(LogLevel level, const usb::InterfaceDescriptor& if_desc) {
-    Log(level, "Interface Descriptor: class=%d, sub=%d, protocol=%d\n",
+    Log(level, "Interface Descriptor %d: num_ep=%d class=%d sub=%d protocol=%d\n",
+        if_desc.interface_number,
+        if_desc.num_endpoints,
         if_desc.interface_class,
         if_desc.interface_sub_class,
         if_desc.interface_protocol);
