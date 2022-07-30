@@ -310,7 +310,7 @@ size_t FileDescriptor::Write(const void* buf, size_t len) {
     }
 
     uint8_t* sec = GetSectorByCluster<uint8_t>(wr_cluster_);
-    size_t n = std::min(len, bytes_per_cluster - wr_cluster_off_);
+    size_t n = std::min(len - total, bytes_per_cluster - wr_cluster_off_);
     memcpy(&sec[wr_cluster_off_], &buf8[total], n);
     total += n;
 
