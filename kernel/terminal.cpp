@@ -922,6 +922,7 @@ size_t TerminalFileDescriptor::Read(void* buf, size_t len) {
     auto msg = term_.UnderlyingTask().ReceiveMessage();
     if (!msg) {
       term_.UnderlyingTask().Sleep();
+      __asm__("sti");
       continue;
     }
     __asm__("sti");
