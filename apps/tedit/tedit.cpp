@@ -198,10 +198,14 @@ const std::vector<std::vector<uint32_t> >& data) {
       }
     }
   }
+#ifdef NO_FCLOSE_CHECK
+  fclose(fp);
+#else
   if (fclose(fp) == EOF) {
     printf("failed to close %s: %s\n", file_name, strerror(errno));
     return false;
   }
+#endif
   return true;
 }
 
