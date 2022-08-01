@@ -1,5 +1,7 @@
 #include "terminal.hpp"
 
+#include <algorithm>
+#include <array>
 #include <cstring>
 #include <limits>
 #include <vector>
@@ -605,24 +607,39 @@ void Terminal::ExecuteLine() {
         return;
       }
 
-      const uint8_t insn[14 * 2] = {
-        0x00, 0x20,
-        0xC1, 0x00,
-        0xA3, 0x03,
-        0x94, 0x02,
-        0xA0, 0x00,
-        0xC2, 0x21,
-        0xC0, 0x20,
-        0x00, 0x20,
-        0xB0, 0x02,
-        0xC1, 0x00,
-        0x00, 0x21,
-        0xC3, 0x20,
-        0xA4, 0x00,
-        0xFF, 0xFF,
-      };
+      std::vector<uint8_t> insn;
+
+      if (first_arg && strcmp(first_arg, "sample") == 0) {
+        const std::array<uint8_t, 14 * 2> kSample = {
+          0x00, 0x20,
+          0xC1, 0x00,
+          0xA3, 0x03,
+          0x94, 0x02,
+          0xA0, 0x00,
+          0xC2, 0x21,
+          0xC0, 0x20,
+          0x00, 0x20,
+          0xB0, 0x02,
+          0xC1, 0x00,
+          0x00, 0x21,
+          0xC3, 0x20,
+          0xA4, 0x00,
+          0xFF, 0xFF,
+        };
+        insn.resize(kSample.size());
+        std::copy(kSample.begin(), kSample.end(), insn.begin());
+      } else {
+        uint8_t buf[2];
+        while (files_[0]->Read(buf, 2) == 2) {
+          insn.push_back(buf[0]);
+          insn.push_back(buf[1]);
+        }
+        insn.push_back(0xff);
+        insn.push_back(0xff);
+      }
+
       PrintToFD(*files_[1], "Sending instructions to ComProc CPU\n");
-      usb::cdc::driver->SendSerial(insn, 14 * 2);
+      usb::cdc::driver->SendSerial(&insn[0], insn.size());
 
       PrintToFD(*files_[1], "Receiving exit code from ComProc CPU\n");
       uint8_t code = 0;
