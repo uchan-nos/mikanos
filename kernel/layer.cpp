@@ -69,6 +69,7 @@ void LayerManager::SetWriter(FrameBuffer* screen) {
 
 Layer& LayerManager::NewLayer() {
   ++latest_id_;
+  if (latest_id_ == 0) ++latest_id_;
   return *layers_.emplace_back(new Layer{latest_id_});
 }
 
