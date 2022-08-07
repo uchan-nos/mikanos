@@ -171,6 +171,12 @@ DirectoryEntry* AllocateEntry(unsigned long dir_cluster);
  */
 void SetFileName(DirectoryEntry& entry, const char* name);
 
+/** @brief ディレクトリエントリの更新日時を現在時刻にセットする。
+ *
+ * @param entry  更新日時を設定する対象のディレクトリエントリ
+ */
+void SetWriteTimeToCurrent(DirectoryEntry& entry);
+
 /** @brief 指定されたパスにファイルエントリを作成する。
  *
  * @param path  ファイルパス
