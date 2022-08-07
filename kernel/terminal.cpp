@@ -1,7 +1,5 @@
 #include "terminal.hpp"
 
-#include <algorithm>
-#include <array>
 #include <cstring>
 #include <limits>
 #include <vector>
@@ -607,39 +605,24 @@ void Terminal::ExecuteLine() {
         return;
       }
 
-      std::vector<uint8_t> insn;
-
-      if (first_arg && strcmp(first_arg, "sample") == 0) {
-        const std::array<uint8_t, 14 * 2> kSample = {
-          0x00, 0x20,
-          0xC1, 0x00,
-          0xA3, 0x03,
-          0x94, 0x02,
-          0xA0, 0x00,
-          0xC2, 0x21,
-          0xC0, 0x20,
-          0x00, 0x20,
-          0xB0, 0x02,
-          0xC1, 0x00,
-          0x00, 0x21,
-          0xC3, 0x20,
-          0xA4, 0x00,
-          0xFF, 0xFF,
-        };
-        insn.resize(kSample.size());
-        std::copy(kSample.begin(), kSample.end(), insn.begin());
-      } else {
-        uint8_t buf[2];
-        while (files_[0]->Read(buf, 2) == 2) {
-          insn.push_back(buf[0]);
-          insn.push_back(buf[1]);
-        }
-        insn.push_back(0xff);
-        insn.push_back(0xff);
-      }
-
+      const uint8_t insn[14 * 2] = {
+        0x00, 0x20,
+        0xC1, 0x00,
+        0xA3, 0x03,
+        0x94, 0x02,
+        0xA0, 0x00,
+        0xC2, 0x21,
+        0xC0, 0x20,
+        0x00, 0x20,
+        0xB0, 0x02,
+        0xC1, 0x00,
+        0x00, 0x21,
+        0xC3, 0x20,
+        0xA4, 0x00,
+        0xFF, 0xFF,
+      };
       PrintToFD(*files_[1], "Sending instructions to ComProc CPU\n");
-      usb::cdc::driver->SendSerial(&insn[0], insn.size());
+      usb::cdc::driver->SendSerial(insn, 14 * 2);
 
       PrintToFD(*files_[1], "Receiving exit code from ComProc CPU\n");
       uint8_t code = 0;
@@ -869,8 +852,10 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
     task_manager->Finish(terminal->LastExitCode());
   }
 
-  auto add_blink_timer = [task_id](unsigned long t){
-    timer_manager->AddTimer(Timer{t + static_cast<int>(kTimerFreq * 0.5),
+  unsigned long expected_blink_timeout = 0;
+  auto add_blink_timer = [task_id, &expected_blink_timeout](unsigned long t){
+    expected_blink_timeout = t + static_cast<int>(kTimerFreq * 0.5);
+    timer_manager->AddTimer(Timer{expected_blink_timeout,
                                   1, task_id});
   };
   add_blink_timer(timer_manager->CurrentTick());
@@ -881,6 +866,9 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
     __asm__("cli");
     auto msg = task.ReceiveMessage();
     if (!msg) {
+      if (timer_manager->CurrentTick() > expected_blink_timeout) {
+        add_blink_timer(timer_manager->CurrentTick());
+      }
       task.Sleep();
       __asm__("sti");
       continue;
@@ -889,14 +877,16 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
 
     switch (msg->type) {
     case Message::kTimerTimeout:
-      add_blink_timer(msg->arg.timer.timeout);
-      if (show_window && window_isactive) {
-        const auto area = terminal->BlinkCursor();
-        Message msg = MakeLayerMessage(
-            task_id, terminal->LayerID(), LayerOperation::DrawArea, area);
-        __asm__("cli");
-        task_manager->SendMessage(1, msg);
-        __asm__("sti");
+      if (msg->arg.timer.timeout == expected_blink_timeout) {
+        add_blink_timer(msg->arg.timer.timeout);
+        if (show_window && window_isactive) {
+          const auto area = terminal->BlinkCursor();
+          Message msg = MakeLayerMessage(
+              task_id, terminal->LayerID(), LayerOperation::DrawArea, area);
+          __asm__("cli");
+          task_manager->SendMessage(1, msg);
+          __asm__("sti");
+        }
       }
       break;
     case Message::kKeyPush:
