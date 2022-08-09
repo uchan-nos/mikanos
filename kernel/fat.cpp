@@ -11,13 +11,21 @@ std::pair<const char*, bool>
 NextPathElement(const char* path, char* path_elem) {
   const char* next_slash = strchr(path, '/');
   if (next_slash == nullptr) {
-    strcpy(path_elem, path);
+    if (strlen(path) > 12) {
+      path_elem[0] = '\0';
+    } else {
+      strcpy(path_elem, path);
+    }
     return { nullptr, false };
   }
 
   const auto elem_len = next_slash - path;
-  strncpy(path_elem, path, elem_len);
-  path_elem[elem_len] = '\0';
+  if (elem_len > 12) {
+    path_elem[0] = '\0';
+  } else {
+    strncpy(path_elem, path, elem_len);
+    path_elem[elem_len] = '\0';
+  }
   return { &next_slash[1], true };
 }
 
@@ -117,15 +125,19 @@ bool NameIsEqual(const DirectoryEntry& entry, const char* name) {
 
   int i = 0;
   int i83 = 0;
+  bool found_dot = false;
   for (; name[i] != 0 && i83 < sizeof(name83); ++i, ++i83) {
     if (name[i] == '.') {
+      if (found_dot) return false; // ドットが2個以上ある
       i83 = 7;
+      found_dot = true;
       continue;
     }
+    if (!found_dot && i > 7) return false; // ドットの前に9文字以上ある
     name83[i83] = toupper(name[i]);
   }
 
-  return memcmp(entry.name, name83, sizeof(name83)) == 0;
+  return name[i] == 0 && memcmp(entry.name, name83, sizeof(name83)) == 0;
 }
 
 size_t LoadFile(void* buf, size_t len, DirectoryEntry& entry) {
