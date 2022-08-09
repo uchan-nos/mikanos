@@ -366,6 +366,15 @@ void Terminal::ExecuteLine() {
   char* first_arg = strchr(&linebuf_[0], ' ');
   char* redir_char = strchr(&linebuf_[0], '>');
   char* pipe_char = strchr(&linebuf_[0], '|');
+  char* command_end = &linebuf_[strlen(&linebuf_[0])];
+
+  auto trim_space = [&command](char* end_ptr) {
+    while (command < end_ptr && isspace(end_ptr[-1])) {
+      *--end_ptr = 0;
+    }
+  };
+  trim_space(command_end);
+
   if (first_arg) {
     *first_arg = 0;
     do {
@@ -378,6 +387,7 @@ void Terminal::ExecuteLine() {
 
   if (redir_char) {
     *redir_char = 0;
+    trim_space(redir_char);
     char* redir_dest = &redir_char[1];
     while (isspace(*redir_dest)) {
       ++redir_dest;
@@ -404,6 +414,7 @@ void Terminal::ExecuteLine() {
 
   if (pipe_char) {
     *pipe_char = 0;
+    trim_space(pipe_char);
     char* subcommand = &pipe_char[1];
     while (isspace(*subcommand)) {
       ++subcommand;
