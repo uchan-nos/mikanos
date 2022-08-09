@@ -489,11 +489,11 @@ void Terminal::ExecuteLine() {
       char u8buf[1024];
       DrawCursor(false);
       while (true) {
-        size_t readSize = ReadDelim(*fd, '\n', u8buf, sizeof(u8buf));
-        if (readSize == 0) {
+        size_t read_size = ReadDelim(*fd, '\n', u8buf, sizeof(u8buf));
+        if (read_size == 0) {
           break;
         }
-        files_[1]->Write(u8buf, readSize);
+        files_[1]->Write(u8buf, read_size);
       }
       DrawCursor(true);
     }
