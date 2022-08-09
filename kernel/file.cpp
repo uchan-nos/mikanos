@@ -12,17 +12,16 @@ size_t PrintToFD(FileDescriptor& fd, const char* format, ...) {
   va_start(ap, format);
   result = vsnprintf(s, BUFFER_SIZE, format, ap);
   va_end(ap);
-  if (result >= BUFFER_SIZE) {
-    int allocateSize = result + 1;
-    std::vector<char> s2(allocateSize);
-    va_start(ap, format);
-    result = vsnprintf(&s2[0], allocateSize, format, ap);
-    va_end(ap);
-    fd.Write(&s2[0], result < allocateSize ? result : allocateSize);
-  } else {
+  if (result < BUFFER_SIZE) {
     fd.Write(s, result);
+    return result;
   }
 
+  std::vector<char> s2(result + 1);
+  va_start(ap, format);
+  vsnprintf(&s2[0], result + 1, format, ap);
+  va_end(ap);
+  fd.Write(&s2[0], result);
   return result;
 }
 
