@@ -82,6 +82,7 @@ class TerminalFileDescriptor : public FileDescriptor {
   size_t Read(void* buf, size_t len) override;
   size_t Write(const void* buf, size_t len) override;
   size_t Size() const override { return 0; }
+  bool IsTerminal() const override { return true; }
   size_t Load(void* buf, size_t len, size_t offset) override;
 
  private:

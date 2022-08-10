@@ -151,15 +151,32 @@ Error FreePML4(Task& current_task) {
   return FreePageMap(reinterpret_cast<PageMapEntry*>(cr3));
 }
 
+void PrintFileAttr(FileDescriptor& fd, const fat::DirectoryEntry& dir) {
+  if ((uint8_t)dir.attr & (uint8_t)fat::Attribute::kDirectory) {
+    PrintToFD(fd, "%10s", "<DIR>");
+  } else {
+    PrintToFD(fd, "%10lu", (unsigned long)dir.file_size);
+  }
+  char date[20], name[13];
+  fat::FormatWriteTime(dir, date);
+  fat::FormatName(dir, name);
+  PrintToFD(fd, " %s %s\n", date, name);
+}
+
 void ListAllEntries(FileDescriptor& fd, uint32_t dir_cluster, bool verbose) {
   const auto kEntriesPerCluster =
     fat::bytes_per_cluster / sizeof(fat::DirectoryEntry);
 
+  const bool multi_per_line = !verbose && fd.IsTerminal();
+  int count = 0;
   while (dir_cluster != fat::kEndOfClusterchain) {
     auto dir = fat::GetSectorByCluster<fat::DirectoryEntry>(dir_cluster);
 
     for (int i = 0; i < kEntriesPerCluster; ++i) {
       if (dir[i].name[0] == 0x00) {
+        if (multi_per_line && (count % 4) != 0) {
+          PrintToFD(fd, "\n");
+        }
         return;
       } else if (static_cast<uint8_t>(dir[i].name[0]) == 0xe5) {
         continue;
@@ -168,18 +185,20 @@ void ListAllEntries(FileDescriptor& fd, uint32_t dir_cluster, bool verbose) {
       }
 
       if (verbose) {
-        if ((uint8_t)dir[i].attr & (uint8_t)fat::Attribute::kDirectory) {
-          PrintToFD(fd, "%10s", "<DIR>");
+        PrintFileAttr(fd, dir[i]);
+      } else {
+        char name[13];
+        fat::FormatName(dir[i], name);
+        if (!multi_per_line) {
+          PrintToFD(fd, "%s\n", name);
         } else {
-          PrintToFD(fd, "%10lu", (unsigned long)dir[i].file_size);
+          PrintToFD(fd, "%-14s", name);
+          ++count;
+          if ((count % 4) == 0) {
+            PrintToFD(fd, "\n");
+          }
         }
-        char date[20];
-        fat::FormatWriteTime(dir[i], date);
-        PrintToFD(fd, " %s ", date);
       }
-      char name[13];
-      fat::FormatName(dir[i], name);
-      PrintToFD(fd, "%s\n", name);
     }
 
     dir_cluster = fat::NextCluster(dir_cluster);
@@ -495,16 +514,10 @@ void Terminal::ExecuteLine() {
           exit_code = 1;
         } else {
           if (verbose) {
-            if ((uint8_t)dir->attr & (uint8_t)fat::Attribute::kDirectory) {
-              PrintToFD(*files_[1], "%10s", "<DIR>");
-            } else {
-              PrintToFD(*files_[1], "%10lu", (unsigned long)dir->file_size);
-            }
-            char date[20];
-            fat::FormatWriteTime(*dir, date);
-            PrintToFD(*files_[1], " %s ", date);
+            PrintFileAttr(*files_[1], *dir);
+          } else {
+            PrintToFD(*files_[1], "%s\n", name);
           }
-          PrintToFD(*files_[1], "%s\n", name);
         }
       }
     }
