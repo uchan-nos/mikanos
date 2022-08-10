@@ -1,7 +1,6 @@
 #include <array>
 #include <bitset>
 #include <cmath>
-#include <cstdlib>
 #include "../syscall.h"
 
 using namespace std;
@@ -62,11 +61,11 @@ T LimitRange(const T& x, const T& min, const T& max) {
   return x;
 }
 
-extern "C" void main(int argc, char** argv) {
+int main(int argc, char** argv) {
   auto [layer_id, err_openwin]
     = SyscallOpenWindow(kCanvasWidth + 8, kCanvasHeight + 28, 10, 10, "blocks");
   if (err_openwin) {
-    exit(err_openwin);
+    return err_openwin;
   }
 
   for (int y = 0; y < kNumBlocksY; ++y) {
@@ -197,5 +196,5 @@ extern "C" void main(int argc, char** argv) {
 
 fin:
   SyscallCloseWindow(layer_id);
-  exit(0);
+  return 0;
 }

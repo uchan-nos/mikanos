@@ -1,6 +1,6 @@
-#include <cstring>
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include "../syscall.h"
 
 int stack_ptr;
@@ -17,7 +17,7 @@ void Push(long value) {
   stack[stack_ptr] = value;
 }
 
-extern "C" void main(int argc, char** argv) {
+int main(int argc, char** argv) {
   stack_ptr = -1;
 
   for (int i = 1; i < argc; ++i) {
@@ -40,5 +40,5 @@ extern "C" void main(int argc, char** argv) {
   }
 
   printf("%ld\n", result);
-  exit(static_cast<int>(result));
+  return static_cast<int>(result);
 }

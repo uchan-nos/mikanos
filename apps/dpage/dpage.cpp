@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include "../syscall.h"
 
-extern "C" void main(int argc, char** argv) {
+int main(int argc, char** argv) {
   const char* filename = "/memmap";
   int ch = '\n';
   if (argc >= 3) {
@@ -12,12 +12,12 @@ extern "C" void main(int argc, char** argv) {
   FILE* fp = fopen(filename, "r");
   if (!fp) {
     printf("failed to open %s\n", filename);
-    exit(1);
+    return 1;
   }
 
   SyscallResult res = SyscallDemandPages(1, 0);
   if (res.error) {
-    exit(1);
+    return 1;
   }
   char* buf = reinterpret_cast<char*>(res.value);
   char* buf0 = buf;
@@ -27,7 +27,7 @@ extern "C" void main(int argc, char** argv) {
   while ((n = fread(buf, 1, 4096, fp)) == 4096) {
     total += n;
     if (res = SyscallDemandPages(1, 0); res.error) {
-      exit(1);
+      return 1;
     }
     buf += 4096;
   }
@@ -41,5 +41,5 @@ extern "C" void main(int argc, char** argv) {
     }
   }
   printf("the number of '%c' (0x%02x) = %lu\n", ch, ch, num);
-  exit(0);
+  return 0;
 }

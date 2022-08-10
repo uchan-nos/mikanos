@@ -18,7 +18,7 @@ struct SyscallResult {
 
 struct SyscallResult SyscallLogString(enum LogLevel level, const char* message);
 struct SyscallResult SyscallPutString(int fd, const char* s, size_t len);
-void SyscallExit(int exit_code);
+void SyscallExit(int exit_code) __attribute__((noreturn));
 struct SyscallResult SyscallOpenWindow(int w, int h, int x, int y, const char* title);
 
 #define LAYER_NO_REDRAW (0x00000001ull << 32)

@@ -1,18 +1,17 @@
-#include <cstdlib>
 #include <cstdio>
 #include <fcntl.h>
 #include "../syscall.h"
 
-extern "C" void main(int argc, char** argv) {
+int main(int argc, char** argv) {
   SyscallResult res = SyscallOpenFile("/memmap", O_RDONLY);
   if (res.error) {
-    exit(res.error);
+    return res.error;
   }
   const int fd = res.value;
   size_t file_size;
   res = SyscallMapFile(fd, &file_size, 0);
   if (res.error) {
-    exit(res.error);
+    return res.error;
   }
 
   char* p = reinterpret_cast<char*>(res.value);
@@ -22,5 +21,5 @@ extern "C" void main(int argc, char** argv) {
   }
   printf("\nread from mapped file (%lu bytes)\n", file_size);
 
-  exit(0);
+  return 0;
 }

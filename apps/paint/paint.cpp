@@ -1,5 +1,4 @@
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
 #include "../syscall.h"
 
@@ -9,11 +8,11 @@ bool IsInside(int x, int y) {
   return 4 <= x && x < 4 + kWidth && 24 <= y && y < 24 + kHeight;
 }
 
-extern "C" void main(int argc, char** argv) {
+int main(int argc, char** argv) {
   auto [layer_id, err_openwin]
     = SyscallOpenWindow(kWidth + 8, kHeight + 28, 10, 10, "paint");
   if (err_openwin) {
-    exit(err_openwin);
+    return err_openwin;
   }
 
   AppEvent events[1];
@@ -44,5 +43,5 @@ extern "C" void main(int argc, char** argv) {
   }
 
   SyscallCloseWindow(layer_id);
-  exit(0);
+  return 0;
 }

@@ -193,7 +193,7 @@ bool UpdateStartLine(int* start_line, int height, size_t num_lines) {
   }
 }
 
-extern "C" void main(int argc, char** argv) {
+int main(int argc, char** argv) {
   auto print_help = [argv](){
     fprintf(stderr,
             "Usage: %s [-w WIDTH] [-h HEIGHT] [-t TAB] <file>\n",
@@ -209,12 +209,12 @@ extern "C" void main(int argc, char** argv) {
     case 't': tab = atoi(optarg); break;
     default:
       print_help();
-      exit(1);
+      return 1;
     }
   }
   if (optind >= argc) {
     print_help();
-    exit(1);
+    return 1;
   }
 
   const char* filepath = argv[optind];
@@ -235,5 +235,5 @@ extern "C" void main(int argc, char** argv) {
   }
 
   SyscallCloseWindow(layer_id);
-  exit(0);
+  return 0;
 }

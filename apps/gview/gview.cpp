@@ -53,10 +53,10 @@ uint32_t GetColorGray(unsigned char* image_data) {
   return gray << 16 | gray << 8 | gray;
 }
 
-extern "C" void main(int argc, char** argv) {
+int main(int argc, char** argv) {
   if (argc < 2) {
     fprintf(stderr, "Usage: %s <file>\n", argv[0]);
-    exit(1);
+    return 1;
   }
 
   int width, height, bytes_per_pixel;
@@ -67,7 +67,7 @@ extern "C" void main(int argc, char** argv) {
       content, filesize, &width, &height, &bytes_per_pixel, 0);
   if (image_data == nullptr) {
     fprintf(stderr, "failed to load image: %s\n", stbi_failure_reason());
-    exit(1);
+    return 1;
   }
 
   fprintf(stderr, "%dx%d, %d bytes/pixel\n", width, height, bytes_per_pixel);
@@ -82,7 +82,7 @@ extern "C" void main(int argc, char** argv) {
     SyscallOpenWindow(8 + width, 28 + height, 10, 10, filename);
   if (window.error) {
     fprintf(stderr, "%s\n", strerror(window.error));
-    exit(1);
+    return 1;
   }
   const uint64_t layer_id = window.value;
 
@@ -98,5 +98,5 @@ extern "C" void main(int argc, char** argv) {
   WaitEvent();
 
   SyscallCloseWindow(layer_id);
-  exit(0);
+  return 0;
 }

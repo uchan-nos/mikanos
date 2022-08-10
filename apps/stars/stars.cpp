@@ -1,4 +1,3 @@
-#include <cstdlib>
 #include <random>
 #include "../syscall.h"
 
@@ -18,11 +17,11 @@ void WaitEvent() {
   }
 }
 
-extern "C" void main(int argc, char** argv) {
+int main(int argc, char** argv) {
   auto [layer_id, err_openwin]
     = SyscallOpenWindow(kWidth + 8, kHeight + 28, 10, 10, "stars");
   if (err_openwin) {
-    exit(err_openwin);
+    return err_openwin;
   }
 
   SyscallWinFillRectangle(layer_id | LAYER_NO_REDRAW,
@@ -53,5 +52,5 @@ extern "C" void main(int argc, char** argv) {
   WaitEvent();
   SyscallCloseWindow(layer_id);
 
-  exit(0);
+  return 0;
 }

@@ -1,6 +1,5 @@
 #include <array>
 #include <cmath>
-#include <cstdlib>
 #include "../syscall.h"
 
 using namespace std;
@@ -36,11 +35,11 @@ array<Vector3D<double>, kCube.size()> vert;
 array<double, kSurface.size()> centerz4;
 array<Vector2D<int>, kCube.size()> scr;
 
-extern "C" void main(int argc, char** argv) {
+int main(int argc, char** argv) {
   auto [layer_id, err_openwin]
     = SyscallOpenWindow(kCanvasSize + 8, kCanvasSize + 28, 10, 10, "cube");
   if (err_openwin) {
-    exit(err_openwin);
+    return err_openwin;
   }
 
   int thx = 0, thy = 0, thz = 0;
@@ -82,7 +81,7 @@ extern "C" void main(int argc, char** argv) {
   }
 
   SyscallCloseWindow(layer_id);
-  exit(0);
+  return 0;
 }
 
 void DrawObj(uint64_t layer_id) {

@@ -1,15 +1,14 @@
 #include <cstdio>
-#include <cstdlib>
 #include <string>
 #include <vector>
 
-extern "C" void main(int argc, char** argv) {
+int main(int argc, char** argv) {
   FILE* fp = stdin;
   if (argc >= 2) {
     fp = fopen(argv[1], "r");
     if (fp == nullptr) {
       fprintf(stderr, "failed to open '%s'\n", argv[1]);
-      exit(1);
+      return 1;
     }
   }
 
@@ -34,5 +33,5 @@ extern "C" void main(int argc, char** argv) {
   for (auto& line : lines) {
     printf("%s", line.c_str());
   }
-  exit(0);
+  return 0;
 }

@@ -2,7 +2,6 @@
 #include <array>
 #include <complex>
 #include <cstdio>
-#include <cstdlib>
 
 #include "../syscall.h"
 
@@ -118,11 +117,11 @@ void WaitEvent() {
 
 constexpr int kWidth = 78*4, kHeight = 52*4;
 
-extern "C" void main(int argc, char** argv) {
+int main(int argc, char** argv) {
   auto [layer_id, err_openwin]
     = SyscallOpenWindow(kWidth + 8, kHeight + 28, 10, 10, "mandel");
   if (err_openwin) {
-    exit(err_openwin);
+    return err_openwin;
   }
 
   // xmin: 実部の最小値, ymin: 虚部の最小値
@@ -146,5 +145,5 @@ extern "C" void main(int argc, char** argv) {
   WaitEvent();
   SyscallCloseWindow(layer_id);
 
-  exit(0);
+  return 0;
 }

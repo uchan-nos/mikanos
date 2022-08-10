@@ -52,19 +52,19 @@ int ReadBytes(uint8_t *v, int n, FILE* in) {
   return n;
 }
 
-extern "C" int main(int argc, char** argv) {
+int main(int argc, char** argv) {
   FILE* in_file;
 
   int non_opt_index = ParseArgs(argc, argv);
   if (non_opt_index < 0) {
-    exit(-non_opt_index);
+    return -non_opt_index;
   } else if (non_opt_index == 0) {
     in_file = stdin;
   } else {
     in_file = fopen(argv[non_opt_index], "rb");
     if (in_file == NULL) {
       perror("failed to open in-file");
-      exit(1);
+      return 1;
     }
   }
 
@@ -102,5 +102,5 @@ extern "C" int main(int argc, char** argv) {
     }
   }
 
-  exit(0);
+  return 0;
 }

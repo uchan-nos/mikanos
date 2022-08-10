@@ -1,5 +1,4 @@
 #include <cmath>
-#include <cstdlib>
 #include <random>
 #include "../syscall.h"
 
@@ -21,11 +20,11 @@ constexpr uint32_t Color(int deg) {
   }
 };
 
-extern "C" void main(int argc, char** argv) {
+int main(int argc, char** argv) {
   auto [layer_id, err_openwin]
     = SyscallOpenWindow(kRadius * 2 + 10 + 8, kRadius + 28, 10, 10, "lines");
   if (err_openwin) {
-    exit(err_openwin);
+    return err_openwin;
   }
 
   const int x0 = 4, y0 = 24, x1 = 4 + kRadius + 10, y1 = 24 + kRadius;
@@ -35,5 +34,5 @@ extern "C" void main(int argc, char** argv) {
     SyscallWinDrawLine(layer_id, x0, y0, x0 + x, y0 + y, Color(deg));
     SyscallWinDrawLine(layer_id, x1, y1, x1 + x, y1 - y, Color(deg + 90));
   }
-  exit(0);
+  return 0;
 }

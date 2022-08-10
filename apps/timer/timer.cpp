@@ -3,10 +3,10 @@
 #include <cstring>
 #include "../syscall.h"
 
-extern "C" void main(int argc, char** argv) {
+int main(int argc, char** argv) {
   if (argc <= 1) {
     printf("Usage: timer <msec>\n");
-    exit(1);
+    return 1;
   }
 
   const unsigned long duration_ms = atoi(argv[1]);
@@ -23,5 +23,5 @@ extern "C" void main(int argc, char** argv) {
       printf("unknown event: type = %d\n", events[0].type);
     }
   }
-  exit(0);
+  return 0;
 }

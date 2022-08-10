@@ -24,7 +24,7 @@ AppEvent WaitKey() {
   }
 }
 
-extern "C" void main(int argc, char** argv) {
+int main(int argc, char** argv) {
   int page_size = 10;
   int arg_file = 1;
   if (argc >= 2 && argv[1][0] == '-' && isdigit(argv[1][1])) {
@@ -37,7 +37,7 @@ extern "C" void main(int argc, char** argv) {
     fp = fopen(argv[arg_file], "r");
     if (fp == nullptr) {
       fprintf(stderr, "failed to open '%s'\n", argv[arg_file]);
-      exit(1);
+      return 1;
     }
   }
 
@@ -54,5 +54,5 @@ extern "C" void main(int argc, char** argv) {
     }
     fputs(lines[i].c_str(), stdout);
   }
-  exit(0);
+  return 0;
 }

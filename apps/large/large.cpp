@@ -3,6 +3,6 @@
 
 char table[3 * 1024 * 1024];
 
-extern "C" void main(int argc, char** argv) {
-  exit(atoi(argv[1]));
+int main(int argc, char** argv) {
+  return atoi(argv[1]);
 }

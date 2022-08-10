@@ -1,9 +1,8 @@
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
 #include "../syscall.h"
 
-extern "C" void main(int argc, char** argv) {
+int main(int argc, char** argv) {
   const char* cmd = "hlt";
   if (argc >= 2) {
     cmd = argv[1];
@@ -22,5 +21,5 @@ extern "C" void main(int argc, char** argv) {
     printf("100/%d = %d\n", z, 100/z);
   }
 
-  exit(0);
+  return 0;
 }

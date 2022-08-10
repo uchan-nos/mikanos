@@ -1,11 +1,10 @@
 #include <cstdio>
-#include <cstdlib>
 #include <regex>
 
-extern "C" void main(int argc, char** argv) {
+int main(int argc, char** argv) {
   if (argc < 2) {
     fprintf(stderr, "Usage: %s <pattern> [<file>]\n", argv[0]);
-    exit(1);
+    return 1;
   }
 
   std::regex pattern{argv[1]};
@@ -13,7 +12,7 @@ extern "C" void main(int argc, char** argv) {
   FILE* fp = stdin;
   if (argc >= 3 && (fp = fopen(argv[2], "r")) == nullptr) {
     fprintf(stderr, "failed to open: %s\n", argv[2]);
-    exit(1);
+    return 1;
   }
 
   char line[256];
@@ -23,5 +22,4 @@ extern "C" void main(int argc, char** argv) {
       printf("%s", line);
     }
   }
-  exit(0);
 }
