@@ -151,7 +151,7 @@ Error FreePML4(Task& current_task) {
   return FreePageMap(reinterpret_cast<PageMapEntry*>(cr3));
 }
 
-void ListAllEntries(FileDescriptor& fd, uint32_t dir_cluster) {
+void ListAllEntries(FileDescriptor& fd, uint32_t dir_cluster, bool verbose) {
   const auto kEntriesPerCluster =
     fat::bytes_per_cluster / sizeof(fat::DirectoryEntry);
 
@@ -167,6 +167,16 @@ void ListAllEntries(FileDescriptor& fd, uint32_t dir_cluster) {
         continue;
       }
 
+      if (verbose) {
+        if ((uint8_t)dir[i].attr & (uint8_t)fat::Attribute::kDirectory) {
+          PrintToFD(fd, "%10s", "<DIR>");
+        } else {
+          PrintToFD(fd, "%10lu", (unsigned long)dir[i].file_size);
+        }
+        char date[20];
+        fat::FormatWriteTime(dir[i], date);
+        PrintToFD(fd, " %s ", date);
+      }
       char name[13];
       fat::FormatName(dir[i], name);
       PrintToFD(fd, "%s\n", name);
@@ -460,15 +470,23 @@ void Terminal::ExecuteLine() {
           dev.class_code.base, dev.class_code.sub, dev.class_code.interface);
     }
   } else if (strcmp(command, "ls") == 0) {
-    if (!first_arg || first_arg[0] == '\0') {
-      ListAllEntries(*files_[1], fat::boot_volume_image->root_cluster);
+    char* file_name = first_arg;
+    bool verbose = false;
+    if (file_name && file_name[0] == '-') {
+      for (++file_name; *file_name && !isspace(*file_name); ++file_name) {
+        if (*file_name == 'l') verbose = true;
+      }
+      while (isspace(*file_name)) file_name++;
+    }
+    if (!file_name || file_name[0] == '\0') {
+      ListAllEntries(*files_[1], fat::boot_volume_image->root_cluster, verbose);
     } else {
-      auto [ dir, post_slash ] = fat::FindFile(first_arg);
+      auto [ dir, post_slash ] = fat::FindFile(file_name);
       if (dir == nullptr) {
-        PrintToFD(*files_[2], "No such file or directory: %s\n", first_arg);
+        PrintToFD(*files_[2], "No such file or directory: %s\n", file_name);
         exit_code = 1;
       } else if (dir->attr == fat::Attribute::kDirectory) {
-        ListAllEntries(*files_[1], dir->FirstCluster());
+        ListAllEntries(*files_[1], dir->FirstCluster(), verbose);
       } else {
         char name[13];
         fat::FormatName(*dir, name);
@@ -476,6 +494,16 @@ void Terminal::ExecuteLine() {
           PrintToFD(*files_[2], "%s is not a directory\n", name);
           exit_code = 1;
         } else {
+          if (verbose) {
+            if ((uint8_t)dir->attr & (uint8_t)fat::Attribute::kDirectory) {
+              PrintToFD(*files_[1], "%10s", "<DIR>");
+            } else {
+              PrintToFD(*files_[1], "%10lu", (unsigned long)dir->file_size);
+            }
+            char date[20];
+            fat::FormatWriteTime(*dir, date);
+            PrintToFD(*files_[1], " %s ", date);
+          }
           PrintToFD(*files_[1], "%s\n", name);
         }
       }

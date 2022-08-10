@@ -112,6 +112,14 @@ void ReadName(const DirectoryEntry& entry, char* base, char* ext);
  */
 void FormatName(const DirectoryEntry& entry, char* dest);
 
+/** @brief ディレクトリエントリの更新日時を dest にコピーする。
+ * 日時は "YYYY-MM-DD hh:mm:ss" 形式で表現する。
+ *
+ * @param entry  更新日時を得る対象のディレクトリエントリ
+ * @param dest  更新日時を表現する文字列を格納するに十分な大きさの配列。
+ */
+void FormatWriteTime(const DirectoryEntry& entry, char* dest);
+
 static const unsigned long kEndOfClusterchain = 0x0ffffffflu;
 
 /** @brief 指定されたクラスタの次のクラスタ番号を返す。

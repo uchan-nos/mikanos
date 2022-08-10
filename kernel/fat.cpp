@@ -74,6 +74,34 @@ void FormatName(const DirectoryEntry& entry, char* dest) {
   }
 }
 
+void FormatWriteTime(const DirectoryEntry& entry, char* dest) {
+  int year = ((entry.write_date >> 9) & 0x3f) + 1980;
+  int month = (entry.write_date >> 5) & 0xf;
+  int date = entry.write_date & 0x1f;
+  int hour = (entry.write_time >> 11) & 0x1f;
+  int minute = (entry.write_time >> 5) & 0x3f;
+  int second = (entry.write_time & 0x1f) * 2;
+
+  auto int_to_str = [](char* out, int value, int num_digits) {
+    for (int i = 0; i < num_digits; i++) {
+      out[num_digits - 1 - i] = '0' + (value % 10);
+      value /= 10;
+    }
+  };
+  int_to_str(&dest[0], year, 4);
+  dest[4] = '-';
+  int_to_str(&dest[5], month, 2);
+  dest[7] = '-';
+  int_to_str(&dest[8], date, 2);
+  dest[10] = ' ';
+  int_to_str(&dest[11], hour, 2);
+  dest[13] = ':';
+  int_to_str(&dest[14], minute, 2);
+  dest[16] = ':';
+  int_to_str(&dest[17], second, 2);
+  dest[19] = '\0';
+}
+
 unsigned long NextCluster(unsigned long cluster) {
   uint32_t next = GetFAT()[cluster];
   if (IsEndOfClusterchain(next)) {
