@@ -502,10 +502,11 @@ void Terminal::ExecuteLine() {
       char u8buf[1024];
       DrawCursor(false);
       while (true) {
-        if (ReadDelim(*fd, '\n', u8buf, sizeof(u8buf)) == 0) {
+        size_t read_size = ReadDelim(*fd, '\n', u8buf, sizeof(u8buf));
+        if (read_size == 0) {
           break;
         }
-        PrintToFD(*files_[1], "%s", u8buf);
+        files_[1]->Write(u8buf, read_size);
       }
       DrawCursor(true);
     }
@@ -580,7 +581,8 @@ void Terminal::ExecuteLine() {
       while (recv_len == 0) {
         recv_len = usb::cdc::driver->ReceiveSerial(buf.data(), send_len);
       }
-      PrintToFD(*files_[1], "%.*s\n", recv_len, buf.data());
+      files_[1]->Write(buf.data(), recv_len);
+      PrintToFD(*files_[1], "\n");
     }();
   } else if (strcmp(command, "setbaud") == 0) {
     [&]{
