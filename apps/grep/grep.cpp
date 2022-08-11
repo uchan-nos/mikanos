@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <regex>
+#include <unistd.h>
 
 int main(int argc, char** argv) {
   if (argc < 2) {
@@ -16,10 +17,18 @@ int main(int argc, char** argv) {
   }
 
   char line[256];
+  const bool is_term = isatty(STDOUT_FILENO);
   while (fgets(line, sizeof(line), fp)) {
     std::cmatch m;
     if (std::regex_search(line, m, pattern)) {
-      printf("%s", line);
+      if (is_term) {
+        printf("%.*s\033[91m%.*s\033[0m%s",
+               static_cast<int>(m.prefix().length()), m.prefix().first,
+               static_cast<int>(m[0].length()), m[0].first,
+               m.suffix().first);
+      } else {
+        printf("%s", line);
+      }
     }
   }
 }

@@ -192,7 +192,11 @@ void ListAllEntries(FileDescriptor& fd, uint32_t dir_cluster, bool verbose) {
         if (!multi_per_line) {
           PrintToFD(fd, "%s\n", name);
         } else {
-          PrintToFD(fd, "%-14s", name);
+          if (dir[i].attr == fat::Attribute::kDirectory) {
+            PrintToFD(fd, "\033[94m%-14s\033[0m", name);
+          } else {
+            PrintToFD(fd, "%-14s", name);
+          }
           ++count;
           if ((count % 4) == 0) {
             PrintToFD(fd, "\n");
@@ -516,7 +520,11 @@ void Terminal::ExecuteLine() {
           if (verbose) {
             PrintFileAttr(*files_[1], *dir);
           } else {
-            PrintToFD(*files_[1], "%s\n", name);
+            if (files_[1]->IsTerminal() && dir->attr == fat::Attribute::kDirectory) {
+              PrintToFD(*files_[1], "\033[94m%s\033[0m\n", name);
+            } else {
+              PrintToFD(*files_[1], "%s\n", name);
+            }
           }
         }
       }
@@ -791,7 +799,68 @@ WithError<int> Terminal::ExecuteFile(fat::DirectoryEntry& file_entry,
   return { ret, FreePML4(task) };
 }
 
+const std::array<PixelColor, 8> kAnsiColorCodes = {{
+  {  0,   0,   0}, // black
+  {170,   0,   0}, // red
+  {  0, 170,   0}, // green
+  {170,  85,   0}, // yellow
+  {  0,   0, 170}, // blue
+  {170,   0, 170}, // magenta
+  {  0, 170, 170}, // cyan
+  {170, 170, 170}, // white
+}};
+const std::array<PixelColor, 8> kAnsiColorCodesBright = {{
+  { 85,  85,  85}, // black
+  {255,  85,  85}, // red
+  { 85, 255,  85}, // green
+  {255, 255,  85}, // yellow
+  { 85,  85, 255}, // blue
+  {255,  85, 255}, // magenta
+  { 85, 255, 255}, // cyan
+  {255, 255, 255}, // white
+}};
+
 void Terminal::Print(char32_t c) {
+  switch (esc_seq_state_) {
+  case EscSeqState::kInit:
+    if (c == U'\033') { // ANSI エスケープシーケンス
+      esc_seq_state_ = EscSeqState::kEsc;
+      return;
+    }
+    break;
+  case EscSeqState::kEsc:
+    if (c == U'[') {
+      esc_seq_state_ = EscSeqState::kCSI;
+      return;
+    }
+    break;
+  case EscSeqState::kCSI:
+    if (U'0' <= c && c <= U'9') {
+      esc_seq_state_ = EscSeqState::kNum;
+      esc_seq_n_ = c - U'0';
+      return;
+    }
+    break;
+  case EscSeqState::kNum:
+    if (c == U'm') {
+      esc_seq_state_ = EscSeqState::kInit;
+      if (esc_seq_n_ == 0) {
+        text_color_ = PixelColor{255, 255, 255};
+      } else if (30 <= esc_seq_n_ && esc_seq_n_ <= 37) {
+        text_color_ = kAnsiColorCodes[esc_seq_n_ - 30];
+      } else if (90 <= esc_seq_n_ && esc_seq_n_ <= 97) {
+        text_color_ = kAnsiColorCodesBright[esc_seq_n_ - 90];
+      }
+      return;
+    } else if (U'0' <= c && c <= U'9') {
+      esc_seq_n_ = esc_seq_n_ * 10 + (c - U'0');
+      return;
+    }
+    break;
+  }
+
+  esc_seq_state_ = EscSeqState::kInit;
+
   if (!show_window_) {
     return;
   }
@@ -811,13 +880,13 @@ void Terminal::Print(char32_t c) {
     if (cursor_.x == kColumns) {
       newline();
     }
-    WriteUnicode(*window_->Writer(), CalcCursorPos(), c, {255, 255, 255});
+    WriteUnicode(*window_->Writer(), CalcCursorPos(), c, text_color_);
     ++cursor_.x;
   } else {
     if (cursor_.x >= kColumns - 1) {
       newline();
     }
-    WriteUnicode(*window_->Writer(), CalcCursorPos(), c, {255, 255, 255});
+    WriteUnicode(*window_->Writer(), CalcCursorPos(), c, text_color_);
     cursor_.x += 2;
   }
 }

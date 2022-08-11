@@ -43,6 +43,7 @@ struct SyscallResult SyscallOpenFile(const char* path, int flags);
 struct SyscallResult SyscallReadFile(int fd, void* buf, size_t count);
 struct SyscallResult SyscallDemandPages(size_t num_pages, int flags);
 struct SyscallResult SyscallMapFile(int fd, size_t* file_size, int flags);
+struct SyscallResult SyscallIsTerminal(int fd);
 
 #ifdef __cplusplus
 } // extern "C"

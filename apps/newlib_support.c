@@ -22,7 +22,11 @@ pid_t getpid(void) {
 }
 
 int isatty(int fd) {
-  errno = EBADF;
+  struct SyscallResult res = SyscallIsTerminal(fd);
+  if (res.error == 0) {
+    return res.value;
+  }
+  errno = res.error;
   return -1;
 }
 

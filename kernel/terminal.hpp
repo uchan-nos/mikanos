@@ -15,6 +15,7 @@
 #include "task.hpp"
 #include "layer.hpp"
 #include "fat.hpp"
+#include "graphics.hpp"
 
 struct AppLoadInfo {
   uint64_t vaddr_end, entry;
@@ -28,6 +29,13 @@ struct TerminalDescriptor {
   bool exit_after_command;
   bool show_window;
   std::array<std::shared_ptr<FileDescriptor>, 3> files;
+};
+
+enum class EscSeqState {
+  kInit, // エスケープシーケンスに出会ってない状態
+  kEsc,  // ESC を受信した直後の状態
+  kCSI,  // \033[
+  kNum,  // 数字を 1 文字以上受信した状態
 };
 
 class Terminal {
@@ -72,6 +80,10 @@ class Terminal {
   bool show_window_;
   std::array<std::shared_ptr<FileDescriptor>, 3> files_;
   int last_exit_code_{0};
+
+  EscSeqState esc_seq_state_{EscSeqState::kInit};
+  int esc_seq_n_{0};
+  PixelColor text_color_{255, 255, 255};
 };
 
 void TaskTerminal(uint64_t task_id, int64_t data);
