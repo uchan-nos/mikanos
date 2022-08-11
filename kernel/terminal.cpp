@@ -353,7 +353,7 @@ Rectangle<int> Terminal::InputKey(
     draw_area.pos = ToplevelWindow::kTopLeftMargin;
     draw_area.size = window_->InnerSize();
   } else if (ascii == '\b') {
-    if (cursor_.x > 0) {
+    if (cursor_.x > 1) {
       --cursor_.x;
       if (show_window_) {
         FillRectangle(*window_->Writer(), CalcCursorPos(), {8, 16}, {0, 0, 0});
