@@ -1,3 +1,5 @@
+// Copyright (c) 2022 MikeCAT
+
 #include <cerrno>
 #include <cinttypes>
 #include <cstdio>
@@ -63,13 +65,13 @@ constexpr int DIALOG_DISCARD_BX = CHAR_WIDTH * 11;
 constexpr int DIALOG_DISCARD_BY = CHAR_HEIGHT * 2;
 constexpr int DIALOG_DISCARD_BW = CHAR_WIDTH * 9;
 constexpr int DIALOG_DISCARD_BH = CHAR_HEIGHT * 2;
-static const char DIALOG_CANDEL[] = "Cancel";
-constexpr int DIALOG_CANDEL_X = CHAR_WIDTH * 22 + CHAR_WIDTH / 2;
-constexpr int DIALOG_CANDEL_Y = CHAR_HEIGHT * 2 + CHAR_HEIGHT / 2;
-constexpr int DIALOG_CANDEL_BX = CHAR_WIDTH * 21;
-constexpr int DIALOG_CANDEL_BY = CHAR_HEIGHT * 2;
-constexpr int DIALOG_CANDEL_BW = CHAR_WIDTH * 9;
-constexpr int DIALOG_CANDEL_BH = CHAR_HEIGHT * 2;
+static const char DIALOG_CANCEL[] = "Cancel";
+constexpr int DIALOG_CANCEL_X = CHAR_WIDTH * 22 + CHAR_WIDTH / 2;
+constexpr int DIALOG_CANCEL_Y = CHAR_HEIGHT * 2 + CHAR_HEIGHT / 2;
+constexpr int DIALOG_CANCEL_BX = CHAR_WIDTH * 21;
+constexpr int DIALOG_CANCEL_BY = CHAR_HEIGHT * 2;
+constexpr int DIALOG_CANCEL_BW = CHAR_WIDTH * 9;
+constexpr int DIALOG_CANCEL_BH = CHAR_HEIGHT * 2;
 
 constexpr uint32_t DIALOG_TEXT_COLOR = 0x000000;
 constexpr uint32_t DIALOG_BORDER_COLOR = 0x000000;
@@ -87,7 +89,9 @@ std::vector<std::vector<uint32_t> > LoadFile(const char* file_name) {
   std::vector<std::vector<uint32_t> > res;
   FILE* fp = fopen(file_name, "rb");
   if (fp == NULL) {
-    printf("failed to open %s: %s\n", file_name, strerror(errno));
+    if (errno != ENOENT) {
+      printf("failed to open %s: %s\n", file_name, strerror(errno));
+    }
     res.push_back(std::vector<uint32_t>());
     return res;
   }
@@ -97,48 +101,48 @@ std::vector<std::vector<uint32_t> > LoadFile(const char* file_name) {
     if (c == '\n') {
       res.push_back(current_line);
       current_line.clear();
-    } else {
-      if (c < 0x80) {
-        current_line.push_back(c);
-      } else if ((c & 0xe0) == 0xc0) {
-        int32_t c2 = getc(fp);
-        if (c2 != EOF && (c2 & 0xc0) == 0x80) {
-          current_line.push_back(((c & 0x1f) << 6) | (c2 & 0x3f));
-        } else {
-          current_line.push_back(INVALID_BYTE | c);
-          if (c2 != EOF) current_line.push_back(INVALID_BYTE | c2);
-        }
-      } else if ((c & 0xf0) == 0xe0) {
-        int32_t c2 = getc(fp);
-        int32_t c3 = getc(fp);
-        if (c2 != EOF && (c2 & 0xc0) == 0x80 &&
-        c3 != EOF && (c3 & 0xc0) == 0x80) {
-          current_line.push_back(
-            ((c & 0x0f) << 12) | ((c2 & 0x3f) << 6) | (c3 & 0x3f));
-        } else {
-          current_line.push_back(INVALID_BYTE | c);
-          if (c2 != EOF) current_line.push_back(INVALID_BYTE | c2);
-          if (c3 != EOF) current_line.push_back(INVALID_BYTE | c3);
-        }
-      } else if ((c & 0xf8) == 0xf0) {
-        int32_t c2 = getc(fp);
-        int32_t c3 = getc(fp);
-        int32_t c4 = getc(fp);
-        if (c2 != EOF && (c2 & 0xc0) == 0x80 &&
-        c3 != EOF && (c3 & 0xc0) == 0x80 &&
-        c4 != EOF && (c4 & 0xc0) == 0x80) {
-          current_line.push_back(
-            ((c & 0x07) << 18) | ((c2 & 0x3f) << 12) |
-            ((c3 & 0x3f) << 6) | (c4 & 0x3f));
-        } else {
-          current_line.push_back(INVALID_BYTE | c);
-          if (c2 != EOF) current_line.push_back(INVALID_BYTE | c2);
-          if (c3 != EOF) current_line.push_back(INVALID_BYTE | c3);
-          if (c4 != EOF) current_line.push_back(INVALID_BYTE | c4);
-        }
+      continue;
+    }
+    if (c < 0x80) {
+      current_line.push_back(c);
+    } else if ((c & 0xe0) == 0xc0) {
+      int32_t c2 = getc(fp);
+      if (c2 != EOF && (c2 & 0xc0) == 0x80) {
+        current_line.push_back(((c & 0x1f) << 6) | (c2 & 0x3f));
       } else {
         current_line.push_back(INVALID_BYTE | c);
+        if (c2 != EOF) current_line.push_back(INVALID_BYTE | c2);
       }
+    } else if ((c & 0xf0) == 0xe0) {
+      int32_t c2 = getc(fp);
+      int32_t c3 = getc(fp);
+      if (c2 != EOF && (c2 & 0xc0) == 0x80 &&
+          c3 != EOF && (c3 & 0xc0) == 0x80) {
+        auto dec = ((c & 0x0f) << 12) | ((c2 & 0x3f) << 6) | (c3 & 0x3f);
+        current_line.push_back(dec);
+      } else {
+        current_line.push_back(INVALID_BYTE | c);
+        if (c2 != EOF) current_line.push_back(INVALID_BYTE | c2);
+        if (c3 != EOF) current_line.push_back(INVALID_BYTE | c3);
+      }
+    } else if ((c & 0xf8) == 0xf0) {
+      int32_t c2 = getc(fp);
+      int32_t c3 = getc(fp);
+      int32_t c4 = getc(fp);
+      if (c2 != EOF && (c2 & 0xc0) == 0x80 &&
+          c3 != EOF && (c3 & 0xc0) == 0x80 &&
+          c4 != EOF && (c4 & 0xc0) == 0x80) {
+        auto dec = ((c & 0x07) << 18) | ((c2 & 0x3f) << 12) |
+                   ((c3 & 0x3f) << 6) | (c4 & 0x3f);
+        current_line.push_back(dec);
+      } else {
+        current_line.push_back(INVALID_BYTE | c);
+        if (c2 != EOF) current_line.push_back(INVALID_BYTE | c2);
+        if (c3 != EOF) current_line.push_back(INVALID_BYTE | c3);
+        if (c4 != EOF) current_line.push_back(INVALID_BYTE | c4);
+      }
+    } else {
+      current_line.push_back(INVALID_BYTE | c);
     }
   }
   res.push_back(current_line);
@@ -146,8 +150,33 @@ std::vector<std::vector<uint32_t> > LoadFile(const char* file_name) {
   return res;
 }
 
+// 1文字をUTF-8にエンコードし、結果のバイト数を返す。
+// UTF-8にエンコードできない値の場合は-1を返す。
+int EncodeCharToUTF8(char* buf, uint32_t c) {
+  if (c < 0x80) {
+    buf[0] = (char)c;
+    return 1;
+  } else if (c < 0x800) {
+    buf[0] = (char)(0xc0 | ((c >> 6) & 0x1f));
+    buf[1] = (char)(0x80 | (c & 0x3f));
+    return 2;
+  } else if (c < 0x10000) {
+    buf[0] = (char)(0xe0 | ((c >> 12) & 0x0f));
+    buf[1] = (char)(0x80 | ((c >> 6) & 0x3f));
+    buf[2] = (char)(0x80 | (c & 0x3f));
+    return 3;
+  } else if (c < 0x110000) {
+    buf[0] = (char)(0xf0 | ((c >> 18) & 0x07));
+    buf[1] = (char)(0x80 | ((c >> 12) & 0x3f));
+    buf[2] = (char)(0x80 | ((c >> 6) & 0x3f));
+    buf[3] = (char)(0x80 | (c & 0x3f));
+    return 4;
+  }
+  return -1;
+}
+
 bool SaveFile(const char* file_name,
-const std::vector<std::vector<uint32_t> >& data) {
+              const std::vector<std::vector<uint32_t> >& data) {
   if (file_name == NULL) {
     printf("cannot save because no file is opened\n");
     return false;
@@ -166,27 +195,9 @@ const std::vector<std::vector<uint32_t> >& data) {
       }
     }
     for (auto c : data[i]) {
-      uint8_t buf[4];
-      size_t write_size;
-      if ((c & INVALID_BYTE) || c < 0x80) {
-        buf[0] = c;
-        write_size = 1;
-      } else if (c < 0x800) {
-        buf[0] = 0xc0 | ((c >> 6) & 0x1f);
-        buf[1] = 0x80 | (c & 0x3f);
-        write_size = 2;
-      } else if (c < 0x10000) {
-        buf[0] = 0xe0 | ((c >> 12) & 0x0f);
-        buf[1] = 0x80 | ((c >> 6) & 0x3f);
-        buf[2] = 0x80 | (c & 0x3f);
-        write_size = 3;
-      } else if (c < 0x110000) {
-        buf[0] = 0xf0 | ((c >> 18) & 0x07);
-        buf[1] = 0x80 | ((c >> 12) & 0x3f);
-        buf[2] = 0x80 | ((c >> 6) & 0x3f);
-        buf[3] = 0x80 | (c & 0x3f);
-        write_size = 4;
-      } else {
+      char buf[8];
+      int write_size = EncodeCharToUTF8(buf, c);
+      if (write_size < 0) {
         printf("invalid character 0x%" PRIx32 "\n", c);
         fclose(fp);
         return false;
@@ -220,55 +231,39 @@ void DrawRect(uint64_t layer_id, int x, int y, int w, int h, uint32_t c) {
 // 1文字を描画する。
 // 横幅が枠何個分だったかを返す。
 int DrawOneChar(uint64_t layer_id,
-int x, int y, uint32_t c, bool dry_run = false) {
+                int x, int y, uint32_t c, bool dry_run = false) {
   layer_id |= LAYER_NO_REDRAW;
   char buf[8] = "";
-  int ret = 0;
   if ((c & INVALID_BYTE) || (c < 0x20 && c != '\t')) {
     // 不正なバイトおよびタブ以外の制御文字 : バイトの値を枠で囲んで表現する
     if (!dry_run) {
       DrawRect(layer_id, x, y,
-        CHAR_WIDTH * 2, CHAR_HEIGHT, SPECIAL_TEXT_COLOR);
+               CHAR_WIDTH * 2, CHAR_HEIGHT, SPECIAL_TEXT_COLOR);
       snprintf(buf, sizeof(buf), "%02x", (unsigned int)(c & 0xff));
       SyscallWinWriteString(layer_id, x, y, SPECIAL_TEXT_COLOR, buf);
     }
     return 2;
-  } else if (c == '\t') {
+  }
+  if (c == '\t') {
+    // タブ
     if (!dry_run) {
       SyscallWinWriteString(layer_id, x, y, SPECIAL_TEXT_COLOR, ">");
     }
     return 1;
-  } else if (c < 0x80) {
-    buf[0] = (char)c;
-    ret = 1;
-  } else if (c < 0x800) {
-    buf[0] = (char)(((c >> 6) & 0x1f) | 0xc0);
-    buf[1] = (char)((c & 0x3f) | 0x80);
-    // TODO: 描画幅をより正確に判定する
-    ret = 2;
-  } else if (c < 0x10000) {
-    buf[0] = (char)(((c >> 12) & 0x0f) | 0xe0);
-    buf[1] = (char)(((c >> 6) & 0x3f) | 0x80);
-    buf[2] = (char)((c & 0x3f) | 0x80);
-    // TODO: 描画幅をより正確に判定する
-    ret = 2;
-  } else if (c < 0x110000) {
-    buf[0] = (char)(((c >> 18) & 0x07) | 0xf0);
-    buf[1] = (char)(((c >> 12) & 0x3f) | 0x80);
-    buf[2] = (char)(((c >> 6) & 0x3f) | 0x80);
-    buf[3] = (char)((c & 0x3f) | 0x80);
-    // TODO: 描画幅をより正確に判定する
-    ret = 2;
-  } else {
+  }
+  if (EncodeCharToUTF8(buf, c) < 0) {
+    // UTF-8で表せない文字
     if (!dry_run) {
       SyscallWinWriteString(layer_id, x, y, SPECIAL_TEXT_COLOR, "?");
     }
     return 1;
   }
+  // UTF-8で表せる文字
   if (!dry_run) {
     SyscallWinWriteString(layer_id, x, y, TEXT_COLOR, buf);
   }
-  return ret;
+  // TODO: 描画幅をより正確に判定する
+  return c < 0x80 ? 1 : 2;
 }
 
 // [指定した文字の最初の位置, 指定した文字の幅] を返す
@@ -282,20 +277,21 @@ std::tuple<int, int> GetCharRange(std::vector<int>& char_idx, int pos) {
   while (start > 0 && char_idx[start] == char_idx[start - 1]) start--;
   int end = start;
   while ((unsigned int)(end + 1) < char_idx.size() &&
-  char_idx[end] == char_idx[end + 1]) end++;
+         char_idx[end] == char_idx[end + 1]) end++;
   return std::tuple<int, int>(start, end - start + 1);
 }
 
 // 一行を描画する
 // 各枠がどの文字に相当するかの情報をchar_idxに記録する
-void DrawLine(std::vector<int>& char_idx, uint64_t layer_id, int x, int y,
-int width, int tab_size, const std::vector<uint32_t>& chars, bool is_last_line,
-bool dry_run = false) {
+void DrawLine(std::vector<int>& char_idx, uint64_t layer_id,
+              int x, int y, int width, int tab_size,
+              const std::vector<uint32_t>& chars, bool is_last_line,
+              bool dry_run = false) {
   layer_id |= LAYER_NO_REDRAW;
   char_idx.resize(width);
   if (!dry_run) {
     SyscallWinFillRectangle(layer_id, x, y,
-      CHAR_WIDTH * width, CHAR_HEIGHT, BACKGROUND_COLOR);
+                            CHAR_WIDTH * width, CHAR_HEIGHT, BACKGROUND_COLOR);
   }
   int idx = 0;
   for (size_t i = 0; idx < width && i < chars.size(); i++) {
@@ -322,7 +318,8 @@ bool dry_run = false) {
       eof_text[width - idx] = '\0';
     }
     SyscallWinWriteString(layer_id | LAYER_NO_REDRAW,
-      x + CHAR_WIDTH * idx, y, SPECIAL_TEXT_COLOR, eof_text);
+                          x + CHAR_WIDTH * idx, y,
+                          SPECIAL_TEXT_COLOR, eof_text);
   }
   // 行のうち文字が無い部分
   for (; idx < width; idx++) {
@@ -334,46 +331,52 @@ bool dry_run = false) {
 void DrawDialog(uint64_t layer_id, int x, int y) {
   layer_id |= LAYER_NO_REDRAW;
   // ダイアログの背景と枠線
-  SyscallWinFillRectangle(layer_id, x, y, DIALOG_WIDTH, DIALOG_HEIGHT,
-    DIALOG_BACKGROUND_COLOR);
+  SyscallWinFillRectangle(layer_id, x, y,
+                          DIALOG_WIDTH, DIALOG_HEIGHT, DIALOG_BACKGROUND_COLOR);
   DrawRect(layer_id, x, y, DIALOG_WIDTH, DIALOG_HEIGHT, DIALOG_BORDER_COLOR);
+
   // ダイアログのボタンの背景と枠線
   SyscallWinFillRectangle(layer_id, x + DIALOG_SAVE_BX, y + DIALOG_SAVE_BY,
-    DIALOG_SAVE_BW, DIALOG_SAVE_BH, DIALOG_BUTTON_COLOR);
+                          DIALOG_SAVE_BW, DIALOG_SAVE_BH, DIALOG_BUTTON_COLOR);
   DrawRect(layer_id, x + DIALOG_SAVE_BX, y + DIALOG_SAVE_BY,
-    DIALOG_SAVE_BW, DIALOG_SAVE_BH, DIALOG_BORDER_COLOR);
+           DIALOG_SAVE_BW, DIALOG_SAVE_BH, DIALOG_BORDER_COLOR);
   SyscallWinFillRectangle(layer_id,
-    x + DIALOG_DISCARD_BX, y + DIALOG_DISCARD_BY,
-    DIALOG_DISCARD_BW, DIALOG_DISCARD_BH, DIALOG_BUTTON_COLOR);
+                          x + DIALOG_DISCARD_BX, y + DIALOG_DISCARD_BY,
+                          DIALOG_DISCARD_BW, DIALOG_DISCARD_BH,
+                          DIALOG_BUTTON_COLOR);
   DrawRect(layer_id, x + DIALOG_DISCARD_BX, y + DIALOG_DISCARD_BY,
-    DIALOG_DISCARD_BW, DIALOG_DISCARD_BH, DIALOG_BORDER_COLOR);
-  SyscallWinFillRectangle(layer_id, x + DIALOG_CANDEL_BX, y + DIALOG_CANDEL_BY,
-    DIALOG_CANDEL_BW, DIALOG_CANDEL_BH, DIALOG_BUTTON_COLOR);
-  DrawRect(layer_id, x + DIALOG_CANDEL_BX, y + DIALOG_CANDEL_BY,
-    DIALOG_CANDEL_BW, DIALOG_CANDEL_BH, DIALOG_BORDER_COLOR);
+           DIALOG_DISCARD_BW, DIALOG_DISCARD_BH, DIALOG_BORDER_COLOR);
+  SyscallWinFillRectangle(layer_id, x + DIALOG_CANCEL_BX, y + DIALOG_CANCEL_BY,
+                          DIALOG_CANCEL_BW, DIALOG_CANCEL_BH,
+                          DIALOG_BUTTON_COLOR);
+  DrawRect(layer_id, x + DIALOG_CANCEL_BX, y + DIALOG_CANCEL_BY,
+           DIALOG_CANCEL_BW, DIALOG_CANCEL_BH, DIALOG_BORDER_COLOR);
+
   // ダイアログのテキスト
   SyscallWinWriteString(layer_id, x + DIALOG_MESSAGE_X, y + DIALOG_MESSAGE_Y,
-    DIALOG_TEXT_COLOR, DIALOG_MESSAGE);
+                        DIALOG_TEXT_COLOR, DIALOG_MESSAGE);
+
   // ダイアログのボタンのテキスト
   SyscallWinWriteString(layer_id, x + DIALOG_SAVE_X, y + DIALOG_SAVE_Y,
-    DIALOG_TEXT_COLOR, DIALOG_SAVE);
+                        DIALOG_TEXT_COLOR, DIALOG_SAVE);
   SyscallWinWriteString(layer_id, x + DIALOG_DISCARD_X, y + DIALOG_DISCARD_Y,
-    DIALOG_TEXT_COLOR, DIALOG_DISCARD);
-  SyscallWinWriteString(layer_id, x + DIALOG_CANDEL_X, y + DIALOG_CANDEL_Y,
-    DIALOG_TEXT_COLOR, DIALOG_CANDEL);
+                        DIALOG_TEXT_COLOR, DIALOG_DISCARD);
+  SyscallWinWriteString(layer_id, x + DIALOG_CANCEL_X, y + DIALOG_CANCEL_Y,
+                        DIALOG_TEXT_COLOR, DIALOG_CANCEL);
+
   // ボタンのテキストの各1文字目に下線をつける (Alt+その文字で操作できる印)
   SyscallWinDrawLine(layer_id,
-    x + DIALOG_SAVE_X, y + DIALOG_SAVE_Y + CHAR_HEIGHT + 1,
-    x + DIALOG_SAVE_X + CHAR_WIDTH - 1,
-    y + DIALOG_SAVE_Y + CHAR_HEIGHT + 1, DIALOG_TEXT_COLOR);
+                     x + DIALOG_SAVE_X, y + DIALOG_SAVE_Y + CHAR_HEIGHT + 1,
+                     x + DIALOG_SAVE_X + CHAR_WIDTH - 1,
+                     y + DIALOG_SAVE_Y + CHAR_HEIGHT + 1, DIALOG_TEXT_COLOR);
   SyscallWinDrawLine(layer_id,
-    x + DIALOG_DISCARD_X, y + DIALOG_DISCARD_Y + CHAR_HEIGHT + 1,
-    x + DIALOG_DISCARD_X + CHAR_WIDTH - 1,
-    y + DIALOG_DISCARD_Y + CHAR_HEIGHT + 1, DIALOG_TEXT_COLOR);
+                     x + DIALOG_DISCARD_X, y + DIALOG_DISCARD_Y + CHAR_HEIGHT + 1,
+                     x + DIALOG_DISCARD_X + CHAR_WIDTH - 1,
+                     y + DIALOG_DISCARD_Y + CHAR_HEIGHT + 1, DIALOG_TEXT_COLOR);
   SyscallWinDrawLine(layer_id,
-    x + DIALOG_CANDEL_X, y + DIALOG_CANDEL_Y + CHAR_HEIGHT + 1,
-    x + DIALOG_CANDEL_X + CHAR_WIDTH - 1,
-    y + DIALOG_CANDEL_Y + CHAR_HEIGHT + 1, DIALOG_TEXT_COLOR);
+                     x + DIALOG_CANCEL_X, y + DIALOG_CANCEL_Y + CHAR_HEIGHT + 1,
+                     x + DIALOG_CANCEL_X + CHAR_WIDTH - 1,
+                     y + DIALOG_CANCEL_Y + CHAR_HEIGHT + 1, DIALOG_TEXT_COLOR);
 }
 
 // 保存ダイアログのボタンの判定をする
@@ -384,14 +387,20 @@ enum DialogHitCheckResult {
 DialogHitCheckResult DialogHitCheck(int dx, int dy, int mx, int my) {
   auto hit_check = [&](int bx, int by, int bw, int bh) {
     return dx + bx <= mx && mx < dx + bx + bw &&
-      dy + by <= my && my < dy + by + bh;
+           dy + by <= my && my < dy + by + bh;
   };
   if (hit_check(DIALOG_SAVE_BX, DIALOG_SAVE_BY,
-  DIALOG_SAVE_BW, DIALOG_SAVE_BH)) return DialogHitCheckResult::SAVE;
+                DIALOG_SAVE_BW, DIALOG_SAVE_BH)) {
+    return DialogHitCheckResult::SAVE;
+  }
   if (hit_check(DIALOG_DISCARD_BX, DIALOG_DISCARD_BY,
-  DIALOG_DISCARD_BW, DIALOG_DISCARD_BH)) return DialogHitCheckResult::DISCARD;
-  if (hit_check(DIALOG_CANDEL_BX, DIALOG_CANDEL_BY,
-  DIALOG_CANDEL_BW, DIALOG_CANDEL_BH)) return DialogHitCheckResult::CANCEL;
+                DIALOG_DISCARD_BW, DIALOG_DISCARD_BH)) {
+    return DialogHitCheckResult::DISCARD;
+  }
+  if (hit_check(DIALOG_CANCEL_BX, DIALOG_CANCEL_BY,
+                DIALOG_CANCEL_BW, DIALOG_CANCEL_BH)) {
+    return DialogHitCheckResult::CANCEL;
+  }
   return DialogHitCheckResult::NONE;
 }
 
@@ -411,8 +420,7 @@ extern "C" void main(int argc, char** argv) {
     }
   }
   if (is_error || width <= 0 || height <= 0 || tab_size <= 0) {
-    printf("Usage: %s [options] [file]\n",
-      argc > 0 ? argv[0] : "tedit");
+    printf("Usage: %s [options] [file]\n", argc > 0 ? argv[0] : "tedit");
     puts("options:");
     puts("  -w <width>  : set the width of the edit area");
     puts("  -h <height> : set the height of the edit area");
@@ -425,17 +433,16 @@ extern "C" void main(int argc, char** argv) {
   int win_width = W_MARGIN + X_PADDING * 2 + CHAR_WIDTH * width;
   int win_height = H_MARGIN + Y_PADDING * 2 + CHAR_HEIGHT * height;
   int dialog_x = X_OFFSET + X_PADDING +
-    (CHAR_WIDTH * width - DIALOG_WIDTH) / 2;
+                 (CHAR_WIDTH * width - DIALOG_WIDTH) / 2;
   int dialog_y = Y_OFFSET + Y_PADDING +
-    (CHAR_HEIGHT * height - DIALOG_HEIGHT) / 2;
-  auto [hwnd, err_open] = SyscallOpenWindow(
-    win_width, win_height, WX, WY, "tedit");
+                 (CHAR_HEIGHT * height - DIALOG_HEIGHT) / 2;
+  auto [hwnd, err_open] = SyscallOpenWindow(win_width, win_height, WX, WY, "tedit");
   if (err_open) {
      printf("SyscallOpenWindow failed: %s\n", strerror(err_open));
      exit(err_open);
   }
   SyscallWinFillRectangle(hwnd | LAYER_NO_REDRAW, X_OFFSET, Y_OFFSET,
-    win_width - W_MARGIN, win_height - H_MARGIN, 0xffffff);
+                          win_width - W_MARGIN, win_height - H_MARGIN, 0xffffff);
   std::vector<std::vector<uint32_t> > data;
   if (file_name != NULL) {
     data = LoadFile(file_name);
@@ -458,10 +465,10 @@ extern "C" void main(int argc, char** argv) {
   // 行を文章中の位置で指定して情報を取得する
   auto get_char_range_2 = [&](int y, int pos) {
     int screen_idx = y - scroll_y;
-    if(0 <= screen_idx && (unsigned int)screen_idx < char_idx.size()) {
+    if (0 <= screen_idx && (unsigned int)screen_idx < char_idx.size()) {
       // 画面内
       return GetCharRange(char_idx[screen_idx], pos);
-    } else  if (0 <= y && (unsigned int)y < data.size()) {
+    } else if (0 <= y && (unsigned int)y < data.size()) {
       // 画面外だが、文章中
       std::vector<int> ci;
       DrawLine(ci, 0, 0, 0, width, tab_size, data[y], false, true);
@@ -472,19 +479,19 @@ extern "C" void main(int argc, char** argv) {
     }
   };
 
-  auto draw_cursor = [&, hwnd = hwnd](bool show, bool redraw){
+  auto draw_cursor = [&, hwnd = hwnd](bool show, bool redraw) {
     int cx = X_OFFSET + X_PADDING + CHAR_WIDTH * cursor_x;
     int cy = Y_OFFSET + Y_PADDING + CHAR_HEIGHT * (cursor_y - scroll_y);
     if (show) {
       // キャレットを出す
       SyscallWinDrawLine(hwnd | LAYER_NO_REDRAW,
-        cx, cy, cx, cy + CHAR_HEIGHT - 1, CURSOR_COLOR);
+                         cx, cy, cx, cy + CHAR_HEIGHT - 1, CURSOR_COLOR);
     } else {
       // キャレットを消す
       auto [start, char_width] = get_char_range_2(cursor_y, cursor_x);
       SyscallWinFillRectangle(hwnd | LAYER_NO_REDRAW,
-        cx, cy, char_width == 0 ? 1 : CHAR_WIDTH * char_width,
-        CHAR_HEIGHT, BACKGROUND_COLOR);
+                              cx, cy, char_width == 0 ? 1 : CHAR_WIDTH * char_width,
+                              CHAR_HEIGHT, BACKGROUND_COLOR);
       if (char_width > 0) {
         // 画面からはみ出さない場合のみ、文字を描画しなおす
         auto c = data[cursor_y][char_idx[cursor_y - scroll_y][cursor_x]];
@@ -501,17 +508,17 @@ extern "C" void main(int argc, char** argv) {
   auto draw_lines = [&, hwnd = hwnd](int draw_from, int draw_to) {
     if (draw_from >= 0) {
       for (size_t i = (size_t)draw_from;
-      (draw_to < 0 || i <= (unsigned int)draw_to) &&
-      i < (unsigned int)height; i++) {
+           (draw_to < 0 || i <= (unsigned int)draw_to) && i < (unsigned int)height;
+           i++) {
         size_t idx = scroll_y + i;
         if (idx < data.size()) {
           DrawLine(char_idx[i], hwnd, X_OFFSET + X_PADDING,
-            Y_OFFSET + Y_PADDING + CHAR_HEIGHT * i, width, tab_size, data[idx],
-            idx + 1 == data.size());
+                   Y_OFFSET + Y_PADDING + CHAR_HEIGHT * i, width, tab_size,
+                   data[idx], idx + 1 == data.size());
         } else {
           SyscallWinFillRectangle(hwnd | LAYER_NO_REDRAW, X_OFFSET + X_PADDING,
-            Y_OFFSET + Y_PADDING + CHAR_HEIGHT * i,
-            CHAR_WIDTH * width, CHAR_HEIGHT, BACKGROUND_COLOR);
+                                  Y_OFFSET + Y_PADDING + CHAR_HEIGHT * i,
+                                  CHAR_WIDTH * width, CHAR_HEIGHT, BACKGROUND_COLOR);
         }
       }
     }
@@ -520,8 +527,7 @@ extern "C" void main(int argc, char** argv) {
   draw_lines(0, -1);
   SyscallWinRedraw(hwnd);
 
-  SyscallCreateTimer(TIMER_ONESHOT_REL,
-    CURSOR_TIMER_VALUE, CURSOR_TIMER_INTERVAL_MS);
+  SyscallCreateTimer(TIMER_ONESHOT_REL, CURSOR_TIMER_VALUE, CURSOR_TIMER_INTERVAL_MS);
   int ret = 0;
   bool exit_flag = false;
 
@@ -537,7 +543,7 @@ extern "C" void main(int argc, char** argv) {
     }
   };
   auto dialog_discard_pressed = [&]() {
-   exit_flag = true;
+    exit_flag = true;
   };
   auto dialog_cancel_pressed = [&, hwnd = hwnd]() {
     draw_lines(0, -1);
@@ -620,7 +626,7 @@ extern "C" void main(int argc, char** argv) {
           draw_cursor(cursor_on, true);
         }
         SyscallCreateTimer(TIMER_ONESHOT_REL,
-          CURSOR_TIMER_VALUE, CURSOR_TIMER_INTERVAL_MS);
+                           CURSOR_TIMER_VALUE, CURSOR_TIMER_INTERVAL_MS);
         break;
       case AppEvent::kKeyPush:
         if (arg.keypush.press) {
@@ -646,7 +652,7 @@ extern "C" void main(int argc, char** argv) {
           int new_cursor_x = cursor_x, new_cursor_y = cursor_y;
           int redraw_from = -1, redraw_to = -1;
           if (arg.keypush.modifier == KEY_MODIFIER_CTRL &&
-          arg.keypush.keycode == KEY_S) {
+              arg.keypush.keycode == KEY_S) {
             // Ctrl+S (上書き保存)
             if (SaveFile(file_name, data)) edited = false;
           } else if (arg.keypush.ascii > 0 && arg.keypush.keycode != KEY_ESC) {
@@ -657,7 +663,8 @@ extern "C" void main(int argc, char** argv) {
                   // 現在の行を前の行と接続し、前の行以降を再描画
                   auto [s, cw] = get_char_range_2(cursor_y - 1, width);
                   data[cursor_y - 1].insert(data[cursor_y - 1].end(),
-                    data[cursor_y].begin(), data[cursor_y].end());
+                                            data[cursor_y].begin(),
+                                            data[cursor_y].end());
                   data.erase(data.begin() + cursor_y);
                   new_cursor_y--;
                   new_cursor_x = s;
@@ -676,11 +683,11 @@ extern "C" void main(int argc, char** argv) {
             } else if (arg.keypush.ascii == '\n') {
               // Enter
               int idx = cursor_x == 0 ? 0 :
-                char_idx[cursor_y - scroll_y][cursor_x - 1] + 1;
-              std::vector<uint32_t> newLine(
-                data[cursor_y].begin() + idx, data[cursor_y].end());
-              data[cursor_y].erase(
-                data[cursor_y].begin() + idx, data[cursor_y].end());
+                        char_idx[cursor_y - scroll_y][cursor_x - 1] + 1;
+              std::vector<uint32_t> newLine(data[cursor_y].begin() + idx,
+                                            data[cursor_y].end());
+              data[cursor_y].erase(data[cursor_y].begin() + idx,
+                                   data[cursor_y].end());
               data.insert(data.begin() + (cursor_y + 1), newLine);
               new_cursor_y++;
               new_cursor_x = 0;
@@ -689,14 +696,14 @@ extern "C" void main(int argc, char** argv) {
             } else {
               // 文字の挿入
               int idx = cursor_x == 0 ? 0 :
-                char_idx[cursor_y - scroll_y][cursor_x - 1] + 1;
+                        char_idx[cursor_y - scroll_y][cursor_x - 1] + 1;
               int c = arg.keypush.ascii;
               data[cursor_y].insert(data[cursor_y].begin() + idx, c);
               // 挿入後の行について、新しいカーソルの位置を求める
               // タブ(など)の処理があり得るので、単に「一文字分」ではダメ
               std::vector<int> new_char_idx;
               DrawLine(new_char_idx, 0, 0, 0, width, tab_size,
-                data[cursor_y], false, true);
+                       data[cursor_y], false, true);
               auto [s, cw] = GetCharRange(new_char_idx, cursor_x);
               if (cursor_x + cw <= width) new_cursor_x += cw;
               redraw_from = redraw_to = cursor_y - scroll_y;
@@ -709,20 +716,20 @@ extern "C" void main(int argc, char** argv) {
                   auto& line_char_idx = char_idx[cursor_y - scroll_y];
                   auto [s, cw] = get_char_range_2(cursor_y, cursor_x);
                   // 行末である
-                  if (cw == 0 && (s == 0 ||
-                  line_char_idx[s - 1] + 1 == (int)data[cursor_y].size())) {
+                  if (cw == 0 &&
+                      (s == 0 || line_char_idx[s - 1] + 1 == (int)data[cursor_y].size())) {
                     // 次の行を現在の行にくっつけ、現在の行以降を再描画
                     if ((unsigned int)(cursor_y + 1) < data.size()) {
                       data[cursor_y].insert(data[cursor_y].end(),
-                        data[cursor_y + 1].begin(), data[cursor_y + 1].end());
+                                            data[cursor_y + 1].begin(),
+                                            data[cursor_y + 1].end());
                       data.erase(data.begin() + (cursor_y + 1));
                       redraw_from = cursor_y - scroll_y;
                       edited = true;
                     }
                   } else {
                     // 現在の行から1文字消し、現在の行のみを再描画
-                    int idx =
-                      s == 0 ? line_char_idx[s] : line_char_idx[s - 1] + 1;
+                    int idx = s == 0 ? line_char_idx[s] : line_char_idx[s - 1] + 1;
                     data[cursor_y].erase(data[cursor_y].begin() + idx);
                     redraw_from = redraw_to = cursor_y - scroll_y;
                     edited = true;
