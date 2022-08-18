@@ -404,7 +404,7 @@ DialogHitCheckResult DialogHitCheck(int dx, int dy, int mx, int my) {
   return DialogHitCheckResult::NONE;
 }
 
-extern "C" void main(int argc, char** argv) {
+int main(int argc, char** argv) {
   int width = 80, height = 20, tab_size = 8;
   char* file_name = NULL;
   bool is_error = false;
@@ -841,5 +841,5 @@ extern "C" void main(int argc, char** argv) {
     }
   }
   SyscallCloseWindow(hwnd);
-  exit(ret);
+  return ret;
 }
