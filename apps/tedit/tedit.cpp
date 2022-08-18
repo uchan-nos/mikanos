@@ -1,5 +1,12 @@
 // Copyright (c) 2022 MikeCAT
 
+/* 使い方メモ（将来的にアプリのヘルプ表示に組み込みたい）
+ *
+ * Ctrl-S で上書き保存できる
+ *
+ * 保存確認ダイアログの Save, Discard, Cancel を Alt-S/D/C で選択できる
+ */
+
 #include <cerrno>
 #include <cinttypes>
 #include <cstdio>
