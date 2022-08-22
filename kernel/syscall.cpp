@@ -223,6 +223,11 @@ SYSCALL(ReadEvent) {
     }
 
     switch (msg->type) {
+    case Message::kCharInput:
+      app_events[i].type = AppEvent::kCharInput;
+      app_events[i].arg.charinput.ch = msg->arg.char_input.ch;
+      ++i;
+      break;
     case Message::kKeyPush:
       if (msg->arg.keyboard.keycode == 20 /* Q key */ &&
           msg->arg.keyboard.modifier & (kLControlBitMask | kRControlBitMask)) {

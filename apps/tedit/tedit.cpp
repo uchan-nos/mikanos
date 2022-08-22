@@ -538,6 +538,22 @@ int main(int argc, char** argv) {
   int ret = 0;
   bool exit_flag = false;
 
+  // カーソルの位置に文字cを挿入し、挿入後のカーソルのx座標を返す
+  auto insert_char = [&](uint32_t c) {
+    int idx = cursor_x == 0 ? 0 :
+              char_idx[cursor_y - scroll_y][cursor_x - 1] + 1;
+    data[cursor_y].insert(data[cursor_y].begin() + idx, c);
+    // 挿入後の行について、新しいカーソルの位置を求める
+    // タブ(など)の処理があり得るので、単に「一文字分」ではダメ
+    std::vector<int> new_char_idx;
+    DrawLine(new_char_idx, 0, 0, 0, width, tab_size,
+             data[cursor_y], false, true);
+    auto [s, cw] = GetCharRange(new_char_idx, cursor_x);
+    int new_cursor_x = cursor_x;
+    if (cursor_x + cw <= width) new_cursor_x += cw;
+    return new_cursor_x;
+  };
+
   // ダイアログの各ボタンを押した時の動作
   auto dialog_save_pressed = [&, hwnd = hwnd]() {
     if (SaveFile(file_name, data)) {
@@ -702,17 +718,7 @@ int main(int argc, char** argv) {
               edited = true;
             } else {
               // 文字の挿入
-              int idx = cursor_x == 0 ? 0 :
-                        char_idx[cursor_y - scroll_y][cursor_x - 1] + 1;
-              int c = arg.keypush.ascii;
-              data[cursor_y].insert(data[cursor_y].begin() + idx, c);
-              // 挿入後の行について、新しいカーソルの位置を求める
-              // タブ(など)の処理があり得るので、単に「一文字分」ではダメ
-              std::vector<int> new_char_idx;
-              DrawLine(new_char_idx, 0, 0, 0, width, tab_size,
-                       data[cursor_y], false, true);
-              auto [s, cw] = GetCharRange(new_char_idx, cursor_x);
-              if (cursor_x + cw <= width) new_cursor_x += cw;
+              new_cursor_x = insert_char(arg.keypush.ascii);
               redraw_from = redraw_to = cursor_y - scroll_y;
               edited = true;
             }
@@ -842,6 +848,15 @@ int main(int argc, char** argv) {
           cursor_x = new_cursor_x;
           cursor_y = new_cursor_y;
           draw_lines(redraw_from, redraw_to);
+          SyscallWinRedraw(hwnd);
+        }
+        break;
+      case AppEvent::kCharInput:
+        {
+          if (cursor_on) draw_cursor(false, false);
+          cursor_x = insert_char(arg.charinput.ch);
+          int line_to_draw = cursor_y - scroll_y;
+          draw_lines(line_to_draw, line_to_draw);
           SyscallWinRedraw(hwnd);
         }
         break;

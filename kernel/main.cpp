@@ -35,6 +35,7 @@
 #include "keyboard.hpp"
 #include "task.hpp"
 #include "terminal.hpp"
+#include "ime.hpp"
 #include "fat.hpp"
 #include "syscall.hpp"
 #include "uefi.hpp"
@@ -205,6 +206,7 @@ extern "C" void KernelMainNewStack(
   InitializeLayer();
   InitializeMainWindow();
   InitializeTextWindow();
+  InitializeIME();
   layer_manager->Draw({{0, 0}, ScreenSize()});
 
   acpi::Initialize(acpi_table);
@@ -232,6 +234,13 @@ extern "C" void KernelMainNewStack(
   task_manager->NewTask()
     .InitContext(TaskWallclock, 0)
     .Wakeup();
+
+  auto ime_task_id = task_manager->NewTask()
+                       .InitContext(TaskIME, 0)
+                       .Wakeup()
+                       .ID();
+
+  bool ime_enabled = false;
 
   char str[128];
 
@@ -280,6 +289,24 @@ extern "C" void KernelMainNewStack(
         task_manager->NewTask()
           .InitContext(TaskTerminal, 0)
           .Wakeup();
+      } else if ((msg->arg.keyboard.modifier == kLAltBitMask ||
+                  msg->arg.keyboard.modifier == kRAltBitMask) &&
+                 msg->arg.keyboard.keycode == 53 /* Alt+半角/全角 */) {
+        if (msg->arg.keyboard.press) {
+          ime_enabled = !ime_enabled;
+          ime->ShowWindow(ime_enabled);
+          if (!ime_enabled) ime->ResetInput();
+        }
+      } else if (ime_enabled && (!ime->IsEmpty() ||
+                                 (!(msg->arg.keyboard.ascii == 0 ||
+                                    msg->arg.keyboard.ascii == '\n' ||
+                                    msg->arg.keyboard.ascii == '\b' ||
+                                    msg->arg.keyboard.ascii == '\t') &&
+                                  !(msg->arg.keyboard.modifier &
+                                    ~(kLShiftBitMask | kRShiftBitMask))))) {
+        // IMEが有効で、かつ、「入力中」または「CtrlやAltを伴わない文字の入力」
+        // のとき、IMEにキーイベント情報を渡す
+        task_manager->SendMessage(ime_task_id, *msg);
       } else {
         __asm__("cli");
         auto task_it = layer_task_map->find(act);
