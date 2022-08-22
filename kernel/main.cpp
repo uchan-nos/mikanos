@@ -306,7 +306,9 @@ extern "C" void KernelMainNewStack(
                                     ~(kLShiftBitMask | kRShiftBitMask))))) {
         // IMEが有効で、かつ、「入力中」または「CtrlやAltを伴わない文字の入力」
         // のとき、IMEにキーイベント情報を渡す
+        __asm__("cli");
         task_manager->SendMessage(ime_task_id, *msg);
+        __asm__("sti");
       } else {
         __asm__("cli");
         auto task_it = layer_task_map->find(act);
