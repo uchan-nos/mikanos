@@ -73,10 +73,10 @@ piyo")", nullptr, nullptr},
     int pipe = -1, *p_pipe = &pipe;
     struct TokenizerInnerState *t = tbl[i].iis;
 
-    t = tokenize(tbl[i].linebuf, tokens, p_redir, p_pipe, t);
+    t = Tokenize(tbl[i].linebuf, tokens, p_redir, p_pipe, t);
     // return val check
     
-    if (!isTISsame(t, tbl[i].eis)) { PrintTis(t); PrintTis(tbl[i].eis); printf("    \e[38;5;9mERR: invalid return val\e[0m\n"); ret = -1; }
+    if (!IsTisSame(t, tbl[i].eis)) { PrintTis(t); PrintTis(tbl[i].eis); printf("    \e[38;5;9mERR: invalid return val\e[0m\n"); ret = -1; }
     // size of tokens check
     if (tokens.size() != tbl[i].expected) {
       printf("    \e[38;5;9mERR: num of tokens. expected %d but %zu.\e[0m\n", tbl[i].expected, tokens.size());
