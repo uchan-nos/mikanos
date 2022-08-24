@@ -23,5 +23,5 @@ struct TokenizerInnerState {
   std::string tmp_token;
 };
 
-TokenizerInnerState *tokenize(const char *c, std::vector<std::string>& tokens,
+TokenizerInnerState *Tokenize(const char *c, std::vector<std::string>& tokens,
   int *redir_idx, int *pipe_idx, TokenizerInnerState *last_istate);

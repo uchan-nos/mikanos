@@ -8,7 +8,7 @@
 
 #include "../tokenizer.hpp"
 
-bool isTISsame(struct TokenizerInnerState *tis1, struct TokenizerInnerState *tis2) {
+bool IsTisSame(struct TokenizerInnerState *tis1, struct TokenizerInnerState *tis2) {
   if (tis1 == nullptr ^ tis2 == nullptr) { return false; }
   if (tis1 == nullptr && tis2 == nullptr) { return true; }
   if (tis1->last_state != tis2->last_state) { return false; }
@@ -17,7 +17,7 @@ bool isTISsame(struct TokenizerInnerState *tis1, struct TokenizerInnerState *tis
   return true;
 }
 
-void printTIS(struct TokenizerInnerState *tis) {
+void PrintTis(struct TokenizerInnerState *tis) {
   std::cout << "    >>>>>>>>>>>>>>>>>>>>>>>>>>>" << std::endl;
   if (!tis) { std::cout << "    nullptr" << std::endl; }
   else {
@@ -29,7 +29,7 @@ void printTIS(struct TokenizerInnerState *tis) {
   std::cout << "    <<<<<<<<<<<<<<<<<<<<<<<<<<<<" << std::endl;
 }
 
-int test_tokenize() {
+int TestTokenize() {
   int ret = 0;
   struct TokenizerInnerState t0 = { InToken, BackSlash, "hoge"};
   struct TokenizerInnerState t5 = { InDoubleQuoted, Init, "piyo"};
@@ -76,7 +76,7 @@ piyo")", nullptr, nullptr},
     t = tokenize(tbl[i].linebuf, tokens, p_redir, p_pipe, t);
     // return val check
     
-    if (!isTISsame(t, tbl[i].eis)) { printTIS(t); printTIS(tbl[i].eis); printf("    \e[38;5;9mERR: invalid return val\e[0m\n"); ret = -1; }
+    if (!isTISsame(t, tbl[i].eis)) { PrintTis(t); PrintTis(tbl[i].eis); printf("    \e[38;5;9mERR: invalid return val\e[0m\n"); ret = -1; }
     // size of tokens check
     if (tokens.size() != tbl[i].expected) {
       printf("    \e[38;5;9mERR: num of tokens. expected %d but %zu.\e[0m\n", tbl[i].expected, tokens.size());

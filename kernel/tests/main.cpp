@@ -5,7 +5,7 @@ int main() {
   int ret = 0;
 
   printf("test: tokenizer\n");
-  ret = ret | test_tokenize();
+  ret = ret | TestTokenize();
 
   if (ret) {
     printf("\e[38;5;9mERR\e[0m\n");

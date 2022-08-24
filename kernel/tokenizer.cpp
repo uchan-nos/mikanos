@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 
-TokenizerInnerState *tokenize(const char *c, std::vector<std::string>& tokens,
+TokenizerInnerState *Tokenize(const char *c, std::vector<std::string>& tokens,
   int *redir_idx, int *pipe_idx, TokenizerInnerState *last_istate) {
   State state = Init;
   State last_state = Init;

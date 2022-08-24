@@ -319,7 +319,7 @@ Rectangle<int> Terminal::InputKey(
     int redir_idx = -1, *p_redir = &redir_idx;
     int pipe_idx = -1, *p_pipe = &pipe_idx;
     struct TokenizerInnerState *t = nullptr;
-    t = tokenize(&linebuf_[0], tokens, p_redir, p_pipe, t);
+    t = Tokenize(&linebuf_[0], tokens, p_redir, p_pipe, t);
     if (t) { // input not end
       cursor_.x = 0;
       if (cursor_.y < kRows - 1) {
