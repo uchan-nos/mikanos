@@ -205,20 +205,18 @@ void SetFileName(DirectoryEntry& entry, const char* name) {
   }
 }
 
-void SetWriteTimeToCurrent(DirectoryEntry& entry) {
-  EFI_TIME t;
-  uefi_rt->GetTime(&t, nullptr);
-  uint16_t current_time =
-    ((t.Hour & 0x1f) << 11) |
-    ((t.Minute & 0x3f) << 5) |
-    ((t.Second / 2) & 0x1f);
-  uint16_t current_date =
-    (((t.Year - 1980) & 0x7f) << 9) |
-    ((t.Month & 0xf) << 5) |
-    (t.Day & 0x1f);
+void SetWriteTime(DirectoryEntry& entry, const EFI_TIME& write_time) {
+  uint16_t time_encoded =
+    ((write_time.Hour & 0x1f) << 11) |
+    ((write_time.Minute & 0x3f) << 5) |
+    ((write_time.Second / 2) & 0x1f);
+  uint16_t date_encoded =
+    (((write_time.Year - 1980) & 0x7f) << 9) |
+    ((write_time.Month & 0xf) << 5) |
+    (write_time.Day & 0x1f);
 
-  entry.write_time = current_time;
-  entry.write_date = current_date;
+  entry.write_time = time_encoded;
+  entry.write_date = date_encoded;
 }
 
 WithError<DirectoryEntry*> CreateFile(const char* path) {
@@ -250,11 +248,13 @@ WithError<DirectoryEntry*> CreateFile(const char* path) {
   if (dir == nullptr) {
     return { nullptr, MAKE_ERROR(Error::kNoEnoughMemory) };
   }
+  EFI_TIME current_time;
+  uefi_rt->GetTime(&current_time, nullptr);
   fat::SetFileName(*dir, filename);
-  fat::SetWriteTimeToCurrent(*dir);
+  fat::SetWriteTime(*dir, current_time);
   dir->file_size = 0;
   if (parent_dir_entry != nullptr) {
-    fat::SetWriteTimeToCurrent(*parent_dir_entry);
+    fat::SetWriteTime(*parent_dir_entry, current_time);
   }
   return { dir, MAKE_ERROR(Error::kSuccess) };
 }
@@ -343,7 +343,10 @@ size_t FileDescriptor::Write(const void* buf, size_t len) {
 
   wr_off_ += total;
   fat_entry_.file_size = wr_off_;
-  fat::SetWriteTimeToCurrent(fat_entry_);
+
+  EFI_TIME current_time;
+  uefi_rt->GetTime(&current_time, nullptr);
+  fat::SetWriteTime(fat_entry_, current_time);
   return total;
 }
 
