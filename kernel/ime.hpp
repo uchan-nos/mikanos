@@ -15,17 +15,30 @@ class IME {
     bool IsEmpty();
 
   private:
+    struct HiraganaConversionResult {
+      // 変換結果
+      std::string converted;
+      // 変換元の入力
+      std::string source;
+      // アルファベット(ローマ字変換対象)か
+      bool is_alpha;
+
+      HiraganaConversionResult() = default;
+      HiraganaConversionResult(const std::string& _converted,
+                               const std::string& _source,
+                               bool _is_alpha)
+        : converted(_converted), source(_source), is_alpha(_is_alpha) {}
+    };
+
     void Draw();
-    void Convert();
+    void AppendChar(char c);
     bool SendChars(const std::string& str);
 
     std::shared_ptr<ToplevelWindow> window;
     unsigned int layer_id;
     bool window_shown;
 
-    std::string current_conversion;
-    std::string chars_entered;
-    std::string converted_hiragana;
+    std::vector<HiraganaConversionResult> hiragana;
 };
 
 extern IME* ime;

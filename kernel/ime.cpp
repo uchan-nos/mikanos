@@ -16,6 +16,8 @@
 
 static const std::unordered_map<std::string, std::string>* hiragana_map;
 
+static const std::unordered_map<char, std::string>* alpha_map;
+
 IME::IME() {
   window = std::make_shared<ToplevelWindow>(
       200, 52, screen_config.pixel_format, "IME");
@@ -55,8 +57,7 @@ void IME::ShowWindow(bool show) {
 }
 
 void IME::ResetInput() {
-  chars_entered.clear();
-  Convert();
+  hiragana.clear();
   Draw();
 }
 
@@ -66,20 +67,22 @@ void IME::ProcessMessage(const Message& msg) {
     if (info.press) {
       if (info.ascii == '\n') {
         // 決定
-        if (SendChars(current_conversion)) {
-          chars_entered.clear();
-          Convert();
+        std::string str;
+        for (size_t i = 0; i < hiragana.size(); ++i) {
+          str += hiragana[i].converted;
+        }
+        if (SendChars(str)) {
+          hiragana.clear();
           Draw();
         }
       }if (info.ascii == '\b') {
         // バックスペース
-        if (!chars_entered.empty()) {
-          chars_entered.erase(chars_entered.end() - 1);
-          Convert();
+        if (!hiragana.empty()) {
+          hiragana.pop_back();
           Draw();
         }
       } else if (info.ascii == ' ') {
-        if (chars_entered.empty()) {
+        if (hiragana.empty()) {
           // 全角スペースを入力
           SendChars("　");
         } else {
@@ -87,8 +90,7 @@ void IME::ProcessMessage(const Message& msg) {
         }
       } else if (info.ascii > ' ') {
         // 文字入力
-        chars_entered.push_back(info.ascii);
-        Convert();
+        AppendChar(info.ascii);
         Draw();
       }
     }
@@ -96,69 +98,112 @@ void IME::ProcessMessage(const Message& msg) {
 }
 
 bool IME::IsEmpty() {
-  return chars_entered.empty();
+  return hiragana.empty();
 }
 
 void IME::Draw() {
   if (!window_shown) return;
   std::string string_to_draw;
   int draw_right = 4;
-  for (size_t i = 0; i < current_conversion.size(); ) {
-    auto [c, size] = ConvertUTF8To32(&current_conversion[i]);
-    if (size <= 0) break;
-    draw_right += 8 * (IsHankaku(c) ? 1 : 2);
-    if (draw_right > window->InnerSize().x) break;
-    string_to_draw.append(current_conversion.begin() + i,
-                          current_conversion.begin() + i + size);
-    i += size;
+  for (size_t i = 0; i < hiragana.size(); ++i) {
+    for (size_t j = 0; j < hiragana[i].converted.size(); ) {
+      auto [c, size] = ConvertUTF8To32(&hiragana[i].converted[j]);
+      if (size <= 0) break;
+      draw_right += 8 * (IsHankaku(c) ? 1 : 2);
+      if (draw_right > window->InnerSize().x) {
+        i = hiragana.size();
+        break;
+      }
+      string_to_draw.append(hiragana[i].converted.begin() + j,
+                            hiragana[i].converted.begin() + j + size);
+      j += size;
+    }
   }
   FillRectangle(*window->InnerWriter(), {0, 0}, window->InnerSize(), {255, 255, 255});
   WriteString(*window->InnerWriter(), {4, 4}, string_to_draw.c_str(), {0, 0, 0});
   layer_manager->Draw(layer_id);
 }
 
-void IME::Convert() {
-  converted_hiragana.clear();
-  bool prev_is_number = false;
-  for (size_t i = 0; i < chars_entered.size(); ){
-    std::string res;
-    int res_input_length = 0;
-    if (prev_is_number) {
-      if (chars_entered[i] == '.') res = "．";
-      else if (chars_entered[i] == ',') res = "，";
-      else if (chars_entered[i] == '-') res = "－";
-      if (!res.empty()) {
-        converted_hiragana.append(res);
-        ++i;
-        prev_is_number = false;
-        continue;
-      }
-    }
-    prev_is_number = isdigit(chars_entered[i]);
-    for (int j = 3; j >= 1; j--) {
-      auto search_result = hiragana_map->find(chars_entered.substr(i, j));
-      if (search_result != hiragana_map->end()) {
-        res = search_result->second;
-        res_input_length = j;
-        break;
-      }
-    }
-    if (res_input_length > 0) {
-      converted_hiragana.append(res);
-      i += res_input_length;
-    } else if (i + 2 <= chars_entered.size() &&
-               chars_entered[i] == chars_entered[i + 1] &&
-               !(chars_entered[i] == 'a' || chars_entered[i] == 'i' ||
-                 chars_entered[i] == 'u' || chars_entered[i] == 'e' ||
-                 chars_entered[i] == 'o')) {
-      converted_hiragana.append("っ");
-      ++i;
-    } else {
-      converted_hiragana.push_back(chars_entered[i]);
-      ++i;
+void IME::AppendChar(char c) {
+  // 数字の後だと変化する記号を処理する
+  if (!hiragana.empty() && isdigit(hiragana.back().source[0])) {
+    std::string res = "";
+    if (c == '.') res = "．";
+    else if (c == ',') res = "，";
+    else if (c == '-') res = "－";
+    if (!res.empty()) {
+      hiragana.push_back({res, std::string(1, c), false});
+      return;
     }
   }
-  current_conversion = converted_hiragana;
+
+  // ローマ字からの変換を処理する (数字・記号を含む)
+  auto [source, converted] = [&]() -> std::tuple<std::string, std::string> {
+    if (!hiragana.empty() && hiragana.back().is_alpha) {
+      if (hiragana.size() >= 2 && hiragana[hiragana.size() - 2].is_alpha) {
+        // 3文字からの変換を試す
+        std::string key;
+        key.push_back(tolower(hiragana[hiragana.size() - 2].source[0]));
+        key.push_back(tolower(hiragana.back().source[0]));
+        key.push_back(tolower(c));
+        auto it = hiragana_map->find(key);
+        if (it != hiragana_map->end()) {
+          std::string source = hiragana[hiragana.size() - 2].source +
+                               hiragana.back().source + c;
+          hiragana.erase(hiragana.end() - 2, hiragana.end());
+          return {source, it->second};
+        }
+      }
+      // 2文字からの変換を試す
+      std::string key;
+      key.push_back(tolower(hiragana.back().source[0]));
+      key.push_back(tolower(c));
+      auto it = hiragana_map->find(key);
+      if (it != hiragana_map->end()) {
+        std::string source = hiragana.back().source + c;
+        hiragana.pop_back();
+        return {source, it->second};
+      }
+    }
+    // 1文字からの変換を試す
+    std::string key(1, c);
+    auto it = hiragana_map->find(key);
+    if (it != hiragana_map->end()) {
+      return {key, it->second};
+    }
+    return {"", ""};
+  }();
+  if (!converted.empty()) {
+    int first_character_size = CountUTF8Size(converted[0]);
+    if (converted.size() > static_cast<unsigned int>(first_character_size)) {
+      // 2文字に変換する (3文字以上への変換は存在しないので)
+      hiragana.push_back({converted.substr(0, first_character_size),
+                          source.substr(0, 1), false});
+      hiragana.push_back({converted.substr(first_character_size),
+                          source.substr(1), false});
+    } else {
+      // 1文字に変換する
+      hiragana.push_back({converted, source, false});
+    }
+    return;
+  }
+
+  // 小さい「っ」の入力(同じ子音を重ねる)を処理する
+  if (!hiragana.empty() && hiragana.back().is_alpha &&
+      hiragana.back().source[0] == c &&
+      c != 'a' && c != 'i' && c != 'u' && c != 'e' && c != 'o') {
+    std::string source = hiragana.back().source;
+    hiragana.pop_back();
+    hiragana.push_back({"っ", source, false});
+  }
+
+  // 入力された文字(アルファベット)を置く
+  auto it = alpha_map->find(c);
+  if (it != alpha_map->end()) {
+    hiragana.push_back({it->second, std::string(1, c), true});
+  } else {
+    hiragana.push_back({std::string(1, c), std::string(1, c), true});
+  }
 }
 
 bool IME::SendChars(const std::string& str) {
@@ -235,6 +280,18 @@ void InitializeIME() {
     {"^", "＾"}, {"_", "＿"}, {"`", "｀"}, {"{", "｛"}, {"|", "｜"}, {"}", "｝"},
     {"~", "～"},
     {"zh", "←"}, {"zj", "↓"}, {"zk", "↑"}, {"zl", "→"},
+  };
+  alpha_map = new std::unordered_map<char, std::string>{
+    {'a', "ａ"}, {'b', "ｂ"}, {'c', "ｃ"}, {'d', "ｄ"}, {'e', "ｅ"}, {'f', "ｆ"},
+    {'g', "ｇ"}, {'h', "ｈ"}, {'i', "ｉ"}, {'j', "ｊ"}, {'k', "ｋ"}, {'l', "ｌ"},
+    {'m', "ｍ"}, {'n', "ｎ"}, {'o', "ｏ"}, {'p', "ｐ"}, {'q', "ｑ"}, {'r', "ｒ"},
+    {'s', "ｓ"}, {'t', "ｔ"}, {'u', "ｕ"}, {'v', "ｖ"}, {'w', "ｗ"}, {'x', "ｘ"},
+    {'y', "ｙ"}, {'z', "ｚ"},
+    {'A', "Ａ"}, {'B', "Ｂ"}, {'C', "Ｃ"}, {'D', "Ｄ"}, {'E', "Ｅ"}, {'F', "Ｆ"},
+    {'G', "Ｇ"}, {'H', "Ｈ"}, {'I', "Ｉ"}, {'J', "Ｊ"}, {'K', "Ｋ"}, {'L', "Ｌ"},
+    {'M', "Ｍ"}, {'N', "Ｎ"}, {'O', "Ｏ"}, {'P', "Ｐ"}, {'Q', "Ｑ"}, {'R', "Ｒ"},
+    {'S', "Ｓ"}, {'T', "Ｔ"}, {'U', "Ｕ"}, {'V', "Ｖ"}, {'W', "Ｗ"}, {'X', "Ｘ"},
+    {'Y', "Ｙ"}, {'Z', "Ｚ"},
   };
 }
 
