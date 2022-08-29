@@ -855,6 +855,7 @@ int main(int argc, char** argv) {
         {
           if (cursor_on) draw_cursor(false, false);
           cursor_x = insert_char(arg.charinput.ch);
+          edited = true;
           int line_to_draw = cursor_y - scroll_y;
           draw_lines(line_to_draw, line_to_draw);
           SyscallWinRedraw(hwnd);
