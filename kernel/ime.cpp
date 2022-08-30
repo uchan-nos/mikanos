@@ -24,14 +24,23 @@ static const std::unordered_map<char, std::string>* alpha_map;
 IME::IME() {
   main_window_ = std::make_shared<Window>(ScreenSize().x, 19, screen_config.pixel_format);
   main_window_->SetTransparentColor(kIMETransparentColor);
-
   main_layer_id_ = layer_manager->NewLayer(kIMELayerPriority)
     .SetWindow(main_window_)
     .SetDraggable(false)
     .Move({580, 480})
     .ID();
 
+  status_window_ = std::make_shared<Window>(16, 16, screen_config.pixel_format);
+  status_layer_id_ = layer_manager->NewLayer(kBgObjectLayerPriority)
+    .SetWindow(status_window_)
+    .SetDraggable(false)
+    .Move(ScreenSize() - status_window_->Size() -
+          Vector2D<int>{8 * 10 + 4 + 16, 8 + 8})
+    .ID();
+  layer_manager->UpDown(status_layer_id_, std::numeric_limits<int>::max());
+
   enabled_ = false;
+  Draw();
 }
 
 void IME::SetEnabled(bool enabled) {
@@ -103,7 +112,15 @@ bool IME::IsEmpty() const {
 }
 
 void IME::Draw() {
-  if (!enabled_) return;
+  FillRectangle(*status_window_->Writer(), {0, 0}, status_window_->Size(), {0, 0, 0});
+  if (!enabled_) {
+    WriteString(*status_window_->Writer(), {8, 0}, "A", {255, 255, 255});
+    layer_manager->Draw(status_layer_id_);
+    return;
+  }
+  WriteString(*status_window_->Writer(), {0, 0}, "あ", {255, 255, 255});
+  layer_manager->Draw(status_layer_id_);
+
   std::string string_to_draw;
   int draw_right = 0;
   for (size_t i = 0; i < hiragana_.size(); ++i) {

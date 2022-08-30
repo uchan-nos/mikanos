@@ -46,6 +46,10 @@ class IME {
     std::shared_ptr<Window> main_window_;
     // メインの変換結果を表示するレイヤーのID
     unsigned int main_layer_id_;
+    // 状態を表示するウィンドウ
+    std::shared_ptr<Window> status_window_;
+    //状態を表示するレイヤーのID
+    unsigned int status_layer_id_;
     // IMEが有効になっているか
     bool enabled_;
 
