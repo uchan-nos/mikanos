@@ -15,30 +15,36 @@ class IME {
     bool IsEmpty();
 
   private:
-    struct HiraganaConversionResult {
-      // 変換結果
-      std::string converted;
-      // 変換元の入力
-      std::string source;
-      // アルファベット(ローマ字変換対象)か
-      bool is_alpha;
+    class HiraganaConversionResult {
+      public:
+        HiraganaConversionResult() = default;
+        HiraganaConversionResult(const std::string& converted,
+                                 const std::string& source,
+                                 bool is_alpha)
+          : converted_{converted}, source_{source}, is_alpha_{is_alpha} {}
 
-      HiraganaConversionResult() = default;
-      HiraganaConversionResult(const std::string& _converted,
-                               const std::string& _source,
-                               bool _is_alpha)
-        : converted(_converted), source(_source), is_alpha(_is_alpha) {}
+        const std::string& Converted() const { return converted_; }
+        const std::string& Source() const { return source_; }
+        const bool IsAlpha() const { return is_alpha_; }
+
+      private:
+        // 変換結果
+        std::string converted_;
+        // 変換元の入力
+        std::string source_;
+        // アルファベット(ローマ字変換対象)か
+        bool is_alpha_;
     };
 
     void Draw();
     void AppendChar(char c);
     bool SendChars(const std::string& str);
 
-    std::shared_ptr<ToplevelWindow> window;
-    unsigned int layer_id;
-    bool window_shown;
+    std::shared_ptr<ToplevelWindow> window_;
+    unsigned int layer_id_;
+    bool window_shown_;
 
-    std::vector<HiraganaConversionResult> hiragana;
+    std::vector<HiraganaConversionResult> hiragana_;
 };
 
 extern IME* ime;

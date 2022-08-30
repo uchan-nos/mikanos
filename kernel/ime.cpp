@@ -19,32 +19,32 @@ static const std::unordered_map<std::string, std::string>* hiragana_map;
 static const std::unordered_map<char, std::string>* alpha_map;
 
 IME::IME() {
-  window = std::make_shared<ToplevelWindow>(
+  window_ = std::make_shared<ToplevelWindow>(
       200, 52, screen_config.pixel_format, "IME");
 
-  layer_id = layer_manager->NewLayer(kIMELayerPriority)
-    .SetWindow(window)
+  layer_id_ = layer_manager->NewLayer(kIMELayerPriority)
+    .SetWindow(window_)
     .SetDraggable(true)
     .Move({580, 480})
     .ID();
 
-  layer_manager->UpDown(layer_id, -1);
-  window_shown = false;
+  layer_manager->UpDown(layer_id_, -1);
+  window_shown_ = false;
 }
 
 void IME::ShowWindow(bool show) {
   __asm__("cli");
   if (show) {
-    layer_manager->UpDown(layer_id, 0);
+    layer_manager->UpDown(layer_id_, 0);
     auto active_id = active_layer->GetActive();
-    active_layer->Activate(layer_id);
+    active_layer->Activate(layer_id_);
     active_layer->Activate(active_id);
   } else {
-    Layer* layer = layer_manager->FindLayer(layer_id);
-    if (active_layer->GetActive() == layer_id) {
+    Layer* layer = layer_manager->FindLayer(layer_id_);
+    if (active_layer->GetActive() == layer_id_) {
       active_layer->Activate(0);
     }
-    layer_manager->Hide(layer_id);
+    layer_manager->Hide(layer_id_);
     if (layer != nullptr) {
       const auto pos = layer->GetPosition();
       const auto size = layer->GetWindow()->Size();
@@ -52,12 +52,12 @@ void IME::ShowWindow(bool show) {
     }
   }
   __asm__("sti");
-  window_shown = show;
+  window_shown_ = show;
   Draw();
 }
 
 void IME::ResetInput() {
-  hiragana.clear();
+  hiragana_.clear();
   Draw();
 }
 
@@ -68,21 +68,21 @@ void IME::ProcessMessage(const Message& msg) {
       if (info.ascii == '\n') {
         // 決定
         std::string str;
-        for (size_t i = 0; i < hiragana.size(); ++i) {
-          str += hiragana[i].converted;
+        for (size_t i = 0; i < hiragana_.size(); ++i) {
+          str += hiragana_[i].Converted();
         }
         if (SendChars(str)) {
-          hiragana.clear();
+          hiragana_.clear();
           Draw();
         }
       }if (info.ascii == '\b') {
         // バックスペース
-        if (!hiragana.empty()) {
-          hiragana.pop_back();
+        if (!hiragana_.empty()) {
+          hiragana_.pop_back();
           Draw();
         }
       } else if (info.ascii == ' ') {
-        if (hiragana.empty()) {
+        if (hiragana_.empty()) {
           // 全角スペースを入力
           SendChars("　");
         } else {
@@ -98,70 +98,70 @@ void IME::ProcessMessage(const Message& msg) {
 }
 
 bool IME::IsEmpty() {
-  return hiragana.empty();
+  return hiragana_.empty();
 }
 
 void IME::Draw() {
-  if (!window_shown) return;
+  if (!window_shown_) return;
   std::string string_to_draw;
   int draw_right = 4;
-  for (size_t i = 0; i < hiragana.size(); ++i) {
-    for (size_t j = 0; j < hiragana[i].converted.size(); ) {
-      auto [c, size] = ConvertUTF8To32(&hiragana[i].converted[j]);
+  for (size_t i = 0; i < hiragana_.size(); ++i) {
+    for (size_t j = 0; j < hiragana_[i].Converted().size(); ) {
+      auto [c, size] = ConvertUTF8To32(&hiragana_[i].Converted()[j]);
       if (size <= 0) break;
       draw_right += 8 * (IsHankaku(c) ? 1 : 2);
-      if (draw_right > window->InnerSize().x) {
-        i = hiragana.size();
+      if (draw_right > window_->InnerSize().x) {
+        i = hiragana_.size();
         break;
       }
-      string_to_draw.append(hiragana[i].converted.begin() + j,
-                            hiragana[i].converted.begin() + j + size);
+      string_to_draw.append(hiragana_[i].Converted().begin() + j,
+                            hiragana_[i].Converted().begin() + j + size);
       j += size;
     }
   }
-  FillRectangle(*window->InnerWriter(), {0, 0}, window->InnerSize(), {255, 255, 255});
-  WriteString(*window->InnerWriter(), {4, 4}, string_to_draw.c_str(), {0, 0, 0});
-  layer_manager->Draw(layer_id);
+  FillRectangle(*window_->InnerWriter(), {0, 0}, window_->InnerSize(), {255, 255, 255});
+  WriteString(*window_->InnerWriter(), {4, 4}, string_to_draw.c_str(), {0, 0, 0});
+  layer_manager->Draw(layer_id_);
 }
 
 void IME::AppendChar(char c) {
   // 数字の後だと変化する記号を処理する
-  if (!hiragana.empty() && isdigit(hiragana.back().source[0])) {
+  if (!hiragana_.empty() && isdigit(hiragana_.back().Source()[0])) {
     std::string res = "";
     if (c == '.') res = "．";
     else if (c == ',') res = "，";
     else if (c == '-') res = "－";
     if (!res.empty()) {
-      hiragana.push_back({res, std::string(1, c), false});
+      hiragana_.push_back({res, std::string(1, c), false});
       return;
     }
   }
 
   // ローマ字からの変換を処理する (数字・記号を含む)
   auto [source, converted] = [&]() -> std::tuple<std::string, std::string> {
-    if (!hiragana.empty() && hiragana.back().is_alpha) {
-      if (hiragana.size() >= 2 && hiragana[hiragana.size() - 2].is_alpha) {
+    if (!hiragana_.empty() && hiragana_.back().IsAlpha()) {
+      if (hiragana_.size() >= 2 && hiragana_[hiragana_.size() - 2].IsAlpha()) {
         // 3文字からの変換を試す
         std::string key;
-        key.push_back(tolower(hiragana[hiragana.size() - 2].source[0]));
-        key.push_back(tolower(hiragana.back().source[0]));
+        key.push_back(tolower(hiragana_[hiragana_.size() - 2].Source()[0]));
+        key.push_back(tolower(hiragana_.back().Source()[0]));
         key.push_back(tolower(c));
         auto it = hiragana_map->find(key);
         if (it != hiragana_map->end()) {
-          std::string source = hiragana[hiragana.size() - 2].source +
-                               hiragana.back().source + c;
-          hiragana.erase(hiragana.end() - 2, hiragana.end());
+          std::string source = hiragana_[hiragana_.size() - 2].Source() +
+                               hiragana_.back().Source() + c;
+          hiragana_.erase(hiragana_.end() - 2, hiragana_.end());
           return {source, it->second};
         }
       }
       // 2文字からの変換を試す
       std::string key;
-      key.push_back(tolower(hiragana.back().source[0]));
+      key.push_back(tolower(hiragana_.back().Source()[0]));
       key.push_back(tolower(c));
       auto it = hiragana_map->find(key);
       if (it != hiragana_map->end()) {
-        std::string source = hiragana.back().source + c;
-        hiragana.pop_back();
+        std::string source = hiragana_.back().Source() + c;
+        hiragana_.pop_back();
         return {source, it->second};
       }
     }
@@ -177,32 +177,32 @@ void IME::AppendChar(char c) {
     int first_character_size = CountUTF8Size(converted[0]);
     if (converted.size() > static_cast<unsigned int>(first_character_size)) {
       // 2文字に変換する (3文字以上への変換は存在しないので)
-      hiragana.push_back({converted.substr(0, first_character_size),
-                          source.substr(0, 1), false});
-      hiragana.push_back({converted.substr(first_character_size),
-                          source.substr(1), false});
+      hiragana_.push_back({converted.substr(0, first_character_size),
+                           source.substr(0, 1), false});
+      hiragana_.push_back({converted.substr(first_character_size),
+                           source.substr(1), false});
     } else {
       // 1文字に変換する
-      hiragana.push_back({converted, source, false});
+      hiragana_.push_back({converted, source, false});
     }
     return;
   }
 
   // 小さい「っ」の入力(同じ子音を重ねる)を処理する
-  if (!hiragana.empty() && hiragana.back().is_alpha &&
-      hiragana.back().source[0] == c &&
+  if (!hiragana_.empty() && hiragana_.back().IsAlpha() &&
+      hiragana_.back().Source()[0] == c &&
       c != 'a' && c != 'i' && c != 'u' && c != 'e' && c != 'o') {
-    std::string source = hiragana.back().source;
-    hiragana.pop_back();
-    hiragana.push_back({"っ", source, false});
+    std::string source = hiragana_.back().Source();
+    hiragana_.pop_back();
+    hiragana_.push_back({"っ", source, false});
   }
 
   // 入力された文字(アルファベット)を置く
   auto it = alpha_map->find(c);
   if (it != alpha_map->end()) {
-    hiragana.push_back({it->second, std::string(1, c), true});
+    hiragana_.push_back({it->second, std::string(1, c), true});
   } else {
-    hiragana.push_back({std::string(1, c), std::string(1, c), true});
+    hiragana_.push_back({std::string(1, c), std::string(1, c), true});
   }
 }
 
