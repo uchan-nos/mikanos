@@ -37,10 +37,11 @@ class IME {
     };
 
     void Draw();
+    void DrawDotLine(int start_x, int length);
     void AppendChar(char c);
     bool SendChars(const std::string& str);
 
-    std::shared_ptr<ToplevelWindow> window_;
+    std::shared_ptr<Window> window_;
     unsigned int layer_id_;
     bool window_shown_;
 

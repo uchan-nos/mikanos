@@ -14,17 +14,19 @@
 #include "layer.hpp"
 #include "task.hpp"
 
+const PixelColor kIMETransparentColor{255, 1, 1};
+
 static const std::unordered_map<std::string, std::string>* hiragana_map;
 
 static const std::unordered_map<char, std::string>* alpha_map;
 
 IME::IME() {
-  window_ = std::make_shared<ToplevelWindow>(
-      200, 52, screen_config.pixel_format, "IME");
+  window_ = std::make_shared<Window>(ScreenSize().x, 19, screen_config.pixel_format);
+  window_->SetTransparentColor(kIMETransparentColor);
 
   layer_id_ = layer_manager->NewLayer(kIMELayerPriority)
     .SetWindow(window_)
-    .SetDraggable(true)
+    .SetDraggable(false)
     .Move({580, 480})
     .ID();
 
@@ -104,24 +106,36 @@ bool IME::IsEmpty() {
 void IME::Draw() {
   if (!window_shown_) return;
   std::string string_to_draw;
-  int draw_right = 4;
+  int draw_right = 0;
   for (size_t i = 0; i < hiragana_.size(); ++i) {
     for (size_t j = 0; j < hiragana_[i].Converted().size(); ) {
       auto [c, size] = ConvertUTF8To32(&hiragana_[i].Converted()[j]);
       if (size <= 0) break;
-      draw_right += 8 * (IsHankaku(c) ? 1 : 2);
-      if (draw_right > window_->InnerSize().x) {
+      auto new_draw_right = draw_right + 8 * (IsHankaku(c) ? 1 : 2);
+      if (new_draw_right > window_->Size().x) {
         i = hiragana_.size();
         break;
       }
       string_to_draw.append(hiragana_[i].Converted().begin() + j,
                             hiragana_[i].Converted().begin() + j + size);
       j += size;
+      draw_right = new_draw_right;
     }
   }
-  FillRectangle(*window_->InnerWriter(), {0, 0}, window_->InnerSize(), {255, 255, 255});
-  WriteString(*window_->InnerWriter(), {4, 4}, string_to_draw.c_str(), {0, 0, 0});
-  layer_manager->Draw(layer_id_);
+  const auto& size = window_->Size();
+  FillRectangle(*window_->Writer(), {0, 0}, {draw_right, size.y}, {255, 255, 255});
+  FillRectangle(*window_->Writer(), {draw_right, 0},
+                {size.x - draw_right, size.y}, kIMETransparentColor);
+  WriteString(*window_->Writer(), {0, 0}, string_to_draw.c_str(), {0, 0, 0});
+  DrawDotLine(0, draw_right);
+  layer_manager->Draw({layer_manager->FindLayer(layer_id_)->GetPosition(),
+                       window_->Size()});
+}
+
+void IME::DrawDotLine(int start_x, int length) {
+  for (int i = 0; i < length; i++) {
+    if (i % 3 != 2) window_->Writer()->Write({start_x + i, 18}, {0, 0, 0});
+  }
 }
 
 void IME::AppendChar(char c) {
