@@ -22,7 +22,7 @@ IME::IME() {
   window = std::make_shared<ToplevelWindow>(
       200, 52, screen_config.pixel_format, "IME");
 
-  layer_id = layer_manager->NewLayer()
+  layer_id = layer_manager->NewLayer(kIMELayerPriority)
     .SetWindow(window)
     .SetDraggable(true)
     .Move({580, 480})

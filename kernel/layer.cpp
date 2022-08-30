@@ -13,11 +13,15 @@ namespace {
   }
 } // namespace
 
-Layer::Layer(unsigned int id) : id_{id} {
+Layer::Layer(unsigned int id, int priority) : id_{id}, priority_{priority} {
 }
 
 unsigned int Layer::ID() const {
   return id_;
+}
+
+int Layer::Priority() const {
+  return priority_;
 }
 
 Layer& Layer::SetWindow(const std::shared_ptr<Window>& window) {
@@ -67,9 +71,9 @@ void LayerManager::SetWriter(FrameBuffer* screen) {
   back_buffer_.Initialize(back_config);
 }
 
-Layer& LayerManager::NewLayer() {
+Layer& LayerManager::NewLayer(int priority) {
   ++latest_id_;
-  return *layers_.emplace_back(new Layer{latest_id_});
+  return *layers_.emplace_back(new Layer{latest_id_, priority});
 }
 
 void LayerManager::RemoveLayer(unsigned int id) {
@@ -143,12 +147,21 @@ void LayerManager::UpDown(unsigned int id, int new_height) {
   auto old_pos = std::find(layer_stack_.begin(), layer_stack_.end(), layer);
   auto new_pos = layer_stack_.begin() + new_height;
 
+  auto comp = [](Layer* a, Layer* b) { return a->Priority() < b->Priority(); };
+  auto lower_limit = std::lower_bound(layer_stack_.begin(), layer_stack_.end(),
+                                      layer, comp);
+  auto upper_limit = std::upper_bound(layer_stack_.begin(), layer_stack_.end(),
+                                      layer, comp);
+  if (new_pos < lower_limit) new_pos = lower_limit;
+  if (upper_limit < new_pos) new_pos = upper_limit;
+
   if (old_pos == layer_stack_.end()) {
     layer_stack_.insert(new_pos, layer);
     return;
   }
 
-  if (new_pos == layer_stack_.end()) {
+  if (new_pos == layer_stack_.end() ||
+      (new_pos == upper_limit && old_pos < upper_limit)) {
     --new_pos;
   }
   layer_stack_.erase(old_pos);
@@ -163,9 +176,13 @@ void LayerManager::Hide(unsigned int id) {
   }
 }
 
-Layer* LayerManager::FindLayerByPosition(Vector2D<int> pos, unsigned int exclude_id) const {
-  auto pred = [pos, exclude_id](Layer* layer) {
+Layer* LayerManager::FindLayerByPosition(Vector2D<int> pos, unsigned int exclude_id,
+                                         int max_priority) const {
+  auto pred = [pos, exclude_id, max_priority](Layer* layer) {
     if (layer->ID() == exclude_id) {
+      return false;
+    }
+    if (layer->Priority() > max_priority) {
       return false;
     }
     const auto& win = layer->GetWindow();
@@ -224,10 +241,6 @@ LayerManager* layer_manager;
 ActiveLayer::ActiveLayer(LayerManager& manager) : manager_{manager} {
 }
 
-void ActiveLayer::SetMouseLayer(unsigned int mouse_layer) {
-  mouse_layer_ = mouse_layer;
-}
-
 void ActiveLayer::Activate(unsigned int layer_id) {
   if (active_layer_ == layer_id) {
     return;
@@ -244,8 +257,7 @@ void ActiveLayer::Activate(unsigned int layer_id) {
   if (active_layer_ > 0) {
     Layer* layer = manager_.FindLayer(active_layer_);
     layer->GetWindow()->Activate();
-    manager_.UpDown(active_layer_, 0);
-    manager_.UpDown(active_layer_, manager_.GetHeight(mouse_layer_) - 1);
+    manager_.UpDown(active_layer_, std::numeric_limits<int>::max());
     manager_.Draw(active_layer_);
     SendWindowActiveMessage(active_layer_, 1);
   }
@@ -275,11 +287,11 @@ void InitializeLayer() {
   layer_manager = new LayerManager;
   layer_manager->SetWriter(screen);
 
-  auto bglayer_id = layer_manager->NewLayer()
+  auto bglayer_id = layer_manager->NewLayer(kBackgroundLayerPriority)
     .SetWindow(bgwindow)
     .Move({0, 0})
     .ID();
-  console->SetLayerID(layer_manager->NewLayer()
+  console->SetLayerID(layer_manager->NewLayer(kBgObjectLayerPriority)
     .SetWindow(console_window)
     .Move({0, 0})
     .ID());

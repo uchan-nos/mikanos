@@ -126,7 +126,7 @@ void TaskWallclock(uint64_t task_id, int64_t data) {
   Task& task = task_manager->CurrentTask();
   auto clock_window = std::make_shared<Window>(
       8 * 10, 16 * 2, screen_config.pixel_format);
-  const auto clock_window_layer_id = layer_manager->NewLayer()
+  const auto clock_window_layer_id = layer_manager->NewLayer(kBgObjectLayerPriority)
     .SetWindow(clock_window)
     .SetDraggable(false)
     .Move(ScreenSize() - clock_window->Size() - Vector2D<int>{4, 8})

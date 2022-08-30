@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <map>
 #include <vector>
@@ -14,6 +15,8 @@
 #include "window.hpp"
 #include "message.hpp"
 
+const int kDefaultLayerPriority = 5000;
+
 /** @brief Layer は 1 つの層を表す。
  *
  * 現状では 1 つのウィンドウしか保持できない設計だが，
@@ -21,10 +24,12 @@
  */
 class Layer {
  public:
-  /** @brief 指定された ID を持つレイヤーを生成する。 */
-  Layer(unsigned int id = 0);
+  /** @brief 指定された ID と優先度を持つレイヤーを生成する。 */
+  Layer(unsigned int id = 0, int priority = kDefaultLayerPriority);
   /** @brief このインスタンスの ID を返す。 */
   unsigned int ID() const;
+  /** @brief このインスタンスの優先度を返す。 */
+  int Priority() const;
 
   /** @brief ウィンドウを設定する。既存のウィンドウはこのレイヤーから外れる。 */
   Layer& SetWindow(const std::shared_ptr<Window>& window);
@@ -47,6 +52,7 @@ class Layer {
 
  private:
   unsigned int id_;
+  int priority_;
   Vector2D<int> pos_{};
   std::shared_ptr<Window> window_{};
   bool draggable_{false};
@@ -61,7 +67,7 @@ class LayerManager {
    *
    * 新しく生成されたレイヤーの実体は LayerManager 内部のコンテナで保持される。
    */
-  Layer& NewLayer();
+  Layer& NewLayer(int priority = kDefaultLayerPriority);
   /** @brief 指定されたレイヤーを削除する。 */
   void RemoveLayer(unsigned int id);
 
@@ -82,13 +88,15 @@ class LayerManager {
    * new_height に負の高さを指定するとレイヤーは非表示となり，
    * 0 以上を指定するとその高さとなる。
    * 現在のレイヤー数以上の数値を指定した場合は最前面のレイヤーとなる。
+   * ただし、優先度の関係は維持する。
    * */
   void UpDown(unsigned int id, int new_height);
   /** @brief レイヤーを非表示とする。 */
   void Hide(unsigned int id);
 
   /** @brief 指定された座標にウィンドウを持つ最も上に表示されているレイヤーを探す。 */
-  Layer* FindLayerByPosition(Vector2D<int> pos, unsigned int exclude_id) const;
+  Layer* FindLayerByPosition(Vector2D<int> pos, unsigned int exclude_id,
+                             int max_priority = std::numeric_limits<int>::max()) const;
   /** @brief 指定された ID を持つレイヤーを返す。 */
   Layer* FindLayer(unsigned int id);
   /** @brief 指定されたレイヤーの現在の高さを返す。 */
@@ -107,14 +115,12 @@ extern LayerManager* layer_manager;
 class ActiveLayer {
  public:
   ActiveLayer(LayerManager& manager);
-  void SetMouseLayer(unsigned int mouse_layer);
   void Activate(unsigned int layer_id);
   unsigned int GetActive() const { return active_layer_; }
 
  private:
   LayerManager& manager_;
   unsigned int active_layer_{0};
-  unsigned int mouse_layer_{0};
 };
 
 extern ActiveLayer* active_layer;
@@ -137,3 +143,8 @@ constexpr Message MakeLayerMessage(
 }
 
 Error CloseLayer(unsigned int layer_id);
+
+const int kMouseLayerPriority      = 9000;
+const int kIMELayerPriority        = 8000;
+const int kBgObjectLayerPriority   = 1000;
+const int kBackgroundLayerPriority =    0;
