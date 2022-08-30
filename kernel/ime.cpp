@@ -7,6 +7,7 @@
 #include "ime.hpp"
 
 #include <cctype>
+#include <limits>
 #include <unordered_map>
 
 #include "font.hpp"
@@ -21,41 +22,39 @@ static const std::unordered_map<std::string, std::string>* hiragana_map;
 static const std::unordered_map<char, std::string>* alpha_map;
 
 IME::IME() {
-  window_ = std::make_shared<Window>(ScreenSize().x, 19, screen_config.pixel_format);
-  window_->SetTransparentColor(kIMETransparentColor);
+  main_window_ = std::make_shared<Window>(ScreenSize().x, 19, screen_config.pixel_format);
+  main_window_->SetTransparentColor(kIMETransparentColor);
 
-  layer_id_ = layer_manager->NewLayer(kIMELayerPriority)
-    .SetWindow(window_)
+  main_layer_id_ = layer_manager->NewLayer(kIMELayerPriority)
+    .SetWindow(main_window_)
     .SetDraggable(false)
     .Move({580, 480})
     .ID();
 
-  layer_manager->UpDown(layer_id_, -1);
-  window_shown_ = false;
+  enabled_ = false;
 }
 
-void IME::ShowWindow(bool show) {
+void IME::SetEnabled(bool enabled) {
   __asm__("cli");
-  if (show) {
-    layer_manager->UpDown(layer_id_, 0);
-    auto active_id = active_layer->GetActive();
-    active_layer->Activate(layer_id_);
-    active_layer->Activate(active_id);
+  if (enabled) {
+    layer_manager->UpDown(main_layer_id_, std::numeric_limits<int>::max());
   } else {
-    Layer* layer = layer_manager->FindLayer(layer_id_);
-    if (active_layer->GetActive() == layer_id_) {
-      active_layer->Activate(0);
-    }
-    layer_manager->Hide(layer_id_);
+    Layer* layer = layer_manager->FindLayer(main_layer_id_);
+    layer_manager->UpDown(main_layer_id_, -1);
     if (layer != nullptr) {
       const auto pos = layer->GetPosition();
       const auto size = layer->GetWindow()->Size();
       layer_manager->Draw({pos, size});
     }
+    ResetInput();
   }
   __asm__("sti");
-  window_shown_ = show;
+  enabled_ = enabled;
   Draw();
+}
+
+bool IME::GetEnabled() const {
+  return enabled_;
 }
 
 void IME::ResetInput() {
@@ -99,12 +98,12 @@ void IME::ProcessMessage(const Message& msg) {
   }
 }
 
-bool IME::IsEmpty() {
+bool IME::IsEmpty() const {
   return hiragana_.empty();
 }
 
 void IME::Draw() {
-  if (!window_shown_) return;
+  if (!enabled_) return;
   std::string string_to_draw;
   int draw_right = 0;
   for (size_t i = 0; i < hiragana_.size(); ++i) {
@@ -112,7 +111,7 @@ void IME::Draw() {
       auto [c, size] = ConvertUTF8To32(&hiragana_[i].Converted()[j]);
       if (size <= 0) break;
       auto new_draw_right = draw_right + 8 * (IsHankaku(c) ? 1 : 2);
-      if (new_draw_right > window_->Size().x) {
+      if (new_draw_right > main_window_->Size().x) {
         i = hiragana_.size();
         break;
       }
@@ -122,19 +121,19 @@ void IME::Draw() {
       draw_right = new_draw_right;
     }
   }
-  const auto& size = window_->Size();
-  FillRectangle(*window_->Writer(), {0, 0}, {draw_right, size.y}, {255, 255, 255});
-  FillRectangle(*window_->Writer(), {draw_right, 0},
+  const auto& size = main_window_->Size();
+  FillRectangle(*main_window_->Writer(), {0, 0}, {draw_right, size.y}, {255, 255, 255});
+  FillRectangle(*main_window_->Writer(), {draw_right, 0},
                 {size.x - draw_right, size.y}, kIMETransparentColor);
-  WriteString(*window_->Writer(), {0, 0}, string_to_draw.c_str(), {0, 0, 0});
+  WriteString(*main_window_->Writer(), {0, 0}, string_to_draw.c_str(), {0, 0, 0});
   DrawDotLine(0, draw_right);
-  layer_manager->Draw({layer_manager->FindLayer(layer_id_)->GetPosition(),
-                       window_->Size()});
+  layer_manager->Draw({layer_manager->FindLayer(main_layer_id_)->GetPosition(),
+                       main_window_->Size()});
 }
 
 void IME::DrawDotLine(int start_x, int length) {
   for (int i = 0; i < length; i++) {
-    if (i % 3 != 2) window_->Writer()->Write({start_x + i, 18}, {0, 0, 0});
+    if (i % 3 != 2) main_window_->Writer()->Write({start_x + i, 18}, {0, 0, 0});
   }
 }
 

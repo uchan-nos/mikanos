@@ -9,10 +9,11 @@
 class IME {
   public:
     IME();
-    void ShowWindow(bool show);
+    void SetEnabled(bool enabled);
+    bool GetEnabled() const;
     void ResetInput();
     void ProcessMessage(const Message& msg);
-    bool IsEmpty();
+    bool IsEmpty() const;
 
   private:
     class HiraganaConversionResult {
@@ -41,10 +42,14 @@ class IME {
     void AppendChar(char c);
     bool SendChars(const std::string& str);
 
-    std::shared_ptr<Window> window_;
-    unsigned int layer_id_;
-    bool window_shown_;
+    // メインの変換結果を表示するウィンドウ
+    std::shared_ptr<Window> main_window_;
+    // メインの変換結果を表示するレイヤーのID
+    unsigned int main_layer_id_;
+    // IMEが有効になっているか
+    bool enabled_;
 
+    // 入力をひらがなに変換した結果
     std::vector<HiraganaConversionResult> hiragana_;
 };
 

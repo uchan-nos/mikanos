@@ -240,8 +240,6 @@ extern "C" void KernelMainNewStack(
                        .Wakeup()
                        .ID();
 
-  bool ime_enabled = false;
-
   char str[128];
 
   while (true) {
@@ -293,17 +291,15 @@ extern "C" void KernelMainNewStack(
                   msg->arg.keyboard.modifier == kRAltBitMask) &&
                  msg->arg.keyboard.keycode == 53 /* Alt+半角/全角 */) {
         if (msg->arg.keyboard.press) {
-          ime_enabled = !ime_enabled;
-          ime->ShowWindow(ime_enabled);
-          if (!ime_enabled) ime->ResetInput();
+          ime->SetEnabled(!ime->GetEnabled());
         }
-      } else if (ime_enabled && (!ime->IsEmpty() ||
-                                 (!(msg->arg.keyboard.ascii == 0 ||
-                                    msg->arg.keyboard.ascii == '\n' ||
-                                    msg->arg.keyboard.ascii == '\b' ||
-                                    msg->arg.keyboard.ascii == '\t') &&
-                                  !(msg->arg.keyboard.modifier &
-                                    ~(kLShiftBitMask | kRShiftBitMask))))) {
+      } else if (ime->GetEnabled() &&
+                 (!ime->IsEmpty() || (!(msg->arg.keyboard.ascii == 0 ||
+                                        msg->arg.keyboard.ascii == '\n' ||
+                                        msg->arg.keyboard.ascii == '\b' ||
+                                        msg->arg.keyboard.ascii == '\t') &&
+                                      !(msg->arg.keyboard.modifier &
+                                        ~(kLShiftBitMask | kRShiftBitMask))))) {
         // IMEが有効で、かつ、「入力中」または「CtrlやAltを伴わない文字の入力」
         // のとき、IMEにキーイベント情報を渡す
         __asm__("cli");
