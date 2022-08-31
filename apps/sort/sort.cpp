@@ -33,5 +33,6 @@ int main(int argc, char** argv) {
   for (auto& line : lines) {
     printf("%s", line.c_str());
   }
+  fflush(stdout);
   return 0;
 }

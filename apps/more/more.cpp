@@ -54,5 +54,6 @@ int main(int argc, char** argv) {
     }
     fputs(lines[i].c_str(), stdout);
   }
+  fflush(stdout);
   return 0;
 }

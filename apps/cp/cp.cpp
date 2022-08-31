@@ -27,5 +27,6 @@ int main(int argc, char** argv) {
       return 1;
     }
   }
+  fflush(fp_dest);
   return 0;
 }
