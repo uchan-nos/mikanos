@@ -218,13 +218,20 @@ void IME::AppendChar(char c) {
     return;
   }
 
-  // 小さい「っ」の入力(同じ子音を重ねる)を処理する
+  int cl = tolower(c);
   if (!hiragana_.empty() && hiragana_.back().IsAlpha() &&
-      hiragana_.back().Source()[0] == c &&
-      c != 'a' && c != 'i' && c != 'u' && c != 'e' && c != 'o') {
-    std::string source = hiragana_.back().Source();
-    hiragana_.pop_back();
-    hiragana_.push_back({"っ", source, false});
+      cl != 'a' && cl != 'i' && cl != 'u' && cl != 'e' && cl != 'o') {
+    if (tolower(hiragana_.back().Source()[0]) == cl) {
+      // 小さい「っ」の入力(同じ子音を重ねる)
+      std::string source = hiragana_.back().Source();
+      hiragana_.pop_back();
+      hiragana_.push_back({"っ", source, false});
+    } else if(tolower(hiragana_.back().Source()[0]) == 'n' && cl != 'y') {
+      // n 1個による「ん」の入力
+      std::string source = hiragana_.back().Source();
+      hiragana_.pop_back();
+      hiragana_.push_back({"ん", source, false});
+    }
   }
 
   // 入力された文字(アルファベット)を置く
