@@ -85,7 +85,10 @@ void IME::ProcessMessage(const Message& msg) {
           hiragana_.clear();
           Draw();
         }
-      }if (info.ascii == '\b') {
+      } else if (info.keycode == 41 /* Esc */) {
+        // クリア
+        ResetInput();
+      } else if (info.ascii == '\b') {
         // バックスペース
         if (!hiragana_.empty()) {
           hiragana_.pop_back();
