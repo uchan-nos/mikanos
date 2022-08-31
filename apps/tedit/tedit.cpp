@@ -270,7 +270,7 @@ int DrawOneChar(uint64_t layer_id,
     SyscallWinWriteString(layer_id, x, y, TEXT_COLOR, buf);
   }
   // TODO: 描画幅をより正確に判定する
-  return c < 0x80 ? 1 : 2;
+  return c < 0x80 || (0xff61 <= c && c <= 0xff9f) ? 1 : 2;
 }
 
 // [指定した文字の最初の位置, 指定した文字の幅] を返す

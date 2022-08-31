@@ -115,7 +115,7 @@ std::pair<char32_t, int> ConvertUTF8To32(const char* u8) {
 }
 
 bool IsHankaku(char32_t c) {
-  return c <= 0x7f;
+  return c <= 0x7f || (0xff61 <= c && c <= 0xff9f);
 }
 
 WithError<FT_Face> NewFTFace() {
