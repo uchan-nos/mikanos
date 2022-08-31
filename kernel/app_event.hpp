@@ -40,7 +40,7 @@ struct AppEvent {
     } keypush;
 
     struct {
-      char32_t ch;
+      uint32_t ch;
     } charinput;
   } arg;
 };
