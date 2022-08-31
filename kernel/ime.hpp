@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "message.hpp"
 #include "window.hpp"
@@ -16,6 +17,7 @@ class IME {
     bool IsEmpty() const;
 
   private:
+    // 入力をひらがなに変換した結果
     class HiraganaConversionResult {
       public:
         HiraganaConversionResult() = default;
@@ -37,10 +39,26 @@ class IME {
         bool is_alpha_;
     };
 
+    // 変換対象の1区間
+    struct ConversionUnit {
+      // 変換元のひらがなの開始位置
+      int source_from;
+      // 選択中の位置
+      int selected_pos;
+      // 変換結果の候補
+      std::vector<std::string> candidates;
+    };
+
     void Draw();
     void DrawDotLine(int start_x, int length);
+    void DrawBoldLine(int start_x, int length);
     void AppendChar(char c);
     bool SendChars(const std::string& str);
+    ConversionUnit ConvertRange(int start, int length);
+    bool IsConverting() const;
+    void BeginConversion(int conversion_mode);
+    void CancelConversion();
+    bool CommitConversion(bool do_draw = true);
 
     // メインの変換結果を表示するウィンドウ
     std::shared_ptr<Window> main_window_;
@@ -55,6 +73,10 @@ class IME {
 
     // 入力をひらがなに変換した結果
     std::vector<HiraganaConversionResult> hiragana_;
+    // 変換の状態
+    std::vector<ConversionUnit> conversion_;
+    // 選択中の変換区間
+    int current_conversion_unit_;
 };
 
 extern IME* ime;
