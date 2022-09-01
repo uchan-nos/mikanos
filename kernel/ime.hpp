@@ -15,6 +15,7 @@ class IME {
     void ResetInput();
     void ProcessMessage(const Message& msg);
     bool IsEmpty() const;
+    void UpdatePosition();
 
   private:
     // 入力をひらがなに変換した結果

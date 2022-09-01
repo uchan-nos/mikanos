@@ -9,6 +9,7 @@
 #include <limits>
 #include <memory>
 #include <map>
+#include <optional>
 #include <vector>
 
 #include "graphics.hpp"
@@ -47,6 +48,11 @@ class Layer {
   /** @brief レイヤーの位置情報を指定された相対座標へと更新する。再描画はしない。 */
   Layer& MoveRelative(Vector2D<int> pos_diff);
 
+  /** @brief IMEの表示を要求する座標(このレイヤーの左上からの相対座標)を設定する。 */
+  Layer& SetPreferredIMEPos(const std::optional<Vector2D<int>>& pos);
+  /** @brief IMEの表示を要求する座標(このレイヤーの左上からの相対座標)を取得する。 */
+  std::optional<Vector2D<int>> GetPreferredIMEPos() const;
+
   /** @brief 指定された描画先にウィンドウの内容を描画する。 */
   void DrawTo(FrameBuffer& screen, const Rectangle<int>& area) const;
 
@@ -54,6 +60,7 @@ class Layer {
   unsigned int id_;
   int priority_;
   Vector2D<int> pos_{};
+  std::optional<Vector2D<int>> preferred_ime_pos_{};
   std::shared_ptr<Window> window_{};
   bool draggable_{false};
 };
@@ -82,6 +89,13 @@ class LayerManager {
   void Move(unsigned int id, Vector2D<int> new_pos);
   /** @brief レイヤーの位置情報を指定された相対座標へと更新する。再描画する。 */
   void MoveRelative(unsigned int id, Vector2D<int> pos_diff);
+
+  /** @brief レイヤーのIMEの表示を要求する座標を設定する。
+   *
+   * 座標はレイヤーの左上からの相対座標で設定する。
+   * 設定の対象がアクティブレイヤーの場合、IMEに位置の更新を要求する。
+   * */
+  void SetPreferredIMEPos(unsigned int id, const std::optional<Vector2D<int>>& pos);
 
   /** @brief レイヤーの高さ方向の位置を指定された位置に移動する。
    *

@@ -413,13 +413,38 @@ SYSCALL(IsTerminal) {
   return { task.Files()[fd]->IsTerminal(), 0 };
 }
 
+SYSCALL(SetPreferredIMEPos) {
+  const unsigned int layer_id = arg1 & 0xffffffff;
+  Vector2D<int> new_pos{static_cast<int>(arg2), static_cast<int>(arg3)};
+  __asm__("cli");
+  if (layer_manager->FindLayer(layer_id) == nullptr) {
+    __asm__("sti");
+    return { 0, EBADF };
+  }
+  layer_manager->SetPreferredIMEPos(layer_id, new_pos);
+  __asm__("sti");
+  return { 0, 0 };
+}
+
+SYSCALL(UnsetPreferredIMEPos) {
+  const unsigned int layer_id = arg1 & 0xffffffff;
+  __asm__("cli");
+  if (layer_manager->FindLayer(layer_id) == nullptr) {
+    __asm__("sti");
+    return { 0, EBADF };
+  }
+  layer_manager->SetPreferredIMEPos(layer_id, std::nullopt);
+  __asm__("sti");
+  return { 0, 0 };
+}
+
 #undef SYSCALL
 
 } // namespace syscall
 
 using SyscallFuncType = syscall::Result (uint64_t, uint64_t, uint64_t,
                                          uint64_t, uint64_t, uint64_t);
-extern "C" std::array<SyscallFuncType*, 0x11> syscall_table{
+extern "C" std::array<SyscallFuncType*, 0x13> syscall_table{
   /* 0x00 */ syscall::LogString,
   /* 0x01 */ syscall::PutString,
   /* 0x02 */ syscall::Exit,
@@ -437,6 +462,8 @@ extern "C" std::array<SyscallFuncType*, 0x11> syscall_table{
   /* 0x0e */ syscall::DemandPages,
   /* 0x0f */ syscall::MapFile,
   /* 0x10 */ syscall::IsTerminal,
+  /* 0x11 */ syscall::SetPreferredIMEPos,
+  /* 0x12 */ syscall::UnsetPreferredIMEPos,
 };
 
 void InitializeSyscall() {

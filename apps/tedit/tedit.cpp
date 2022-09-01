@@ -486,9 +486,19 @@ int main(int argc, char** argv) {
     }
   };
 
-  auto draw_cursor = [&, hwnd = hwnd](bool show, bool redraw) {
+  auto get_cursor_coord = [&]() -> std::tuple<int, int> {
     int cx = X_OFFSET + X_PADDING + CHAR_WIDTH * cursor_x;
     int cy = Y_OFFSET + Y_PADDING + CHAR_HEIGHT * (cursor_y - scroll_y);
+    return {cx, cy};
+  };
+
+  auto set_ime_position = [&, hwnd = hwnd]() {
+    auto [cx, cy] = get_cursor_coord();
+    SyscallSetPreferredIMEPos(hwnd, cx, cy);
+  };
+
+  auto draw_cursor = [&, hwnd = hwnd](bool show, bool redraw) {
+    auto [cx, cy] = get_cursor_coord();
     if (show) {
       // キャレットを出す
       SyscallWinDrawLine(hwnd | LAYER_NO_REDRAW,
@@ -533,6 +543,7 @@ int main(int argc, char** argv) {
   };
   draw_lines(0, -1);
   SyscallWinRedraw(hwnd);
+  set_ime_position();
 
   SyscallCreateTimer(TIMER_ONESHOT_REL, CURSOR_TIMER_VALUE, CURSOR_TIMER_INTERVAL_MS);
   int ret = 0;
@@ -639,6 +650,7 @@ int main(int argc, char** argv) {
               cursor_x = start;
               cursor_y = new_cursor_y;
               if (cursor_on) draw_cursor(true, true);
+              set_ime_position();
             }
           }
         }
@@ -849,6 +861,7 @@ int main(int argc, char** argv) {
           cursor_y = new_cursor_y;
           draw_lines(redraw_from, redraw_to);
           SyscallWinRedraw(hwnd);
+          set_ime_position();
         }
         break;
       case AppEvent::kCharInput:
@@ -859,6 +872,7 @@ int main(int argc, char** argv) {
           int line_to_draw = cursor_y - scroll_y;
           draw_lines(line_to_draw, line_to_draw);
           SyscallWinRedraw(hwnd);
+          set_ime_position();
         }
         break;
     }

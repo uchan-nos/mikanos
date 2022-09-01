@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include "console.hpp"
+#include "ime.hpp"
 #include "logger.hpp"
 #include "task.hpp"
 
@@ -54,6 +55,15 @@ Layer& Layer::Move(Vector2D<int> pos) {
 Layer& Layer::MoveRelative(Vector2D<int> pos_diff) {
   pos_ += pos_diff;
   return *this;
+}
+
+Layer& Layer::SetPreferredIMEPos(const std::optional<Vector2D<int>>& pos) {
+  preferred_ime_pos_ = pos;
+  return *this;
+}
+
+std::optional<Vector2D<int>> Layer::GetPreferredIMEPos() const {
+  return preferred_ime_pos_;
 }
 
 void Layer::DrawTo(FrameBuffer& screen, const Rectangle<int>& area) const {
@@ -123,6 +133,7 @@ void LayerManager::Move(unsigned int id, Vector2D<int> new_pos) {
   layer->Move(new_pos);
   Draw({old_pos, window_size});
   Draw(id);
+  if (active_layer->GetActive() == id) ime->UpdatePosition();
 }
 
 void LayerManager::MoveRelative(unsigned int id, Vector2D<int> pos_diff) {
@@ -132,6 +143,14 @@ void LayerManager::MoveRelative(unsigned int id, Vector2D<int> pos_diff) {
   layer->MoveRelative(pos_diff);
   Draw({old_pos, window_size});
   Draw(id);
+  if (active_layer->GetActive() == id) ime->UpdatePosition();
+}
+
+void LayerManager::SetPreferredIMEPos(unsigned int id,
+                                      const std::optional<Vector2D<int>>& pos) {
+  auto layer = FindLayer(id);
+  layer->SetPreferredIMEPos(pos);
+  if (active_layer->GetActive() == id) ime->UpdatePosition();
 }
 
 void LayerManager::UpDown(unsigned int id, int new_height) {
@@ -261,6 +280,8 @@ void ActiveLayer::Activate(unsigned int layer_id) {
     manager_.Draw(active_layer_);
     SendWindowActiveMessage(active_layer_, 1);
   }
+
+  ime->UpdatePosition();
 }
 
 ActiveLayer* active_layer;

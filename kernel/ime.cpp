@@ -236,6 +236,17 @@ bool IME::IsEmpty() const {
   return hiragana_.empty();
 }
 
+void IME::UpdatePosition() {
+  __asm__("cli");
+  auto layer = layer_manager->FindLayer(active_layer->GetActive());
+  __asm__("sti");
+  if (layer == nullptr) return;
+  auto preferred_position = layer->GetPreferredIMEPos();
+  if (preferred_position) {
+    layer_manager->Move(main_layer_id_, layer->GetPosition() + *preferred_position);
+  }
+}
+
 void IME::Draw() {
   FillRectangle(*status_window_->Writer(), {0, 0}, status_window_->Size(), {0, 0, 0});
   if (!enabled_) {
