@@ -7,6 +7,7 @@
 #include "ime.hpp"
 
 #include <cctype>
+#include <cstdlib>
 #include <limits>
 #include <unordered_map>
 
@@ -440,6 +441,33 @@ IME::ConversionUnit IME::ConvertRange(int start, int length) {
   full_katakana = ApplyMap(hiragana, *full_katakana_map);
   half_katakana = ApplyMap(full_katakana, *half_katakana_map);
   full_alpha = ApplyMap(half_alpha, *alpha_map);
+
+  // 文字コード(Unicode、16進、4～6桁)から文字への変換を行う
+  if (4 <= half_alpha.length() && half_alpha.length() <= 6 &&
+      std::all_of(half_alpha.begin(), half_alpha.end(),
+                  [](char c) { return isxdigit(c); })) {
+    char *p;
+    long value = strtol(half_alpha.c_str(), &p, 16);
+    if (value < 0x110000) {
+      std::string converted;
+      if (value < 0x80) {
+        converted.push_back(static_cast<char>(value));
+      } else if(value < 0x800) {
+        converted.push_back(static_cast<char>(0xc0 | (value >> 6)));
+        converted.push_back(static_cast<char>(0x80 | (value & 0x3f)));
+      } else if (value < 0x10000) {
+        converted.push_back(static_cast<char>(0xe0 | (value >> 12)));
+        converted.push_back(static_cast<char>(0x80 | ((value >> 6) & 0x3f)));
+        converted.push_back(static_cast<char>(0x80 | (value & 0x3f)));
+      } else {
+        converted.push_back(static_cast<char>(0xf0 | (value >> 18)));
+        converted.push_back(static_cast<char>(0x80 | ((value >> 12) & 0x3f)));
+        converted.push_back(static_cast<char>(0x80 | ((value >> 6) & 0x3f)));
+        converted.push_back(static_cast<char>(0x80 | (value & 0x3f)));
+      }
+      candidates.push_back(converted);
+    }
+  }
 
   // 各種文字への変換結果を変換候補に加える
   candidates.push_back(hiragana);
