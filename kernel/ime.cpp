@@ -78,6 +78,7 @@ void IME::SetEnabled(bool enabled) {
   if (enabled) {
     layer_manager->UpDown(main_layer_id_, std::numeric_limits<int>::max());
   } else {
+    if (!IsEmpty()) CommitConversion(false);
     Layer* layer = layer_manager->FindLayer(main_layer_id_);
     layer_manager->UpDown(main_layer_id_, -1);
     if (layer != nullptr) {
