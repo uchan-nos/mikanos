@@ -53,6 +53,7 @@ class IME {
     void Draw();
     void DrawDotLine(int start_x, int length);
     void DrawBoldLine(int start_x, int length);
+    void UpdateCandidatePosition();
     void AppendChar(char c);
     bool SendChars(const std::string& str);
     ConversionUnit ConvertRange(int start, int length);
@@ -65,12 +66,24 @@ class IME {
     std::shared_ptr<Window> main_window_;
     // メインの変換結果を表示するレイヤーのID
     unsigned int main_layer_id_;
+    // 変換候補を表示するウィンドウ
+    std::shared_ptr<Window> candidate_window_;
+    // 変換候補を表示するレイヤーのID
+    unsigned int candidate_layer_id_;
     // 状態を表示するウィンドウ
     std::shared_ptr<Window> status_window_;
-    //状態を表示するレイヤーのID
+    // 状態を表示するレイヤーのID
     unsigned int status_layer_id_;
     // IMEが有効になっているか
     bool enabled_;
+    // 変換候補を表示するか
+    bool show_candidates_;
+    // 前回描画した変換候補ウィンドウの幅
+    int candidate_width_;
+    // 前回描画した変換候補ウィンドウの高さ
+    int candidate_height_;
+    // 変換候補ウィンドウのx座標 - メインウィンドウのx座標
+    int candidate_offset_x_;
 
     // 入力をひらがなに変換した結果
     std::vector<HiraganaConversionResult> hiragana_;

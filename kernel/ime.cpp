@@ -60,6 +60,16 @@ IME::IME() {
     .Move({580, 480})
     .ID();
 
+  candidate_window_ = std::make_shared<Window>(ScreenSize().x, 161, screen_config.pixel_format);
+  candidate_window_->SetTransparentColor(kIMETransparentColor);
+  candidate_layer_id_ = layer_manager->NewLayer(kIMELayerPriority)
+    .SetWindow(candidate_window_)
+    .SetDraggable(false)
+    .ID();
+  candidate_width_ = candidate_window_->Size().x;
+  candidate_height_ = 0;
+  candidate_offset_x_ = -18;
+
   status_window_ = std::make_shared<Window>(16, 16, screen_config.pixel_format);
   status_layer_id_ = layer_manager->NewLayer(kBgObjectLayerPriority)
     .SetWindow(status_window_)
@@ -70,6 +80,7 @@ IME::IME() {
   layer_manager->UpDown(status_layer_id_, std::numeric_limits<int>::max());
 
   enabled_ = false;
+  show_candidates_ = false;
   Draw();
 }
 
@@ -108,8 +119,10 @@ void IME::ProcessMessage(const Message& msg) {
     if (IsConverting()) {
       auto& unit = conversion_[current_conversion_unit_];
       unit.selected_pos = unit.candidates.size() + offset;
+      show_candidates_ = false;
       Draw();
     } else {
+      show_candidates_ = false;
       BeginConversion(offset);
     }
   };
@@ -144,9 +157,11 @@ void IME::ProcessMessage(const Message& msg) {
           // 次の変換候補に進む
           auto& unit = conversion_[current_conversion_unit_];
           unit.selected_pos = (unit.selected_pos + 1) % unit.candidates.size();
+          show_candidates_ = true;
           Draw();
         } else {
           // 変換
+          show_candidates_ = false;
           BeginConversion(kNormalConversion);
         }
       } else if (info.ascii > ' ') {
@@ -178,6 +193,7 @@ void IME::ProcessMessage(const Message& msg) {
           } else {
             if (current_conversion_unit_ > 0) --current_conversion_unit_;
           }
+          show_candidates_ = false;
           Draw();
         }
       } else if (info.keycode == 79 /* → */) {
@@ -198,18 +214,21 @@ void IME::ProcessMessage(const Message& msg) {
               ++current_conversion_unit_;
             }
           }
+          show_candidates_ = false;
           Draw();
       } else if (info.keycode == 82 /* ↑ */) {
         if (IsConverting()) {
           auto& unit = conversion_[current_conversion_unit_];
           --unit.selected_pos;
           if (unit.selected_pos < 0) unit.selected_pos = unit.candidates.size() - 1;
+          show_candidates_ = true;
           Draw();
         }
       } else if (info.keycode == 81 /* ↓ */) {
         if (IsConverting()) {
           auto& unit = conversion_[current_conversion_unit_];
           unit.selected_pos = (unit.selected_pos + 1) % unit.candidates.size();
+          show_candidates_ = true;
           Draw();
         }
       } else if (info.keycode == 75 /* PgUp */) {
@@ -217,6 +236,7 @@ void IME::ProcessMessage(const Message& msg) {
           auto& unit = conversion_[current_conversion_unit_];
           unit.selected_pos = unit.selected_pos / 9 * 9 - 9;
           if (unit.selected_pos < 0) unit.selected_pos = (unit.candidates.size() - 1) / 9 * 9;
+          show_candidates_ = true;
           Draw();
         }
       } else if (info.keycode == 78 /* PgDn */) {
@@ -226,6 +246,7 @@ void IME::ProcessMessage(const Message& msg) {
           if (static_cast<unsigned int>(unit.selected_pos) >= unit.candidates.size()) {
             unit.selected_pos = 0;
           }
+          show_candidates_ = true;
           Draw();
         }
       }
@@ -245,6 +266,7 @@ void IME::UpdatePosition() {
   auto preferred_position = layer->GetPreferredIMEPos();
   if (preferred_position) {
     layer_manager->Move(main_layer_id_, layer->GetPosition() + *preferred_position);
+    UpdateCandidatePosition();
   }
 }
 
@@ -258,47 +280,151 @@ void IME::Draw() {
   WriteString(*status_window_->Writer(), {0, 0}, "あ", {255, 255, 255});
   layer_manager->Draw(status_layer_id_);
 
-  int draw_right = 0;
-  const auto& area_size = main_window_->Size();
-  auto draw_unit = [&](const std::string& str, bool is_selected, bool is_last) {
-    int draw_left = draw_right;
-    std::string string_to_draw;
-    bool limit_reached = false;
+  // 描画時に指定の幅以内になるように文字列を切り詰める
+  // {切り詰めた文字列, 切り詰めた文字列の描画幅} を返す
+  auto prepare_string_to_draw = [](const std::string& str, int width_limit)
+                                -> std::tuple<std::string, int> {
+    std::string string_to_draw = "";
+    int draw_size = 0;
     for (size_t i = 0; i < str.size(); ) {
       auto [c, size] = ConvertUTF8To32(&str[i]);
       if (size <= 0) break;
-      auto new_draw_right = draw_right + 8 * (IsHankaku(c) ? 1 : 2);
-      if (new_draw_right > area_size.x) {
-        i = hiragana_.size();
-        limit_reached = true;
-        break;
-      }
+      auto new_draw_size = draw_size + 8 * (IsHankaku(c) ? 1 : 2);
+      if (new_draw_size > width_limit) break;
       string_to_draw.append(str.begin() + i, str.begin() + i + size);
       i += size;
-      draw_right = new_draw_right;
+      draw_size = new_draw_size;
     }
-    FillRectangle(*main_window_->Writer(), {draw_left, 0},
-                  {draw_right - draw_left, area_size.y}, {255, 255, 255});
-    WriteString(*main_window_->Writer(), {draw_left, 0},
+    return {string_to_draw, draw_size};
+  };
+
+  int draw_right = 0;
+  const auto& area_size = main_window_->Size();
+  auto draw_unit = [&](const std::string& str, bool is_selected, bool is_last) {
+    auto [string_to_draw, draw_width] = prepare_string_to_draw(str, area_size.x - draw_right);
+    bool limit_reached = str.size() != string_to_draw.size();
+    FillRectangle(*main_window_->Writer(), {draw_right, 0},
+                  {draw_width, area_size.y}, {255, 255, 255});
+    WriteString(*main_window_->Writer(), {draw_right, 0},
                 string_to_draw.c_str(), {0, 0, 0});
-    int line_length = draw_right - draw_left - (is_last || limit_reached ? 0 : 3);
+    int line_length = draw_width - (is_last || limit_reached ? 0 : 3);
     if (is_selected) {
-      DrawBoldLine(draw_left, line_length);
+      DrawBoldLine(draw_right, line_length);
     } else {
-      DrawDotLine(draw_left, line_length);
+      DrawDotLine(draw_right, line_length);
     }
+    draw_right += draw_width;
     return limit_reached;
   };
 
+  if (show_candidates_ && IsConverting()) {
+    if (layer_manager->GetHeight(candidate_layer_id_) < 0) {
+      layer_manager->UpDown(candidate_layer_id_, std::numeric_limits<int>::max());
+    }
+  } else {
+    if (layer_manager->GetHeight(candidate_layer_id_) >= 0) {
+      layer_manager->Hide(candidate_layer_id_);
+      layer_manager->Draw({layer_manager->FindLayer(candidate_layer_id_)->GetPosition(),
+                           candidate_window_->Size()});
+    }
+  }
+
   if (IsConverting()) {
     for (size_t i = 0; !conversion_[i].candidates.empty(); ++i) {
+      int draw_left = draw_right;
       auto& unit = conversion_[i];
-      if (draw_unit(unit.candidates[unit.selected_pos],
-                    static_cast<unsigned int>(current_conversion_unit_) == i,
-                    conversion_[i + 1].candidates.empty())) {
-        // 描画できる右端に到達した
-        break;
+      bool is_selected = static_cast<unsigned int>(current_conversion_unit_) == i;
+      bool limit_reached = draw_unit(unit.candidates[unit.selected_pos],
+                                     is_selected,
+                                     conversion_[i + 1].candidates.empty());
+      if (is_selected && show_candidates_) {
+        // 変換候補の描画に用いる色
+        const PixelColor candidate_color{0, 0, 0}; // 変換候補のテキストの色
+        const PixelColor guide_color{64, 64, 64}; // 番号や変換候補数のテキストの色
+        const PixelColor back_color{255, 255, 255}; // 変換候補の背景の色
+        const PixelColor selected_back_color{128, 255, 255}; // 選択中の変換候補の背景の色
+        const PixelColor guide_back_color{192, 192, 192}; // 番号や変換候補数の背景の色
+        // 変換候補の描画
+        int start = unit.selected_pos / 9 * 9;
+        int draw_y = 1;
+        int drawn_width_max = 0;
+        std::vector<int> drawn_width;
+        drawn_width.reserve(9);
+        for (int j = 0;
+             j < 9 && static_cast<unsigned int>(start + j) < unit.candidates.size();
+             j++) {
+          auto [string_to_draw, draw_width] = prepare_string_to_draw(unit.candidates[start + j],
+                                                                     candidate_window_->Size().x - 18);
+          // 変換候補の背景
+          if (start + j == unit.selected_pos) {
+            FillRectangle(*candidate_window_->Writer(), {0, draw_y},
+                          {1, 16}, guide_back_color);
+            FillRectangle(*candidate_window_->Writer(), {1, draw_y},
+                          {15 + 2+ draw_width, 16}, selected_back_color);
+          } else {
+            FillRectangle(*candidate_window_->Writer(), {0, draw_y},
+                          {18, 16}, guide_back_color);
+            FillRectangle(*candidate_window_->Writer(), {16, draw_y},
+                          {2 + draw_width, 16}, back_color);
+          }
+          // 変換候補の番号
+          WriteAscii(*candidate_window_->Writer(), {4, draw_y}, '1' + j, guide_color);
+          // 変換候補
+          WriteString(*candidate_window_->Writer(), {18, draw_y},
+                      string_to_draw.c_str(), candidate_color);
+          drawn_width.push_back(draw_width);
+          if (draw_width > drawn_width_max) drawn_width_max = draw_width;
+          draw_y += 16;
+        }
+        // 変換候補数
+        std::string current_candidate = std::to_string(unit.selected_pos + 1);
+        std::string max_candidate = std::to_string(unit.candidates.size());
+        while (current_candidate.size() < max_candidate.size()) {
+          current_candidate = " " + max_candidate;
+        }
+        auto [candidate_string, candidate_string_width] = prepare_string_to_draw(current_candidate + "/" + max_candidate,
+                                                                                 candidate_window_->Size().x - 1);
+        if (18 + drawn_width_max < candidate_string_width) {
+          drawn_width_max = candidate_string_width - 18;
+        }
+        int new_candidate_width = 18 + drawn_width_max + 1;
+        FillRectangle(*candidate_window_->Writer(), {0, draw_y},
+                      {new_candidate_width, 16}, guide_back_color);
+        WriteString(*candidate_window_->Writer(),
+                    {18 + drawn_width_max - candidate_string_width, draw_y},
+                    candidate_string.c_str(), guide_color);
+        draw_y += 16;
+        // 変換候補の背景の残りの部分
+        for (size_t j = 0; j < drawn_width.size(); j++) {
+          FillRectangle(*candidate_window_->Writer(),
+                        {18 + drawn_width[j], 1 + 16 * static_cast<int>(j)},
+                        {drawn_width_max - drawn_width[j], 16},
+                        static_cast<int>(start + j) == unit.selected_pos ? selected_back_color : back_color);
+        }
+        // 変換候補の上の線
+        FillRectangle(*candidate_window_->Writer(), {0, 0},
+                      {new_candidate_width, 1}, guide_back_color);
+        // 変換候補の右の線
+        FillRectangle(*candidate_window_->Writer(), {new_candidate_width - 1, 0},
+                      {1, draw_y}, guide_back_color);
+        // 変換候補の右の余った部分
+        if (new_candidate_width < candidate_width_) {
+          FillRectangle(*candidate_window_->Writer(), {new_candidate_width, 0},
+                        {candidate_width_ - new_candidate_width, candidate_window_->Size().y},
+                        kIMETransparentColor);
+        }
+        // 変換候補の下の余った部分
+        FillRectangle(*candidate_window_->Writer(), {0, draw_y},
+                      {new_candidate_width, candidate_window_->Size().y - draw_y},
+                      kIMETransparentColor);
+        // 描画したサイズを更新
+        candidate_width_ = new_candidate_width;
+        candidate_height_ = draw_y;
+        // レイヤーの位置を設定 (+再描画)
+        candidate_offset_x_ = draw_left - 18;
+        UpdateCandidatePosition();
       }
+      if (limit_reached) break;
     }
   } else {
     std::string converted_string;
@@ -321,6 +447,26 @@ void IME::DrawDotLine(int start_x, int length) {
 
 void IME::DrawBoldLine(int start_x, int length) {
   FillRectangle(*main_window_->Writer(), {start_x, 17}, {length, 2}, {0, 0, 0});
+}
+
+void IME::UpdateCandidatePosition() {
+  auto main_pos = layer_manager->FindLayer(main_layer_id_)->GetPosition();
+  Vector2D<int> candidate_pos;
+  candidate_pos.x = main_pos.x + candidate_offset_x_;
+  if (candidate_pos.x < 0) candidate_pos.x = 0;
+  if (candidate_pos.x > ScreenSize().x - candidate_width_) {
+    candidate_pos.x = ScreenSize().x - candidate_width_;
+  }
+  if (main_pos.y + 20 + candidate_height_ > ScreenSize().y) {
+    candidate_pos.y = main_pos.y - candidate_height_ - 1;
+  } else {
+    candidate_pos.y = main_pos.y + 20;
+  }
+  if (candidate_pos.y < 0) candidate_pos.y = 0;
+  if (candidate_pos.y > ScreenSize().y - candidate_height_) {
+    candidate_pos.y = ScreenSize().y - candidate_height_;
+  }
+  layer_manager->Move(candidate_layer_id_, candidate_pos);
 }
 
 void IME::AppendChar(char c) {
