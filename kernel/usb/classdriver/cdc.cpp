@@ -11,7 +11,7 @@ namespace usb::cdc {
   CDCDriver::CDCDriver(Device* dev, const InterfaceDescriptor* if_comm,
                        const InterfaceDescriptor* if_data)
     : ClassDriver{dev},
-      if_data_index_{if_data->interface_number}
+      if_comm_index_{if_comm->interface_number}
   {
   }
 
@@ -89,7 +89,7 @@ namespace usb::cdc {
     setup_data.request_type.bits.recipient = request_type::kInterface;
     setup_data.request = request::kSetLineCoding;
     setup_data.value = 0;
-    setup_data.index = if_data_index_;
+    setup_data.index = if_comm_index_;
     setup_data.length = sizeof(LineCoding);
 
     line_coding_ = value;
