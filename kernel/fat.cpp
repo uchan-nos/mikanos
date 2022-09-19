@@ -270,8 +270,8 @@ WithError<DirectoryEntry*> CreateFile(const char* path) {
   if (dir == nullptr) {
     return { nullptr, MAKE_ERROR(Error::kNoEnoughMemory) };
   }
+  memset(dir, 0, sizeof(DirectoryEntry));
   fat::SetFileName(*dir, filename);
-  dir->file_size = 0;
   return { dir, MAKE_ERROR(Error::kSuccess) };
 }
 
