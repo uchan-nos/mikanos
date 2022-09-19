@@ -18,9 +18,11 @@ namespace {
     }
 
     const uint8_t* Next() {
+      if(desc_buf_ + desc_buf_len_ <= p_) return nullptr;
+      const uint8_t* buf = p_;
       p_ += p_[0];
-      if (p_ < desc_buf_ + desc_buf_len_) {
-        return p_;
+      if (p_ <= desc_buf_ + desc_buf_len_) {
+        return buf;
       }
       return nullptr;
     }
