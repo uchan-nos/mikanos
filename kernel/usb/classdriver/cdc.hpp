@@ -131,6 +131,8 @@ namespace usb::cdc {
     std::deque<uint8_t> receive_buf_;
     uint8_t if_comm_index_;
     LineCoding line_coding_;
+    bool initializing_line_coding_{};
+    uint8_t buf_in_[8];
   };
 
   inline CDCDriver* driver = nullptr;
