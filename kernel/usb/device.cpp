@@ -121,11 +121,12 @@ namespace {
           if_data = if_desc;
         }
 
-        for (int i = 0; i < if_desc->num_endpoints; ++i) {
+        for (int i = 0; i < if_desc->num_endpoints; ) {
           auto desc = conf_reader.Next();
           if (auto ep_desc = usb::DescriptorDynamicCast<usb::EndpointDescriptor>(desc)) {
             ep_configs.push_back(MakeEPConfig(*ep_desc));
             Log(kWarn, ep_configs.back());
+            ++i;
           } else if (auto cdc = FuncDescDynamicCast<HeaderDescriptor>(desc)) {
             Log(kWarn, "kHeader: cdc=%04x\n", cdc->cdc);
           } else if (auto call = FuncDescDynamicCast<CMDescriptor>(desc)) {
