@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <deque>
+#include <vector>
 
 #include "usb/classdriver/base.hpp"
 #include "usb/descriptor.hpp"
@@ -132,7 +133,7 @@ namespace usb::cdc {
     uint8_t if_comm_index_;
     LineCoding line_coding_;
     int line_coding_initialization_status_{};
-    uint8_t buf_in_[8];
+    std::vector<uint8_t> buf_in_;
   };
 
   inline CDCDriver* driver = nullptr;

@@ -25,6 +25,7 @@ namespace usb::cdc {
         ep_interrupt_in_ = config.ep_id;
       } else if (config.ep_type == EndpointType::kBulk && config.ep_id.IsIn()) {
         ep_bulk_in_ = config.ep_id;
+        buf_in_.resize(config.max_packet_size);
       } else if (config.ep_type == EndpointType::kBulk && !config.ep_id.IsIn()) {
         ep_bulk_out_ = config.ep_id;
       }
@@ -64,7 +65,7 @@ namespace usb::cdc {
       if (setup_data.request == request::kSetLineCoding) {
         line_coding_initialization_status_ = 0;
         // 受信を開始する
-        if (auto err = ParentDevice()->NormalIn(ep_bulk_in_, buf_in_, 8)) {
+        if (auto err = ParentDevice()->NormalIn(ep_bulk_in_, buf_in_.data(), buf_in_.size())) {
           Log(kError, "%s:%d: NormalIn failed: %s\n", err.File(), err.Line(), err.Name());
           return err;
         }
@@ -79,7 +80,7 @@ namespace usb::cdc {
     if (ep_id == ep_bulk_in_) {
       std::copy_n(buf8, len, std::back_inserter(receive_buf_));
       // 次の受信を開始する
-      if (auto err = ParentDevice()->NormalIn(ep_bulk_in_, buf_in_, 8)) {
+      if (auto err = ParentDevice()->NormalIn(ep_bulk_in_, buf_in_.data(), buf_in_.size())) {
         Log(kError, "%s:%d: NormalIn failed: %s\n", err.File(), err.Line(), err.Name());
         return err;
       }
