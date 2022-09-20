@@ -42,6 +42,19 @@ namespace usb {
     uint8_t max_power;          // offset 8
   } __attribute__((packed));
 
+  struct InterfaceAssociationDescriptor {
+    static const uint8_t kType = 11;
+
+    uint8_t length;             // offset 0
+    uint8_t descriptor_type;    // offset 1
+    uint8_t first_interface;    // offset 2
+    uint8_t interface_count;    // offset 3
+    uint8_t function_class;     // offset 4
+    uint8_t function_sub_class; // offset 5
+    uint8_t function_protocol;  // offset 6
+    uint8_t function;           // offset 7
+  } __attribute__((packed));
+
   struct InterfaceDescriptor {
     static const uint8_t kType = 4;
 
