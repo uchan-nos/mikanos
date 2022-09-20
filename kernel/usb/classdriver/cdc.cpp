@@ -34,7 +34,7 @@ namespace usb::cdc {
 
   Error CDCDriver::OnEndpointsConfigured() {
     // 現在の通信設定を取得する
-    initializing_line_coding_ = true;
+    line_coding_initialization_status_ = 1;
     SetupData setup_data{};
     setup_data.request_type.bits.direction = request_type::kIn;
     setup_data.request_type.bits.type = request_type::kClass;
@@ -52,21 +52,22 @@ namespace usb::cdc {
                                       const void* buf, int len) {
     Log(kDebug, "CDCDriver::OnControlCompleted: req_type=0x%02x req=0x%02x len=%u\n",
         setup_data.request_type.data, setup_data.request, len);
-    if (initializing_line_coding_) {
+    if (line_coding_initialization_status_ == 1) {
       if (setup_data.request == request::kGetLineCoding) {
         if (line_coding_.dte_rate == 0) {
-          // 通信設定がされていないので、設定を行う
-          return SetLineCoding({9600, CharFormat::kStopBit1, ParityType::kNone, 8});
+          line_coding_ = LineCoding{9600, CharFormat::kStopBit1, ParityType::kNone, 8};
         }
-      } else if (setup_data.request != request::kSetLineCoding) {
-        return MAKE_ERROR(Error::kSuccess);
+        line_coding_initialization_status_ = 2;
+        return SetLineCoding(line_coding_);
       }
-      // 通信設定がされている(Get) or した(Set)
-      initializing_line_coding_ = false;
-      // 受信を開始する
-      if (auto err = ParentDevice()->NormalIn(ep_bulk_in_, buf_in_, 8)) {
-        Log(kError, "%s:%d: NormalIn failed: %s\n", err.File(), err.Line(), err.Name());
-        return err;
+    } else if (line_coding_initialization_status_ == 2) {
+      if (setup_data.request == request::kSetLineCoding) {
+        line_coding_initialization_status_ = 0;
+        // 受信を開始する
+        if (auto err = ParentDevice()->NormalIn(ep_bulk_in_, buf_in_, 8)) {
+          Log(kError, "%s:%d: NormalIn failed: %s\n", err.File(), err.Line(), err.Name());
+          return err;
+        }
       }
     }
     return MAKE_ERROR(Error::kSuccess);

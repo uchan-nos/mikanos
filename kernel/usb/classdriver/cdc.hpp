@@ -131,7 +131,7 @@ namespace usb::cdc {
     std::deque<uint8_t> receive_buf_;
     uint8_t if_comm_index_;
     LineCoding line_coding_;
-    bool initializing_line_coding_{};
+    int line_coding_initialization_status_{};
     uint8_t buf_in_[8];
   };
 
