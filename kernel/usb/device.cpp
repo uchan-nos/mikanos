@@ -130,7 +130,6 @@ namespace {
       usb::Device* dev,
       ConfigurationDescriptorReader& conf_reader) {
     using namespace usb::cdc;
-    Log(kWarn, "creating class driver for class=%d\n", dev->DeviceDesc().device_class);
 
     auto cdc_driver = [&](int num_interface = -1) -> WithError<usb::ClassDriver*> {
       const usb::InterfaceDescriptor* if_comm = nullptr;
@@ -185,20 +184,20 @@ namespace {
       }
     };
 
-    if (dev->DeviceDesc().device_class == 2) {
-      return cdc_driver();
-    } else if (dev->DeviceDesc().device_class == 0xef &&
-               dev->DeviceDesc().device_sub_class == 2 &&
-               dev->DeviceDesc().device_protocol == 1) { // Interface Association Descriptor
+    const auto& device_desc = dev->DeviceDesc();
+    if (device_desc.device_class == 0 ||
+               (device_desc.device_class == 0xef &&
+                device_desc.device_sub_class == 2 &&
+                device_desc.device_protocol == 1)) { // Interface Association Descriptor
       while (auto desc = conf_reader.Next()) {
         if (auto ia_desc = usb::DescriptorDynamicCast<usb::InterfaceAssociationDescriptor>(desc)) {
-          Log(kWarn, *ia_desc);
+          Log(kDebug, *ia_desc);
           if (ia_desc->function_class == 2) {
             return cdc_driver(ia_desc->interface_count);
           }
           drop_iad(ia_desc->interface_count);
         } else if (auto if_desc = usb::DescriptorDynamicCast<usb::InterfaceDescriptor>(desc)) {
-          Log(kWarn, *if_desc);
+          Log(kDebug, *if_desc);
           auto class_driver = NewClassDriver(dev, *if_desc);
           if (class_driver != nullptr) {
             GetEndPoints(ep_configs, conf_reader, if_desc->num_endpoints);
@@ -206,6 +205,12 @@ namespace {
           }
         }
       }
+      return { nullptr, MAKE_ERROR(Error::kSuccess) };
+    }
+
+    Log(kWarn, "creating class driver for class=%d\n", device_desc.device_class);
+    if (device_desc.device_class == 2) {
+      return cdc_driver();
     }
     return { nullptr, MAKE_ERROR(Error::kNotImplemented) };
   }
@@ -324,34 +329,15 @@ namespace usb {
     }
     ConfigurationDescriptorReader config_reader{buf, len};
 
-    if (device_desc_.device_class != 0) {
-      auto [ class_driver, err ] =
-        NewClassDriver(ep_configs_, this, config_reader);
-      if (err) {
-        return err;
-      }
-      class_drivers_.push_back(class_driver);
-    } else {
-      bool no_class_driver = true;
-      while (auto if_desc = config_reader.Next<InterfaceDescriptor>()) {
-        Log(kDebug, *if_desc);
-
-        auto class_driver = NewClassDriver(this, *if_desc);
-        if (class_driver == nullptr) {
-          // 非対応デバイス．次の interface を調べる．
-          continue;
-        }
-        no_class_driver = false;
-        class_drivers_.push_back(class_driver);
-
-        GetEndPoints(ep_configs_, config_reader, if_desc->num_endpoints);
-        break;
-      }
-
-      if (no_class_driver) {
-        return MAKE_ERROR(Error::kSuccess);
-      }
+    auto [ class_driver, err ] =
+      NewClassDriver(ep_configs_, this, config_reader);
+    if (err) {
+      return err;
     }
+    if (class_driver == nullptr) {
+      return MAKE_ERROR(Error::kSuccess);
+    }
+    class_drivers_.push_back(class_driver);
 
     initialize_phase_ = 3;
     Log(kDebug, "issuing SetConfiguration: conf_val=%d\n",
