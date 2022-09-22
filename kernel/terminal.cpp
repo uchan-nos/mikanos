@@ -487,8 +487,10 @@ void Terminal::ExecuteLine() {
     if (show_window_) {
       CloseLayer(layer_id_);
     }
+    int exit_code = 0;
+    if (first_arg) exit_code = atoi(first_arg);
     __asm__("cli");
-    task_manager->Finish(0);
+    task_manager->Finish(exit_code);
   } else if (strcmp(command, "lspci") == 0) {
     for (int i = 0; i < pci::num_device; ++i) {
       const auto& dev = pci::devices[i];
