@@ -166,7 +166,19 @@ void IME::ProcessMessage(const Message& msg) {
         }
       } else if (info.ascii > ' ') {
         // 文字入力
-        if (IsConverting()) CommitConversion(false);
+        if (IsConverting()) {
+          if ('1' <= info.ascii && info.ascii <= '9') {
+            auto& unit = conversion_[current_conversion_unit_];
+            int newPos = unit.selected_pos / 9 * 9 + info.ascii - '1';
+            if (static_cast<unsigned int>(newPos) < unit.candidates.size()) {
+              unit.selected_pos = newPos;
+            }
+            show_candidates_ = true;
+            Draw();
+          } else {
+            CommitConversion(false);
+          }
+        }
         AppendChar(info.ascii);
         Draw();
       } else if (info.keycode == 63 /* F6 */) {
