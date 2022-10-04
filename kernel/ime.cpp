@@ -6,14 +6,16 @@
 
 #include "ime.hpp"
 
+#include <algorithm>
 #include <cctype>
 #include <cstdlib>
 #include <limits>
-#include <unordered_map>
 
+#include "fat.hpp"
 #include "font.hpp"
 #include "graphics.hpp"
 #include "layer.hpp"
+#include "logger.hpp"
 #include "task.hpp"
 
 const PixelColor kIMETransparentColor{255, 1, 1};
@@ -82,6 +84,64 @@ IME::IME() {
   enabled_ = false;
   show_candidates_ = false;
   Draw();
+}
+
+void IME::ReadDictionary(const char* file_name, bool append) {
+  auto [ file, pos_slash] = fat::FindFile(file_name);
+  if (file == nullptr || pos_slash) {
+    Log(kWarn, "%s not found\n", file_name);
+    return;
+  }
+  const size_t file_size = file->file_size;
+  std::vector<char> file_data(file_size);
+  if (LoadFile(file_data.data(), file_size, *file) != file_size) {
+    Log(kWarn, "failed to read %s\n", file_name);
+    return;
+  }
+  if (!append) dictionary_.clear();
+
+  // 辞書ファイルの仕様
+  // ・1行に1項目 (読みと変換結果の対応) を書く
+  // ・読み→変換結果の順で、タブ区切りで書く
+  // ・各行のシャープ以降は無視する
+  // ・タブが無い行も無視する
+  // ・同じ「読み」と「変換結果」の組は、複数個あっても1個だけ登録する
+
+  std::vector<char>::iterator from_begin, from_end, to_begin, to_end;
+  bool reading_to = false, skipping = false;
+  from_begin = file_data.begin();
+  for (std::vector<char>::iterator it = file_data.begin(); it != file_data.end(); it++) {
+    if (!skipping && *it == '#') {
+      // シャープが見つかったので、そこを行の終わりとみなす
+      if (reading_to) to_end = it;
+      skipping = true;
+    } else if (!skipping && *it == '\t') {
+      // タブが見つかったので、「読み」と「変換結果」の境目とする
+      if (!reading_to) {
+        from_end = it;
+        to_begin = it + 1;
+        reading_to = true;
+      }
+    } else if (*it == '\n') {
+      // 改行が見つかった
+      if (!skipping) to_end = it;
+      if (reading_to) {
+        std::string from(from_begin, from_end), to(to_begin, to_end);
+        // 未登録の「読み」と「変換結果」の組であれば、登録する
+        auto dic_elem = dictionary_.find(from);
+        if (dic_elem == dictionary_.end()) {
+          dictionary_[from] = std::vector<std::string>{to};
+        } else {
+          auto& vec = dic_elem->second;
+          auto vec_elem = std::find(vec.begin(), vec.end(), to);
+          if (vec_elem == vec.end()) vec.push_back(to);
+        }
+      }
+      from_begin = it + 1;
+      reading_to = false;
+      skipping = false;
+    }
+  }
 }
 
 void IME::SetEnabled(bool enabled) {
@@ -612,6 +672,13 @@ IME::ConversionUnit IME::ConvertRange(int start, int length) {
   half_katakana = ApplyMap(full_katakana, *half_katakana_map);
   full_alpha = ApplyMap(half_alpha, *alpha_map);
 
+  // 辞書を用いた変換を行う
+  auto dict_elem = dictionary_.find(hiragana);
+  if (dict_elem != dictionary_.end()) {
+    candidates.insert(candidates.end(),
+                      dict_elem->second.begin(), dict_elem->second.end());
+  }
+
   // 文字コード(Unicode、16進、4～6桁)から文字への変換を行う
   if (4 <= half_alpha.length() && half_alpha.length() <= 6 &&
       std::all_of(half_alpha.begin(), half_alpha.end(),
@@ -701,6 +768,7 @@ IME* ime;
 
 void InitializeIME() {
   ime = new IME();
+  ime->ReadDictionary("/imedict.dic");
 
   hiragana_map = new std::unordered_map<std::string, std::string>{
     {"a", "あ"}, {"i", "い"}, {"u", "う"}, {"e", "え"}, {"o", "お"},

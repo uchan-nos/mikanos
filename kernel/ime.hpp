@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "message.hpp"
@@ -10,6 +11,7 @@
 class IME {
   public:
     IME();
+    void ReadDictionary(const char* file_name, bool append = false);
     void SetEnabled(bool enabled);
     bool GetEnabled() const;
     void ResetInput();
@@ -85,6 +87,8 @@ class IME {
     // 変換候補ウィンドウのx座標 - メインウィンドウのx座標
     int candidate_offset_x_;
 
+    // 変換辞書
+    std::unordered_map<std::string, std::vector<std::string>> dictionary_;
     // 入力をひらがなに変換した結果
     std::vector<HiraganaConversionResult> hiragana_;
     // 変換の状態
