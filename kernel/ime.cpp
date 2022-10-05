@@ -724,18 +724,42 @@ void IME::BeginConversion(int conversion_mode) {
   if (hiragana_.empty()) return;
   conversion_.clear();
   if (conversion_mode == kNormalConversion) {
-    // TODO
-    conversion_.push_back(ConvertRange(0, hiragana_.size()));
-    conversion_.back().selected_pos = conversion_.back().candidates.size() + kOffsetFullKatakana;
-    conversion_.push_back({static_cast<int>(hiragana_.size()), 0, {}}); // 番兵
+    // 辞書に載っている最長の部分を貪欲に取る
+    size_t last_unconverted = 0;
+    for (size_t i = 0; i < hiragana_.size(); i++) {
+      size_t found_pos = -1;
+      std::string query = "";
+      for (size_t j = i; j < hiragana_.size(); j++) {
+        query += hiragana_[j].Converted();
+        if (dictionary_.find(query) != dictionary_.end()) found_pos = j;
+      }
+      // 現在の位置から始まる、辞書に載っている部分があった場合
+      if (found_pos != static_cast<size_t>(-1)) {
+        // その前に辞書に載っていない部分があれば、変換リストに加える
+        if (last_unconverted < i) {
+          conversion_.push_back(ConvertRange(last_unconverted, i - last_unconverted));
+          conversion_.back().selected_pos = conversion_.back().candidates.size() + kOffsetHiragana;
+        }
+        // 見つかった辞書に載っている部分を変換リストに加える
+        conversion_.push_back(ConvertRange(i, found_pos + 1 - i));
+        // 加えた部分の次から処理を続行する
+        i = found_pos;
+        last_unconverted = i + 1;
+      }
+    }
+    // 最後に辞書に載っていない部分が残っていれば、変換リストに加える
+    if (last_unconverted < hiragana_.size()) {
+      conversion_.push_back(ConvertRange(last_unconverted, hiragana_.size() - last_unconverted));
+      conversion_.back().selected_pos = conversion_.back().candidates.size() + kOffsetHiragana;
+    }
   } else if (kOffsetHiragana <= conversion_mode &&
              conversion_mode <= kOffsetHalfAlpha) {
     conversion_.push_back(ConvertRange(0, hiragana_.size()));
     conversion_.back().selected_pos = conversion_.back().candidates.size() + conversion_mode;
-    conversion_.push_back({static_cast<int>(hiragana_.size()), 0, {}}); // 番兵
   } else {
     return;
   }
+  conversion_.push_back({static_cast<int>(hiragana_.size()), 0, {}}); // 番兵
   current_conversion_unit_ = 0;
   Draw();
 }
