@@ -270,7 +270,7 @@ int DrawOneChar(uint64_t layer_id,
     SyscallWinWriteString(layer_id, x, y, TEXT_COLOR, buf);
   }
   // TODO: 描画幅をより正確に判定する
-  return c < 0x80 ? 1 : 2;
+  return c < 0x80 || (0xff61 <= c && c <= 0xff9f) ? 1 : 2;
 }
 
 // [指定した文字の最初の位置, 指定した文字の幅] を返す
@@ -486,9 +486,19 @@ int main(int argc, char** argv) {
     }
   };
 
-  auto draw_cursor = [&, hwnd = hwnd](bool show, bool redraw) {
+  auto get_cursor_coord = [&]() -> std::tuple<int, int> {
     int cx = X_OFFSET + X_PADDING + CHAR_WIDTH * cursor_x;
     int cy = Y_OFFSET + Y_PADDING + CHAR_HEIGHT * (cursor_y - scroll_y);
+    return {cx, cy};
+  };
+
+  auto set_ime_position = [&, hwnd = hwnd]() {
+    auto [cx, cy] = get_cursor_coord();
+    SyscallSetPreferredIMEPos(hwnd, cx, cy);
+  };
+
+  auto draw_cursor = [&, hwnd = hwnd](bool show, bool redraw) {
+    auto [cx, cy] = get_cursor_coord();
     if (show) {
       // キャレットを出す
       SyscallWinDrawLine(hwnd | LAYER_NO_REDRAW,
@@ -533,10 +543,27 @@ int main(int argc, char** argv) {
   };
   draw_lines(0, -1);
   SyscallWinRedraw(hwnd);
+  set_ime_position();
 
   SyscallCreateTimer(TIMER_ONESHOT_REL, CURSOR_TIMER_VALUE, CURSOR_TIMER_INTERVAL_MS);
   int ret = 0;
   bool exit_flag = false;
+
+  // カーソルの位置に文字cを挿入し、挿入後のカーソルのx座標を返す
+  auto insert_char = [&](uint32_t c) {
+    int idx = cursor_x == 0 ? 0 :
+              char_idx[cursor_y - scroll_y][cursor_x - 1] + 1;
+    data[cursor_y].insert(data[cursor_y].begin() + idx, c);
+    // 挿入後の行について、新しいカーソルの位置を求める
+    // タブ(など)の処理があり得るので、単に「一文字分」ではダメ
+    std::vector<int> new_char_idx;
+    DrawLine(new_char_idx, 0, 0, 0, width, tab_size,
+             data[cursor_y], false, true);
+    auto [s, cw] = GetCharRange(new_char_idx, cursor_x);
+    int new_cursor_x = cursor_x;
+    if (cursor_x + cw <= width) new_cursor_x += cw;
+    return new_cursor_x;
+  };
 
   // ダイアログの各ボタンを押した時の動作
   auto dialog_save_pressed = [&, hwnd = hwnd]() {
@@ -623,6 +650,7 @@ int main(int argc, char** argv) {
               cursor_x = start;
               cursor_y = new_cursor_y;
               if (cursor_on) draw_cursor(true, true);
+              set_ime_position();
             }
           }
         }
@@ -702,17 +730,7 @@ int main(int argc, char** argv) {
               edited = true;
             } else {
               // 文字の挿入
-              int idx = cursor_x == 0 ? 0 :
-                        char_idx[cursor_y - scroll_y][cursor_x - 1] + 1;
-              int c = arg.keypush.ascii;
-              data[cursor_y].insert(data[cursor_y].begin() + idx, c);
-              // 挿入後の行について、新しいカーソルの位置を求める
-              // タブ(など)の処理があり得るので、単に「一文字分」ではダメ
-              std::vector<int> new_char_idx;
-              DrawLine(new_char_idx, 0, 0, 0, width, tab_size,
-                       data[cursor_y], false, true);
-              auto [s, cw] = GetCharRange(new_char_idx, cursor_x);
-              if (cursor_x + cw <= width) new_cursor_x += cw;
+              new_cursor_x = insert_char(arg.keypush.ascii);
               redraw_from = redraw_to = cursor_y - scroll_y;
               edited = true;
             }
@@ -843,6 +861,18 @@ int main(int argc, char** argv) {
           cursor_y = new_cursor_y;
           draw_lines(redraw_from, redraw_to);
           SyscallWinRedraw(hwnd);
+          set_ime_position();
+        }
+        break;
+      case AppEvent::kCharInput:
+        {
+          if (cursor_on) draw_cursor(false, false);
+          cursor_x = insert_char(arg.charinput.ch);
+          edited = true;
+          int line_to_draw = cursor_y - scroll_y;
+          draw_lines(line_to_draw, line_to_draw);
+          SyscallWinRedraw(hwnd);
+          set_ime_position();
         }
         break;
     }

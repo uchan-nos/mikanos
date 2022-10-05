@@ -45,6 +45,9 @@ struct SyscallResult SyscallDemandPages(size_t num_pages, int flags);
 struct SyscallResult SyscallMapFile(int fd, size_t* file_size, int flags);
 struct SyscallResult SyscallIsTerminal(int fd);
 
+struct SyscallResult SyscallSetPreferredIMEPos(uint64_t layer_id_flags, int x, int y);
+struct SyscallResult SyscallUnsetPreferredIMEPos(uint64_t layer_id_flags);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

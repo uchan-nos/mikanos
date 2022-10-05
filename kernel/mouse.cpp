@@ -134,7 +134,8 @@ void Mouse::OnInterrupt(uint8_t buttons, int8_t displacement_x, int8_t displacem
   const bool previous_left_pressed = (previous_buttons_ & 0x01);
   const bool left_pressed = (buttons & 0x01);
   if (!previous_left_pressed && left_pressed) {
-    auto layer = layer_manager->FindLayerByPosition(position_, layer_id_);
+    auto layer = layer_manager->FindLayerByPosition(position_, layer_id_,
+                                                    kIMELayerPriority - 1);
     if (layer && layer->IsDraggable()) {
       const auto pos_layer = position_ - layer->GetPosition();
       switch (layer->GetWindow()->GetWindowRegion(pos_layer)) {
@@ -176,7 +177,7 @@ void InitializeMouse() {
   mouse_window->SetTransparentColor(kMouseTransparentColor);
   DrawMouseCursor(mouse_window->Writer(), {0, 0});
 
-  auto mouse_layer_id = layer_manager->NewLayer()
+  auto mouse_layer_id = layer_manager->NewLayer(kMouseLayerPriority)
     .SetWindow(mouse_window)
     .ID();
 
@@ -188,6 +189,4 @@ void InitializeMouse() {
     [mouse](uint8_t buttons, int8_t displacement_x, int8_t displacement_y) {
       mouse->OnInterrupt(buttons, displacement_x, displacement_y);
     };
-
-  active_layer->SetMouseLayer(mouse_layer_id);
 }

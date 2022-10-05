@@ -5,6 +5,7 @@ enum class LayerOperation {
 };
 struct Message {
   enum Type {
+    kCharInput,
     kInterruptXHCI,
     kTimerTimeout,
     kKeyPush,
@@ -20,6 +21,10 @@ struct Message {
   uint64_t src_task;
 
   union {
+    struct{
+      char32_t ch;
+    } char_input;
+
     struct {
       unsigned long timeout;
       int value;

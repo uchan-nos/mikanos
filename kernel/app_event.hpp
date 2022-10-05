@@ -11,6 +11,7 @@ struct AppEvent {
     kMouseButton,
     kTimerTimeout,
     kKeyPush,
+    kCharInput,
   } type;
 
   union {
@@ -37,6 +38,10 @@ struct AppEvent {
       char ascii;
       int press; // 1: press, 0: release
     } keypush;
+
+    struct {
+      uint32_t ch;
+    } charinput;
   } arg;
 };
 
