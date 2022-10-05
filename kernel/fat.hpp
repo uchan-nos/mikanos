@@ -11,6 +11,7 @@
 
 #include "error.hpp"
 #include "file.hpp"
+#include "uefi.hpp"
 
 namespace fat {
 
@@ -178,6 +179,13 @@ DirectoryEntry* AllocateEntry(unsigned long dir_cluster);
  * @param name  基本名と拡張子をドットで結合したファイル名
  */
 void SetFileName(DirectoryEntry& entry, const char* name);
+
+/** @brief ディレクトリエントリの更新日時をセットする。
+ *
+ * @param entry  更新日時を設定する対象のディレクトリエントリ
+ * @param write_time  更新日時として設定する日時
+ */
+void SetWriteTime(DirectoryEntry& entry, const EFI_TIME& write_time);
 
 /** @brief 指定されたパスにファイルエントリを作成する。
  *

@@ -5,6 +5,8 @@
 #include <cctype>
 #include <utility>
 
+#include "uefi.hpp"
+
 namespace {
 
 std::pair<const char*, bool>
@@ -243,9 +245,24 @@ void SetFileName(DirectoryEntry& entry, const char* name) {
   }
 }
 
+void SetWriteTime(DirectoryEntry& entry, const EFI_TIME& write_time) {
+  uint16_t time_encoded =
+    ((write_time.Hour & 0x1f) << 11) |
+    ((write_time.Minute & 0x3f) << 5) |
+    ((write_time.Second / 2) & 0x1f);
+  uint16_t date_encoded =
+    (((write_time.Year - 1980) & 0x7f) << 9) |
+    ((write_time.Month & 0xf) << 5) |
+    (write_time.Day & 0x1f);
+
+  entry.write_time = time_encoded;
+  entry.write_date = date_encoded;
+}
+
 WithError<DirectoryEntry*> CreateFile(const char* path) {
   auto parent_dir_cluster = fat::boot_volume_image->root_cluster;
   const char* filename = path;
+  DirectoryEntry* parent_dir_entry = nullptr;
 
   if (const char* slash_pos = strrchr(path, '/')) {
     filename = &slash_pos[1];
@@ -262,6 +279,7 @@ WithError<DirectoryEntry*> CreateFile(const char* path) {
       if (parent_dir == nullptr) {
         return { nullptr, MAKE_ERROR(Error::kNoSuchEntry) };
       }
+      parent_dir_entry = parent_dir;
       parent_dir_cluster = parent_dir->FirstCluster();
     }
   }
@@ -270,8 +288,14 @@ WithError<DirectoryEntry*> CreateFile(const char* path) {
   if (dir == nullptr) {
     return { nullptr, MAKE_ERROR(Error::kNoEnoughMemory) };
   }
+  EFI_TIME current_time;
+  uefi_rt->GetTime(&current_time, nullptr);
   fat::SetFileName(*dir, filename);
+  fat::SetWriteTime(*dir, current_time);
   dir->file_size = 0;
+  if (parent_dir_entry != nullptr) {
+    fat::SetWriteTime(*parent_dir_entry, current_time);
+  }
   return { dir, MAKE_ERROR(Error::kSuccess) };
 }
 
@@ -359,6 +383,10 @@ size_t FileDescriptor::Write(const void* buf, size_t len) {
 
   wr_off_ += total;
   fat_entry_.file_size = wr_off_;
+
+  EFI_TIME current_time;
+  uefi_rt->GetTime(&current_time, nullptr);
+  fat::SetWriteTime(fat_entry_, current_time);
   return total;
 }
 
