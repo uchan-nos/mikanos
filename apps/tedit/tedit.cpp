@@ -433,7 +433,7 @@ int main(int argc, char** argv) {
     puts("  -h <height> : set the height of the edit area");
     puts("  -t <size>   : set the width of one tab");
     puts("file: the name of file to edit");
-    exit(1);
+    return 1;
   }
   if (width < MIN_WIDTH) width = MIN_WIDTH;
   if (height < MIN_HEIGHT) height = MIN_HEIGHT;
@@ -446,7 +446,7 @@ int main(int argc, char** argv) {
   auto [hwnd, err_open] = SyscallOpenWindow(win_width, win_height, WX, WY, "tedit");
   if (err_open) {
      printf("SyscallOpenWindow failed: %s\n", strerror(err_open));
-     exit(err_open);
+     return err_open;
   }
   SyscallWinFillRectangle(hwnd | LAYER_NO_REDRAW, X_OFFSET, Y_OFFSET,
                           win_width - W_MARGIN, win_height - H_MARGIN, 0xffffff);
