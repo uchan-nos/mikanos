@@ -11,7 +11,7 @@ namespace usb::cdc {
   CDCDriver::CDCDriver(Device* dev, const InterfaceDescriptor* if_comm,
                        const InterfaceDescriptor* if_data)
     : ClassDriver{dev},
-      if_data_index_{if_data->interface_number}
+      if_comm_index_{if_comm->interface_number}
   {
   }
 
@@ -25,6 +25,7 @@ namespace usb::cdc {
         ep_interrupt_in_ = config.ep_id;
       } else if (config.ep_type == EndpointType::kBulk && config.ep_id.IsIn()) {
         ep_bulk_in_ = config.ep_id;
+        buf_in_.resize(config.max_packet_size);
       } else if (config.ep_type == EndpointType::kBulk && !config.ep_id.IsIn()) {
         ep_bulk_out_ = config.ep_id;
       }
@@ -33,13 +34,43 @@ namespace usb::cdc {
   }
 
   Error CDCDriver::OnEndpointsConfigured() {
-    return MAKE_ERROR(Error::kSuccess);
+    // 現在の通信設定を取得する
+    line_coding_initialization_status_ = 1;
+    SetupData setup_data{};
+    setup_data.request_type.bits.direction = request_type::kIn;
+    setup_data.request_type.bits.type = request_type::kClass;
+    setup_data.request_type.bits.recipient = request_type::kInterface;
+    setup_data.request = request::kGetLineCoding;
+    setup_data.value = 0;
+    setup_data.index = if_comm_index_;
+    setup_data.length = sizeof(LineCoding);
+    return ParentDevice()->ControlIn(
+        kDefaultControlPipeID, setup_data,
+        &line_coding_, sizeof(LineCoding), this);
   }
 
   Error CDCDriver::OnControlCompleted(EndpointID ep_id, SetupData setup_data,
                                       const void* buf, int len) {
     Log(kDebug, "CDCDriver::OnControlCompleted: req_type=0x%02x req=0x%02x len=%u\n",
         setup_data.request_type.data, setup_data.request, len);
+    if (line_coding_initialization_status_ == 1) {
+      if (setup_data.request == request::kGetLineCoding) {
+        if (line_coding_.dte_rate == 0) {
+          line_coding_ = LineCoding{9600, CharFormat::kStopBit1, ParityType::kNone, 8};
+        }
+        line_coding_initialization_status_ = 2;
+        return SetLineCoding(line_coding_);
+      }
+    } else if (line_coding_initialization_status_ == 2) {
+      if (setup_data.request == request::kSetLineCoding) {
+        line_coding_initialization_status_ = 0;
+        // 受信を開始する
+        if (auto err = ParentDevice()->NormalIn(ep_bulk_in_, buf_in_.data(), buf_in_.size())) {
+          Log(kError, "%s:%d: NormalIn failed: %s\n", err.File(), err.Line(), err.Name());
+          return err;
+        }
+      }
+    }
     return MAKE_ERROR(Error::kSuccess);
   }
 
@@ -48,11 +79,16 @@ namespace usb::cdc {
     auto buf8 = reinterpret_cast<const uint8_t*>(buf);
     if (ep_id == ep_bulk_in_) {
       std::copy_n(buf8, len, std::back_inserter(receive_buf_));
+      // 次の受信を開始する
+      if (auto err = ParentDevice()->NormalIn(ep_bulk_in_, buf_in_.data(), buf_in_.size())) {
+        Log(kError, "%s:%d: NormalIn failed: %s\n", err.File(), err.Line(), err.Name());
+        return err;
+      }
     } else if (ep_id == ep_bulk_out_) {
+      delete[] buf8;
     } else {
       return MAKE_ERROR(Error::kEndpointNotInCharge);
     }
-    delete[] buf8;
     return MAKE_ERROR(Error::kSuccess);
   }
 
@@ -61,12 +97,6 @@ namespace usb::cdc {
     memcpy(buf_out, buf, len);
     if (auto err = ParentDevice()->NormalOut(ep_bulk_out_, buf_out, len)) {
       Log(kError, "%s:%d: NormalOut failed: %s\n", err.File(), err.Line(), err.Name());
-      return err;
-    }
-
-    uint8_t* buf_in = new uint8_t[8];
-    if (auto err = ParentDevice()->NormalIn(ep_bulk_in_, buf_in, 8)) {
-      Log(kError, "%s:%d: NormalIn failed: %s\n", err.File(), err.Line(), err.Name());
       return err;
     }
     return MAKE_ERROR(Error::kSuccess);
@@ -89,7 +119,7 @@ namespace usb::cdc {
     setup_data.request_type.bits.recipient = request_type::kInterface;
     setup_data.request = request::kSetLineCoding;
     setup_data.value = 0;
-    setup_data.index = if_data_index_;
+    setup_data.index = if_comm_index_;
     setup_data.length = sizeof(LineCoding);
 
     line_coding_ = value;

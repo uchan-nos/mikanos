@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <deque>
+#include <vector>
 
 #include "usb/classdriver/base.hpp"
 #include "usb/descriptor.hpp"
@@ -129,8 +130,10 @@ namespace usb::cdc {
    private:
     EndpointID ep_interrupt_in_, ep_bulk_in_, ep_bulk_out_;
     std::deque<uint8_t> receive_buf_;
-    uint8_t if_data_index_;
+    uint8_t if_comm_index_;
     LineCoding line_coding_;
+    int line_coding_initialization_status_{};
+    std::vector<uint8_t> buf_in_;
   };
 
   inline CDCDriver* driver = nullptr;

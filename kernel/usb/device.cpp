@@ -53,6 +53,14 @@ namespace {
     return conf;
   }
 
+  void Log(LogLevel level, const usb::InterfaceAssociationDescriptor& ia_desc) {
+    Log(level, "Interface Association Descriptor: num_if=%d class=%d sub=%d protocol=%d\n",
+        ia_desc.interface_count,
+        ia_desc.function_class,
+        ia_desc.function_sub_class,
+        ia_desc.function_protocol);
+  }
+
   void Log(LogLevel level, const usb::InterfaceDescriptor& if_desc) {
     Log(level, "Interface Descriptor %d: num_ep=%d class=%d sub=%d protocol=%d\n",
         if_desc.interface_number,
@@ -81,6 +89,22 @@ namespace {
     Log(level, "\n");
   }
 
+  void GetEndPoints(
+      std::vector<usb::EndpointConfig>& ep_configs,
+      ConfigurationDescriptorReader& conf_reader,
+      int num_endpoints) {
+    for (int ep_index = 0; ep_index < num_endpoints;) {
+      auto desc = conf_reader.Next();
+      if (auto ep_desc = usb::DescriptorDynamicCast<usb::EndpointDescriptor>(desc)) {
+        ep_configs.push_back(MakeEPConfig(*ep_desc));
+        Log(kDebug, ep_configs.back());
+        ++ep_index;
+      } else if (auto hid_desc = usb::DescriptorDynamicCast<usb::HIDDescriptor>(desc)) {
+        Log(kDebug, *hid_desc);
+      }
+    }
+  }
+
   usb::ClassDriver* NewClassDriver(usb::Device* dev, const usb::InterfaceDescriptor& if_desc) {
     if (if_desc.interface_class == 3 &&
         if_desc.interface_sub_class == 1) {  // HID boot interface
@@ -106,12 +130,13 @@ namespace {
       usb::Device* dev,
       ConfigurationDescriptorReader& conf_reader) {
     using namespace usb::cdc;
-    Log(kWarn, "creating class driver for class=%d\n", dev->DeviceDesc().device_class);
 
-    if (dev->DeviceDesc().device_class == 2) {
+    auto cdc_driver = [&](int num_interface = -1) -> WithError<usb::ClassDriver*> {
       const usb::InterfaceDescriptor* if_comm = nullptr;
       const usb::InterfaceDescriptor* if_data = nullptr;
-      while (auto if_desc = conf_reader.Next<usb::InterfaceDescriptor>()) {
+      for (int i = 0; num_interface < 0 || i < num_interface; ++i) {
+        auto if_desc = conf_reader.Next<usb::InterfaceDescriptor>();
+        if (!if_desc) break;
         Log(kWarn, *if_desc);
         if (if_desc->interface_class == 2) {
           if_comm = if_desc;
@@ -119,11 +144,12 @@ namespace {
           if_data = if_desc;
         }
 
-        for (int i = 0; i < if_desc->num_endpoints; ++i) {
+        for (int j = 0; j < if_desc->num_endpoints; ) {
           auto desc = conf_reader.Next();
           if (auto ep_desc = usb::DescriptorDynamicCast<usb::EndpointDescriptor>(desc)) {
             ep_configs.push_back(MakeEPConfig(*ep_desc));
             Log(kWarn, ep_configs.back());
+            ++j;
           } else if (auto cdc = FuncDescDynamicCast<HeaderDescriptor>(desc)) {
             Log(kWarn, "kHeader: cdc=%04x\n", cdc->cdc);
           } else if (auto call = FuncDescDynamicCast<CMDescriptor>(desc)) {
@@ -141,6 +167,50 @@ namespace {
 
       usb::cdc::driver = new usb::cdc::CDCDriver{dev, if_comm, if_data};
       return { usb::cdc::driver, MAKE_ERROR(Error::kSuccess) };
+    };
+
+    auto drop_iad = [&](int num_interface) {
+      for (int i = 0; num_interface < 0 || i < num_interface; ++i) {
+        auto if_desc = conf_reader.Next<usb::InterfaceDescriptor>();
+        if (!if_desc) break;
+        Log(kWarn, *if_desc);
+        for (int j = 0; j < if_desc->num_endpoints; ) {
+          auto desc = conf_reader.Next();
+          if (auto ep_desc = usb::DescriptorDynamicCast<usb::EndpointDescriptor>(desc)) {
+            Log(kWarn, MakeEPConfig(*ep_desc));
+            ++j;
+          }
+        }
+      }
+    };
+
+    const auto& device_desc = dev->DeviceDesc();
+    if (device_desc.device_class == 0 ||
+               (device_desc.device_class == 0xef &&
+                device_desc.device_sub_class == 2 &&
+                device_desc.device_protocol == 1)) { // Interface Association Descriptor
+      while (auto desc = conf_reader.Next()) {
+        if (auto ia_desc = usb::DescriptorDynamicCast<usb::InterfaceAssociationDescriptor>(desc)) {
+          Log(kDebug, *ia_desc);
+          if (ia_desc->function_class == 2) {
+            return cdc_driver(ia_desc->interface_count);
+          }
+          drop_iad(ia_desc->interface_count);
+        } else if (auto if_desc = usb::DescriptorDynamicCast<usb::InterfaceDescriptor>(desc)) {
+          Log(kDebug, *if_desc);
+          auto class_driver = NewClassDriver(dev, *if_desc);
+          if (class_driver != nullptr) {
+            GetEndPoints(ep_configs, conf_reader, if_desc->num_endpoints);
+            return { class_driver, MAKE_ERROR(Error::kSuccess) };
+          }
+        }
+      }
+      return { nullptr, MAKE_ERROR(Error::kSuccess) };
+    }
+
+    Log(kWarn, "creating class driver for class=%d\n", device_desc.device_class);
+    if (device_desc.device_class == 2) {
+      return cdc_driver();
     }
     return { nullptr, MAKE_ERROR(Error::kNotImplemented) };
   }
@@ -259,43 +329,15 @@ namespace usb {
     }
     ConfigurationDescriptorReader config_reader{buf, len};
 
-    if (device_desc_.device_class != 0) {
-      auto [ class_driver, err ] =
-        NewClassDriver(ep_configs_, this, config_reader);
-      if (err) {
-        return err;
-      }
-      class_drivers_.push_back(class_driver);
-    } else {
-      bool no_class_driver = true;
-      while (auto if_desc = config_reader.Next<InterfaceDescriptor>()) {
-        Log(kDebug, *if_desc);
-
-        auto class_driver = NewClassDriver(this, *if_desc);
-        if (class_driver == nullptr) {
-          // 非対応デバイス．次の interface を調べる．
-          continue;
-        }
-        no_class_driver = false;
-        class_drivers_.push_back(class_driver);
-
-        for (int ep_index = 0; ep_index < if_desc->num_endpoints;) {
-          auto desc = config_reader.Next();
-          if (auto ep_desc = DescriptorDynamicCast<EndpointDescriptor>(desc)) {
-            ep_configs_.push_back(MakeEPConfig(*ep_desc));
-            Log(kDebug, ep_configs_.back());
-            ++ep_index;
-          } else if (auto hid_desc = DescriptorDynamicCast<HIDDescriptor>(desc)) {
-            Log(kDebug, *hid_desc);
-          }
-        }
-        break;
-      }
-
-      if (no_class_driver) {
-        return MAKE_ERROR(Error::kSuccess);
-      }
+    auto [ class_driver, err ] =
+      NewClassDriver(ep_configs_, this, config_reader);
+    if (err) {
+      return err;
     }
+    if (class_driver == nullptr) {
+      return MAKE_ERROR(Error::kSuccess);
+    }
+    class_drivers_.push_back(class_driver);
 
     initialize_phase_ = 3;
     Log(kDebug, "issuing SetConfiguration: conf_val=%d\n",

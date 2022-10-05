@@ -626,11 +626,13 @@ void Terminal::ExecuteLine() {
       }
 
       std::vector<uint8_t> buf(send_len);
-      int recv_len = usb::cdc::driver->ReceiveSerial(buf.data(), send_len);
-      while (recv_len == 0) {
-        recv_len = usb::cdc::driver->ReceiveSerial(buf.data(), send_len);
+      size_t received_len = 0;
+      while (received_len < send_len) {
+        int recv_len = usb::cdc::driver->ReceiveSerial(buf.data() + received_len,
+                                                       send_len - received_len);
+        received_len += recv_len;
       }
-      files_[1]->Write(buf.data(), recv_len);
+      files_[1]->Write(buf.data(), received_len);
       PrintToFD(*files_[1], "\n");
     }();
   } else if (strcmp(command, "setbaud") == 0) {
