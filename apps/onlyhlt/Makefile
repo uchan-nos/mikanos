@@ -1,7 +1,4 @@
 TARGET = onlyhlt
-
-.PHONY: all
-all: $(TARGET)
-
-onlyhlt: onlyhlt.asm Makefile
-	nasm -f bin -o $@ $<
+OBJS = onlyhlt.o
+include ../Makefile.elfapp
+OBJS = onlyhlt.o
