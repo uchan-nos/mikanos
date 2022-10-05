@@ -409,6 +409,18 @@ void Terminal::ExecuteLine() {
   trim_space(command_end);
 
   if (first_arg) {
+    if (redir_char && redir_char < first_arg) first_arg = 0;
+    else if (pipe_char && pipe_char < first_arg) first_arg = 0;
+  }
+  if (redir_char && pipe_char) {
+    if (pipe_char < redir_char) {
+      redir_char = 0;
+    } else {
+      PrintToFD(*files_[2], "pipe after redirect is not supported\n");
+      return;
+    }
+  }
+  if (first_arg) {
     *first_arg = 0;
     do {
       ++first_arg;
