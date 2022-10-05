@@ -452,7 +452,7 @@ void IME::Draw() {
         std::string current_candidate = std::to_string(unit.selected_pos + 1);
         std::string max_candidate = std::to_string(unit.candidates.size());
         while (current_candidate.size() < max_candidate.size()) {
-          current_candidate = " " + max_candidate;
+          current_candidate = " " + current_candidate;
         }
         auto [candidate_string, candidate_string_width] = prepare_string_to_draw(current_candidate + "/" + max_candidate,
                                                                                  candidate_window_->Size().x - 1);
