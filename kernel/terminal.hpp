@@ -56,7 +56,7 @@ class Terminal {
 
  private:
   std::shared_ptr<ToplevelWindow> window_;
-  unsigned int layer_id_;
+  unsigned int layer_id_{0};
   Task& task_;
 
   Vector2D<int> cursor_{0, 0};

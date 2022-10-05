@@ -347,6 +347,15 @@ Rectangle<int> Terminal::InputKey(
       ++cursor_.y;
     } else {
       Scroll1();
+      draw_area.pos = ToplevelWindow::kTopLeftMargin;
+      draw_area.size = window_->InnerSize();
+    }
+    if (LayerID()) {
+      Message msg = MakeLayerMessage(
+          task_.ID(), LayerID(), LayerOperation::DrawArea, draw_area);
+      __asm__("cli");
+      task_manager->SendMessage(1, msg);
+      __asm__("sti");
     }
     ExecuteLine();
     Print(">");
