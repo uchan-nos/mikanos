@@ -10,6 +10,7 @@
 #include <cctype>
 #include <cstdlib>
 #include <limits>
+#include <utility>
 
 #include "fat.hpp"
 #include "font.hpp"
@@ -772,8 +773,21 @@ void IME::CancelConversion() {
 bool IME::CommitConversion(bool do_draw) {
   std::string result = "";
   if (IsConverting()) {
-    for (size_t i = 0; i < conversion_.size(); ++i) {
+    for (size_t i = 0; !conversion_[i].candidates.empty(); ++i) {
       result += conversion_[i].candidates[conversion_[i].selected_pos];
+      // 今回決定した候補を次回最初に出るようにする
+      const auto& query = conversion_[i].candidates[conversion_[i].candidates.size() + kOffsetHiragana];
+      auto dict_elem = dictionary_.find(query);
+      if (dict_elem != dictionary_.end()) {
+        auto& vec = dict_elem->second;
+        if (static_cast<unsigned int>(conversion_[i].selected_pos) < vec.size()) {
+          auto selected_candidate = std::move(vec[conversion_[i].selected_pos]);
+          for (int j = conversion_[i].selected_pos - 1; j >= 0; j--) {
+            vec[j + 1] = std::move(vec[j]);
+          }
+          vec[0] = std::move(selected_candidate);
+        }
+      }
     }
   } else {
     for (size_t i = 0; i < hiragana_.size(); ++i) {
