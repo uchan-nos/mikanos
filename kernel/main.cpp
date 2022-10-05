@@ -233,6 +233,15 @@ extern "C" void KernelMainNewStack(
     .InitContext(TaskWallclock, 0)
     .Wakeup();
 
+  const int kMouseKeyTimer = 2;
+  const int kMouseKeyTimerFirstTimeout = static_cast<int>(kTimerFreq * 0.25);
+  const int kMouseKeyTimerInterval = static_cast<int>(kTimerFreq * 0.025);
+  const int kMouseKeyDelta = 5;
+  uint8_t mouse_key_buttons = 0;
+  bool mouse_key_left = false, mouse_key_right = false;
+  bool mouse_key_up = false, mouse_key_down = false;
+  bool mouse_key_timer_running = false;
+
   char str[128];
 
   while (true) {
@@ -268,9 +277,86 @@ extern "C" void KernelMainNewStack(
         textbox_cursor_visible = !textbox_cursor_visible;
         DrawTextCursor(textbox_cursor_visible);
         layer_manager->Draw(text_window_layer_id);
+      } else if (msg->arg.timer.value == kMouseKeyTimer) {
+        if (mouse_key_left || mouse_key_right || mouse_key_up || mouse_key_down) {
+          int8_t displacement_x = 0, displacement_y = 0;
+          if (mouse_key_left) displacement_x -= kMouseKeyDelta;
+          if (mouse_key_right) displacement_x += kMouseKeyDelta;
+          if (mouse_key_up) displacement_y -= kMouseKeyDelta;
+          if (mouse_key_down) displacement_y += kMouseKeyDelta;
+          __asm__("cli");
+          mouse->OnInterrupt(mouse_key_buttons, displacement_x, displacement_y);
+          timer_manager->AddTimer(
+              Timer{msg->arg.timer.timeout + kMouseKeyTimerInterval, kMouseKeyTimer, 1});
+          __asm__("sti");
+        } else {
+          mouse_key_timer_running = false;
+        }
       }
       break;
     case Message::kKeyPush:
+      if ((msg->arg.keyboard.modifier & 5) == 5 /* Ctrl+Alt */) {
+        bool is_mouse_key_operation = false;
+        uint8_t prev_buttons = mouse_key_buttons;
+        if (msg->arg.keyboard.keycode == 40 /* Enter */) {
+          if (msg->arg.keyboard.press) {
+            mouse_key_buttons |= 1;
+          } else {
+            mouse_key_buttons &= ~1;
+          }
+          is_mouse_key_operation = true;
+        } else if (msg->arg.keyboard.keycode == 42 /* Backspace */) {
+          if (msg->arg.keyboard.press) {
+            mouse_key_buttons |= 2;
+          } else {
+            mouse_key_buttons &= ~2;
+          }
+          is_mouse_key_operation = true;
+        } else if (msg->arg.keyboard.keycode == 80 /* ← */) {
+          mouse_key_left = !!msg->arg.keyboard.press;
+          is_mouse_key_operation = true;
+        } else if (msg->arg.keyboard.keycode == 79 /* → */) {
+          mouse_key_right = !!msg->arg.keyboard.press;
+          is_mouse_key_operation = true;
+        } else if (msg->arg.keyboard.keycode == 82 /* ↑ */) {
+          mouse_key_up = !!msg->arg.keyboard.press;
+          is_mouse_key_operation = true;
+        } else if (msg->arg.keyboard.keycode == 81 /* ↓ */) {
+          mouse_key_down = !!msg->arg.keyboard.press;
+          is_mouse_key_operation = true;
+        }
+        int8_t displacement_x = 0, displacement_y = 0;
+        if (mouse_key_left) displacement_x -= kMouseKeyDelta;
+        if (mouse_key_right) displacement_x += kMouseKeyDelta;
+        if (mouse_key_up) displacement_y -= kMouseKeyDelta;
+        if (mouse_key_down) displacement_y += kMouseKeyDelta;
+        if (mouse_key_buttons != prev_buttons ||
+            displacement_x != 0 || displacement_y != 0) {
+          __asm__("cli");
+          mouse->OnInterrupt(mouse_key_buttons, displacement_x, displacement_y);
+          __asm__("sti");
+        }
+        if (!mouse_key_timer_running &&
+            (mouse_key_left || mouse_key_right || mouse_key_up || mouse_key_down)) {
+          __asm__("cli");
+          timer_manager->AddTimer(
+              Timer{tick + kMouseKeyTimerFirstTimeout, kMouseKeyTimer, 1});
+          __asm__("sti");
+          mouse_key_timer_running = true;
+        }
+        if (is_mouse_key_operation) break;
+      } else {
+        if (mouse_key_buttons != 0) {
+          __asm__("cli");
+          mouse->OnInterrupt(0, 0, 0);
+          __asm__("sti");
+        }
+        mouse_key_buttons = 0;
+        mouse_key_left = false;
+        mouse_key_right = false;
+        mouse_key_up = false;
+        mouse_key_down = false;
+      }
       if (auto act = active_layer->GetActive(); act == text_window_layer_id) {
         if (msg->arg.keyboard.press) {
           InputTextWindow(msg->arg.keyboard.ascii);

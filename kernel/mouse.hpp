@@ -33,4 +33,6 @@ class Mouse {
   uint8_t previous_buttons_{0};
 };
 
+extern Mouse* mouse;
+
 void InitializeMouse();
