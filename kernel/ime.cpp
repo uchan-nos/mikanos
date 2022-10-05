@@ -111,7 +111,7 @@ void IME::ReadDictionary(const char* file_name, bool append) {
   std::vector<char>::iterator from_begin, from_end, to_begin, to_end;
   bool reading_to = false, skipping = false;
   from_begin = file_data.begin();
-  for (std::vector<char>::iterator it = file_data.begin(); it != file_data.end(); it++) {
+  for (std::vector<char>::iterator it = file_data.begin(); it != file_data.end(); ++it) {
     if (!skipping && *it == '#') {
       // シャープが見つかったので、そこを行の終わりとみなす
       if (reading_to) to_end = it;
@@ -425,7 +425,7 @@ void IME::Draw() {
         drawn_width.reserve(9);
         for (int j = 0;
              j < 9 && static_cast<unsigned int>(start + j) < unit.candidates.size();
-             j++) {
+             ++j) {
           auto [string_to_draw, draw_width] = prepare_string_to_draw(unit.candidates[start + j],
                                                                      candidate_window_->Size().x - 18);
           // 変換候補の背景
@@ -468,7 +468,7 @@ void IME::Draw() {
                     candidate_string.c_str(), guide_color);
         draw_y += 16;
         // 変換候補の背景の残りの部分
-        for (size_t j = 0; j < drawn_width.size(); j++) {
+        for (size_t j = 0; j < drawn_width.size(); ++j) {
           FillRectangle(*candidate_window_->Writer(),
                         {18 + drawn_width[j], 1 + 16 * static_cast<int>(j)},
                         {drawn_width_max - drawn_width[j], 16},
@@ -513,7 +513,7 @@ void IME::Draw() {
 }
 
 void IME::DrawDotLine(int start_x, int length) {
-  for (int i = 0; i < length; i++) {
+  for (int i = 0; i < length; ++i) {
     if (i % 3 != 2) main_window_->Writer()->Write({start_x + i, 18}, {0, 0, 0});
   }
 }
@@ -659,7 +659,7 @@ IME::ConversionUnit IME::ConvertRange(int start, int length) {
   std::string hiragana;
   std::string full_katakana, half_katakana;
   std::string full_alpha, half_alpha;
-  for (int i = 0; i < length; i++) {
+  for (int i = 0; i < length; ++i) {
     if (i + 1 >= length && hiragana_[start + i].IsAlpha() &&
         hiragana_[start + i].Source() =="n") {
       // 最後に1個だけ残っている「n」を「ん」に変換する
@@ -727,10 +727,10 @@ void IME::BeginConversion(int conversion_mode) {
   if (conversion_mode == kNormalConversion) {
     // 辞書に載っている最長の部分を貪欲に取る
     size_t last_unconverted = 0;
-    for (size_t i = 0; i < hiragana_.size(); i++) {
+    for (size_t i = 0; i < hiragana_.size(); ++i) {
       size_t found_pos = -1;
       std::string query = "";
-      for (size_t j = i; j < hiragana_.size(); j++) {
+      for (size_t j = i; j < hiragana_.size(); ++j) {
         query += hiragana_[j].Converted();
         if (dictionary_.find(query) != dictionary_.end()) found_pos = j;
       }
@@ -782,7 +782,7 @@ bool IME::CommitConversion(bool do_draw) {
         auto& vec = dict_elem->second;
         if (static_cast<unsigned int>(conversion_[i].selected_pos) < vec.size()) {
           auto selected_candidate = std::move(vec[conversion_[i].selected_pos]);
-          for (int j = conversion_[i].selected_pos - 1; j >= 0; j--) {
+          for (int j = conversion_[i].selected_pos - 1; j >= 0; --j) {
             vec[j + 1] = std::move(vec[j]);
           }
           vec[0] = std::move(selected_candidate);
