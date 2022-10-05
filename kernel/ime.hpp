@@ -1,3 +1,9 @@
+/**
+ * @file ime.hpp
+ *
+ * IMEのプログラム。
+ */
+
 #pragma once
 
 #include <memory>
@@ -8,15 +14,51 @@
 #include "message.hpp"
 #include "window.hpp"
 
+/** @brief IMEを実装したクラス。
+ */
 class IME {
   public:
+    /** @brief IMEを初期化する。 */
     IME();
+
+    /** @brief ファイルから辞書を読み込む。
+     *
+     * @param file_name 読み込む辞書ファイルのパス
+     * @param append 辞書の読み込みが追加かどうか。falseの場合辞書を初期化してから読み込む
+     */
     void ReadDictionary(const char* file_name, bool append = false);
+
+    /** @brief IMEの有効/無効を切り替える。
+     *
+     * @param enabled IMEを有効にするならtrue、無効にするならfalse
+     */
     void SetEnabled(bool enabled);
+
+    /** @brief IMEの有効/無効を取得する。
+     *
+     * @return IMEが有効ならtrue、無効ならfalse
+     */
     bool GetEnabled() const;
+
+    /** @brief 入力中の文字列を破棄し、空にする。 */
     void ResetInput();
+
+    /** @brief IMEに宛てられたメッセージを処理する。
+     *
+     * @param msg 処理するメッセージ
+     */
     void ProcessMessage(const Message& msg);
+
+    /** @brief 入力中の文字列が空かを取得する。
+     *
+     * @return 入力中の文字列が空ならtrue、そうでなければfalse
+     */
     bool IsEmpty() const;
+
+    /** @brief IMEの位置を更新する。
+     *
+     * アクティブレイヤーを取得し、そのレイヤーから位置の指示を読み取る。
+     */
     void UpdatePosition();
 
   private:

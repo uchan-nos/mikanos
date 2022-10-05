@@ -1,9 +1,3 @@
-/**
- * @file ime.cpp
- *
- * IMEを実装したファイル．
- */
-
 #include "ime.hpp"
 
 #include <algorithm>
