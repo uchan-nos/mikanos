@@ -484,7 +484,7 @@ void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pi
     if (args.size() < 2) {
       ListAllEntries(*files_[1], fat::boot_volume_image->root_cluster, verbose);
     } else {
-      if (strcmp(args[1].c_str(), "-l") == 0) {
+      if (args[1] == "-l") {
         verbose = true;
         args.erase(args.begin() + 1);
       }
