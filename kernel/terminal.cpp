@@ -317,10 +317,10 @@ Rectangle<int> Terminal::InputKey(
   if (ascii == '\n') {
     linebuf_[linebuf_index_] = 0;
     std::vector<std::string> tokens;
-    int redir_idx = -1, *p_redir = &redir_idx;
-    int pipe_idx = -1, *p_pipe = &pipe_idx;
+    int redir_idx = -1;
+    int pipe_idx = -1;
     std::unique_ptr<TokenizerInnerState> t = nullptr;
-    t = Tokenize(&linebuf_[0], tokens, p_redir, p_pipe, std::move(t));
+    t = Tokenize(&linebuf_[0], tokens, &redir_idx, &pipe_idx, std::move(t));
     if (t) { // input not end
       cursor_.x = 0;
       if (cursor_.y < kRows - 1) {
@@ -393,8 +393,7 @@ void Terminal::Scroll1() {
 }
 
 void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pipe_idx) {
-  std::string str_command = args[0];
-  const char* command = str_command.c_str();
+  std::string command = args[0];
 
   auto original_stdout = files_[1];
   int exit_code = 0;
@@ -448,13 +447,13 @@ void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pi
     (*layer_task_map)[layer_id_] = subtask_id;
   }
 
-  if (strcmp(command, ">") == 0) {
+  if (command == ">") {
     PrintToFD(*files_[2], "no command befoer > \n");
     exit_code = 1;
-  } else if (strcmp(command, "|") == 0) {
+  } else if (command == "|") {
     PrintToFD(*files_[2], "no command befoer | \n");
     exit_code = 1;
-  } else if (strcmp(command, "echo") == 0) {
+  } else if (command == "echo") {
     if (args.size() > 1) {
       if (args[1] == "$?") {
         PrintToFD(*files_[1], "%d", last_exit_code_);
@@ -465,13 +464,13 @@ void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pi
       }
     }
     PrintToFD(*files_[1], "\n");
-  } else if (strcmp(command, "clear") == 0) {
+  } else if (command == "clear") {
     if (show_window_) {
       FillRectangle(*window_->InnerWriter(),
                     {4, 4}, {8*kColumns, 16*kRows}, {0, 0, 0});
     }
     cursor_.y = 0;
-  } else if (strcmp(command, "lspci") == 0) {
+  } else if (command == "lspci") {
     for (int i = 0; i < pci::num_device; ++i) {
       const auto& dev = pci::devices[i];
       auto vendor_id = pci::ReadVendorId(dev.bus, dev.device, dev.function);
@@ -480,7 +479,7 @@ void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pi
           dev.bus, dev.device, dev.function, vendor_id, dev.header_type,
           dev.class_code.base, dev.class_code.sub, dev.class_code.interface);
     }
-  } else if (strcmp(command, "ls") == 0) {
+  } else if (command == "ls") {
     bool verbose = false;
     if (args.size() < 2) {
       ListAllEntries(*files_[1], fat::boot_volume_image->root_cluster, verbose);
@@ -518,7 +517,7 @@ void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pi
       }
     }
 
-  } else if (strcmp(command, "cat") == 0) {
+  } else if (command == "cat") {
     std::vector<std::shared_ptr<FileDescriptor>> fd_vec;
     if (args.size() < 2) {
       fd_vec.push_back(files_[0]);
@@ -553,7 +552,7 @@ void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pi
         DrawCursor(true);
       }
     }
-  } else if (strcmp(command, "noterm") == 0) {
+  } else if (command == "noterm") {
     char* first_arg = strchr(&linebuf_[0], ' ');
     auto term_desc = new TerminalDescriptor{
       first_arg, true, false, files_
@@ -561,7 +560,7 @@ void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pi
     task_manager->NewTask()
       .InitContext(TaskTerminal, reinterpret_cast<int64_t>(term_desc))
       .Wakeup();
-  } else if (strcmp(command, "memstat") == 0) {
+  } else if (command == "memstat") {
     const auto p_stat = memory_manager->Stat();
     PrintToFD(*files_[1], "Phys used : %lu frames (%llu MiB)\n",
         p_stat.allocated_frames,
@@ -569,7 +568,7 @@ void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pi
     PrintToFD(*files_[1], "Phys total: %lu frames (%llu MiB)\n",
         p_stat.total_frames,
         p_stat.total_frames * kBytesPerFrame / 1024 / 1024);
-  } else if (strcmp(command, "date") == 0) {
+  } else if (command == "date") {
     EFI_TIME t;
     uefi_rt->GetTime(&t, nullptr);
     if (t.TimeZone == EFI_UNSPECIFIED_TIMEZONE) {
@@ -584,11 +583,11 @@ void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pi
         PrintToFD(*files_[1], "-%02d%02d\n", -t.TimeZone / 60, -t.TimeZone % 60);
       }
     }
-  } else if (strcmp(command, "reboot") == 0) {
+  } else if (command == "reboot") {
     uefi_rt->ResetSystem(EfiResetWarm, EFI_SUCCESS, 0, nullptr);
-  } else if (strcmp(command, "poweroff") == 0) {
+  } else if (command == "poweroff") {
     uefi_rt->ResetSystem(EfiResetShutdown, EFI_SUCCESS, 0, nullptr);
-  } else if (strcmp(command, "lsusb") == 0) {
+  } else if (command == "lsusb") {
     auto devmgr = usb::xhci::controller->DeviceManager();
     for (int slot = 1; slot < 256; ++slot) {
       auto dev = devmgr->FindBySlot(slot);
@@ -603,7 +602,7 @@ void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pi
                 dev->DeviceDesc().device_sub_class,
                 dev->DeviceDesc().device_protocol);
     }
-  } else if (strcmp(command, "usbtest") == 0) {
+  } else if (command == "usbtest") {
     [&]{
       if (!usb::cdc::driver) {
         PrintToFD(*files_[2], "CDC device not exist\n");
@@ -629,7 +628,7 @@ void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pi
       files_[1]->Write(buf.data(), recv_len);
       PrintToFD(*files_[1], "\n");
     }();
-  } else if (strcmp(command, "setbaud") == 0) {
+  } else if (command == "setbaud") {
     [&]{
       usb::cdc::LineCoding line_coding{
         9600,
@@ -657,7 +656,7 @@ void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pi
       PrintToFD(*files_[2], "Setting baud rate to %u\n", line_coding.dte_rate);
       usb::cdc::driver->SetLineCoding(line_coding);
     }();
-  } else if (strcmp(command, "comproc") == 0) {
+  } else if (command == "comproc") {
     [&]{
       if (!usb::cdc::driver) {
         PrintToFD(*files_[2], "CDC device not exist\n");
@@ -707,13 +706,13 @@ void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pi
       }
       PrintToFD(*files_[1], "exit_code=%d\n", code);
     }();
-  } else if (command[0] != 0) {
-    auto file_entry = FindCommand(command);
+  } else if (!command.empty()) {
+    auto file_entry = FindCommand(command.c_str());
     if (!file_entry) {
-      PrintToFD(*files_[2], "no such command: %s\n", command);
+      PrintToFD(*files_[2], "no such command: %s\n", command.c_str());
       exit_code = 1;
     } else {
-      auto [ ec, err ] = ExecuteFile(*file_entry, command, args);
+      auto [ ec, err ] = ExecuteFile(*file_entry, command.c_str(), args);
       if (err) {
         PrintToFD(*files_[2], "failed to exec file: %s\n", err.Name());
         exit_code = -ec;
