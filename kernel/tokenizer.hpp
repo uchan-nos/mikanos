@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 
 enum State {
   Init,
@@ -23,5 +24,5 @@ struct TokenizerInnerState {
   std::string tmp_token;
 };
 
-TokenizerInnerState *Tokenize(const char *c, std::vector<std::string>& tokens,
-  int *redir_idx, int *pipe_idx, TokenizerInnerState *last_istate);
+std::unique_ptr<TokenizerInnerState> Tokenize(const char *c, std::vector<std::string>& tokens,
+  int *redir_idx, int *pipe_idx, std::unique_ptr<TokenizerInnerState> last_istate);

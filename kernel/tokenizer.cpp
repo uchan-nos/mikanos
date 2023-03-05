@@ -2,9 +2,10 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 
-TokenizerInnerState *Tokenize(const char *c, std::vector<std::string>& tokens,
-  int *redir_idx, int *pipe_idx, TokenizerInnerState *last_istate) {
+std::unique_ptr<TokenizerInnerState> Tokenize(const char *c, std::vector<std::string>& tokens,
+  int *redir_idx, int *pipe_idx, std::unique_ptr<TokenizerInnerState> last_istate) {
   State state = Init;
   State last_state = Init;
   std::string tmp_token; 
@@ -105,7 +106,7 @@ TokenizerInnerState *Tokenize(const char *c, std::vector<std::string>& tokens,
   }
   if (state != Init || (state == Init && last_state == BackSlash)) {
     if (!last_istate) {
-      last_istate = new TokenizerInnerState ;
+      last_istate = std::make_unique<TokenizerInnerState>() ;
     }
     last_istate->state = state;
     last_istate->last_state = last_state;

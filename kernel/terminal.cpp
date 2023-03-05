@@ -5,6 +5,7 @@
 #include <cstring>
 #include <limits>
 #include <vector>
+#include <memory>
 
 #include "font.hpp"
 #include "layer.hpp"
@@ -318,8 +319,8 @@ Rectangle<int> Terminal::InputKey(
     std::vector<std::string> tokens;
     int redir_idx = -1, *p_redir = &redir_idx;
     int pipe_idx = -1, *p_pipe = &pipe_idx;
-    struct TokenizerInnerState *t = nullptr;
-    t = Tokenize(&linebuf_[0], tokens, p_redir, p_pipe, t);
+    std::unique_ptr<TokenizerInnerState> t = nullptr;
+    t = Tokenize(&linebuf_[0], tokens, p_redir, p_pipe, std::move(t));
     if (t) { // input not end
       cursor_.x = 0;
       if (cursor_.y < kRows - 1) {
