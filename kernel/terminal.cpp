@@ -400,7 +400,7 @@ void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pi
   if (redir_idx != -1 && redir_idx != 0) {
     if (args.size() < redir_idx + 2) {
       PrintToFD(*files_[2],
-                  "failed to create a redirect file");
+                "failed to create a redirect file");
         return;
     }
     const char* redir_dest = args[redir_idx+1].c_str();
