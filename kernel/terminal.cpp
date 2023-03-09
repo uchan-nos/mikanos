@@ -607,7 +607,7 @@ void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pi
       size_t send_len;
       if (args.size() < 2) {
         for (int i = 1; i < args.size(); i++) {
-          send_len = strlen(args[i].c_str());
+          send_len = args[i].length();
           usb::cdc::driver->SendSerial(args[i].c_str(), send_len);
         }
       } else {
