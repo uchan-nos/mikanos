@@ -447,10 +447,10 @@ void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pi
   }
 
   if (command == ">") {
-    PrintToFD(*files_[2], "no command befoer > \n");
+    PrintToFD(*files_[2], "no command before > \n");
     exit_code = 1;
   } else if (command == "|") {
-    PrintToFD(*files_[2], "no command befoer | \n");
+    PrintToFD(*files_[2], "no command before | \n");
     exit_code = 1;
   } else if (command == "echo") {
     if (args.size() > 1) {
