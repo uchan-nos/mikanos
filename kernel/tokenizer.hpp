@@ -11,11 +11,11 @@
 #include <memory>
 
 enum State {
-  Init,
-  InToken,
-  InDoubleQuoted,
-  InSingleQuoted,
-  BackSlash,
+  Init, // 初期状態
+  InToken, // 通常の文字を受理してトークンを処理している状態
+  InDoubleQuoted, //ダブルクウォートを受理してトークンを処理している状態
+  InSingleQuoted, // シングルクウォートを受理してトークンを処理している状態
+  BackSlash, // バックスラッシュを受理した直後の状態
 };
 
 struct TokenizerInnerState {
