@@ -319,8 +319,7 @@ Rectangle<int> Terminal::InputKey(
     std::vector<std::string> tokens;
     int redir_idx = -1;
     int pipe_idx = -1;
-    std::unique_ptr<TokenizerInnerState> t = nullptr;
-    t = Tokenize(&linebuf_[0], tokens, &redir_idx, &pipe_idx, std::move(t));
+    std::unique_ptr<TokenizerInnerState> t = Tokenize(&linebuf_[0], tokens, &redir_idx, &pipe_idx, nullptr);
     if (t) { // input not end
       cursor_.x = 0;
       if (cursor_.y < kRows - 1) {
