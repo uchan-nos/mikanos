@@ -487,32 +487,28 @@ void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pi
         verbose = true;
         args.erase(args.begin() + 1);
       }
-      if (args.size() >= 2) {
-        for (int i = 1; i < args.size(); i++) {
-          const char* file_name = args[i].c_str();
-          auto [ dir, post_slash ] = fat::FindFile(file_name);
-          if (dir == nullptr) {
-            PrintToFD(*files_[2], "No such file or directory: %s\n", file_name);
+      for (int i = 1; i < args.size(); i++) {
+        const char* file_name = args[i].c_str();
+        auto [ dir, post_slash ] = fat::FindFile(file_name);
+        if (dir == nullptr) {
+          PrintToFD(*files_[2], "No such file or directory: %s\n", file_name);
+          exit_code = 1;
+        } else if (dir->attr == fat::Attribute::kDirectory) {
+          ListAllEntries(*files_[1], dir->FirstCluster(), verbose);
+        } else {
+          char name[13];
+          fat::FormatName(*dir, name);
+          if (post_slash) {
+            PrintToFD(*files_[2], "%s is not a directory\n", name);
             exit_code = 1;
-          } else if (dir->attr == fat::Attribute::kDirectory) {
-            ListAllEntries(*files_[1], dir->FirstCluster(), verbose);
           } else {
-            char name[13];
-            fat::FormatName(*dir, name);
-            if (post_slash) {
-              PrintToFD(*files_[2], "%s is not a directory\n", name);
-              exit_code = 1;
+            if (verbose) {
+              PrintFileAttr(*files_[1], *dir);
             } else {
-              if (verbose) {
-                PrintFileAttr(*files_[1], *dir);
-              } else {
-                PrintToFD(*files_[1], "%s\n", name);
-              }
+              PrintToFD(*files_[1], "%s\n", name);
             }
           }
         }
-      } else {
-        ListAllEntries(*files_[1], fat::boot_volume_image->root_cluster, verbose);
       }
     }
 
