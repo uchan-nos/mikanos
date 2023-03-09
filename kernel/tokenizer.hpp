@@ -19,9 +19,9 @@ enum State {
 };
 
 struct TokenizerInnerState {
-  State state;
-  State last_state;
-  std::string tmp_token;
+  State state; // 現在の状態
+  State last_state; // １つ前の状態
+  std::string tmp_token; // 現在受理している文字列
 };
 
 std::unique_ptr<TokenizerInnerState> Tokenize(const char *c, std::vector<std::string>& tokens,
