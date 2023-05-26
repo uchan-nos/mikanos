@@ -52,8 +52,8 @@ namespace usb::xhci {
                     void* buf, int len, ClassDriver* issuer) override;
     Error ControlOut(EndpointID ep_id, SetupData setup_data,
                      const void* buf, int len, ClassDriver* issuer) override;
-    Error NormalIn(EndpointID ep_id, void* buf, int len) override;
-    Error NormalOut(EndpointID ep_id, const void* buf, int len) override;
+    Error InterruptIn(EndpointID ep_id, void* buf, int len) override;
+    Error InterruptOut(EndpointID ep_id, void* buf, int len) override;
 
     Error OnTransferEventReceived(const TransferEventTRB& trb);
 
@@ -72,6 +72,6 @@ namespace usb::xhci {
      */
     ArrayMap<const void*, const SetupStageTRB*, 16> setup_stage_map_{};
 
-    Error PushOneTransaction(EndpointID ep_id, const void* buf, int len);
+    //usb::Device* usb_device_;
   };
 }
