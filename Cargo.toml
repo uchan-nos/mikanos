@@ -1,0 +1,18 @@
+[package]
+name = "mikanos-usb"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cxx = { version = "1.0.95", default-features = false, features = ["alloc", "c++17"] }
+once_cell = { version = "1.17.1", default-features = false, features = ["alloc", "race"] }
+
+[feature]
+default = ["cxx/link_cplusplus/nothing"]
+alloc = ["cxx/alloc, cxx/c_plusplus/nothing"]
+
+[build-dependencies]
+cxx-build = "1.0.95"
+glob = "0.3.1"
