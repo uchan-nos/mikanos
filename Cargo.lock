@@ -84,7 +84,6 @@ dependencies = [
  "cxx",
  "cxx-build",
  "glob",
- "once_cell",
 ]
 
 [[package]]

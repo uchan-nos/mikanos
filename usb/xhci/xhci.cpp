@@ -7,12 +7,13 @@
 #include "usb/xhci/speed.hpp"
 #include <cstring>
 #include <algorithm>
+#include <memory>
 
 namespace
 {
   using namespace usb::xhci;
 
-  Error RegisterCommandRing(Ring *ring, MemMapRegister<CRCR_Bitmap> *crcr)
+  std::unique_ptr<Error> RegisterCommandRing(Ring *ring, MemMapRegister<CRCR_Bitmap> *crcr)
   {
     CRCR_Bitmap value = crcr->Read();
     value.bits.ring_cycle_state = true;
@@ -97,7 +98,7 @@ namespace
     ctx.bits.error_count = 3;
   }
 
-  Error ResetPort(Controller &xhc, Port &port)
+  std::unique_ptr<Error> ResetPort(Controller &xhc, Port &port)
   {
     const bool is_connected = port.IsConnected();
     Log(kDebug, "ResetPort: port.IsConnected() = %s\n",

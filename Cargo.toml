@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 cxx = { version = "1.0.95", default-features = false, features = ["alloc", "c++17"] }
-once_cell = { version = "1.17.1", default-features = false, features = ["alloc", "race"] }
 
 [feature]
 default = ["cxx/link_cplusplus/nothing"]

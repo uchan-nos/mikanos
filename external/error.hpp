@@ -28,16 +28,6 @@ public:
         kInvalidPhase,
         kUnknownXHCISpeedID,
         kNoWaiter,
-        kNoPCIMSI,
-        kUnknownPixelFormat,
-        kNoSuchTask,
-        kInvalidFormat,
-        kFrameTooSmall,
-        kInvalidFile,
-        kIsDirectory,
-        kNoSuchEntry,
-        kFreeTypeError,
-        kEndpointNotInCharge,
         kLastOfCode, // この列挙子は常に最後に配置する
     };
 
@@ -63,16 +53,6 @@ private:
         "kInvalidPhase",
         "kUnknownXHCISpeedID",
         "kNoWaiter",
-        "kNoPCIMSI",
-        "kUnknownPixelFormat",
-        "kNoSuchTask",
-        "kInvalidFormat",
-        "kFrameTooSmall",
-        "kInvalidFile",
-        "kIsDirectory",
-        "kNoSuchEntry",
-        "kFreeTypeError",
-        "kEndpointNotInCharge",
     };
     static_assert(Error::Code::kLastOfCode == code_names_.size());
 
@@ -110,11 +90,13 @@ private:
     const char *file_;
 };
 
-#define MAKE_ERROR(code) Error((code), __FILE__, __LINE__)
+#define MAKE_ERROR(code) (std::make_unique<Error>((code), __FILE__, __LINE__))
 
+// #@@range_begin(with_error)
 template <class T>
 struct WithError
 {
     T value;
     Error error;
 };
+// #@@range_end(with_error)

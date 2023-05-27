@@ -1,8 +1,29 @@
-pub mod asm;
-use cxx::{bridge, private::c_char};
+#![no_std]
+
+use core::sync::atomic::AtomicUsize;
+use cxx::private::c_char;
+
+#[cxx::bridge]
+mod cpp_error {
+    unsafe extern "C++" {
+        include!("mikanos-usb/external/error.hpp");
+        type Error;
+        fn Cause(&self) -> i32;
+        fn Name(&self) -> *const c_char;
+        fn File(&self) -> *const c_char;
+        fn Line(&self) -> i32;
+    }
+}
 
 #[cxx::bridge(namespace = "usb::xhci")]
-mod xhci {}
+mod xhci {
+    unsafe extern "C++" {
+        include!("mikanos-usb/usb/xhci/xhci.hpp");
+        type Controller;
+        type Error = crate::cpp_error::Error;
+        fn initialize(self: &Controller) -> Error;
+    }
+}
 
 #[cxx::bridge(namespace = "rust")]
 mod rust {
@@ -11,32 +32,20 @@ mod rust {
     }
 }
 
-extern "C" {
-    fn IoOut32(addr: u16, data: u32);
-    fn IoIn32(addr: u16) -> u32;
-}
+type PrintFunc = fn(&str);
+static LOG_PRINTER: AtomicUsize = AtomicUsize::new(0);
 
-pub trait LogPrinter {
-    fn print(&mut self, s: &str);
-
-    fn print_cstr(&mut self, s: &core::ffi::CStr) {
-        self.print(s.to_str().unwrap());
-    }
-}
-
-static LOG_PRINTER: core::sync::atomic::AtomicPtr<dyn LogPrinter> =
-    core::sync::atomic::AtomicPtr::new(core::ptr::null_mut());
-
-pub fn set_log_printer(printer: &'static mut dyn LogPrinter) {
-    LOG_PRINTER.store(printer.as_ptr(), core::sync::atomic::Ordering::Relaxed);
+pub fn set_log_printer(printer: PrintFunc) {
+    LOG_PRINTER.store(printer as usize, core::sync::atomic::Ordering::Release);
 }
 
 #[doc(hidden)]
 unsafe fn put_string(s: *const c_char) -> bool {
-    let s = unsafe { core::ffi::CStr::from_ptr(s) };
-    let printer = LOG_PRINTER.load(core::sync::atomic::Ordering::Relaxed);
-    if !printer.is_null() {
-        unsafe { (*printer).print_cstr(s) };
+    let Ok(s) = unsafe { core::ffi::CStr::from_ptr(s) }.to_str() else {return false};
+    let printer = LOG_PRINTER.load(core::sync::atomic::Ordering::Acquire);
+    if printer != 0 {
+        let f: PrintFunc = unsafe { core::mem::transmute(printer) };
+        f(s);
         true
     } else {
         false
