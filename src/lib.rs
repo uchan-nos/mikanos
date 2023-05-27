@@ -1,27 +1,25 @@
-#![no_std]
-
 use core::sync::atomic::AtomicUsize;
 use cxx::private::c_char;
 
 #[cxx::bridge]
-mod cpp_error {
+pub mod ffi {
     unsafe extern "C++" {
         include!("mikanos-usb/external/error.hpp");
         type Error;
-        fn Cause(&self) -> i32;
-        fn Name(&self) -> *const c_char;
-        fn File(&self) -> *const c_char;
-        fn Line(&self) -> i32;
+        fn Name(self: &Error) -> *const c_char;
+        fn File(self: &Error) -> *const c_char;
+        fn Line(self: &Error) -> i32;
     }
-}
+    unsafe extern "C++" {
+        include!("test_cpp/test.hpp");
+        fn new_success() -> UniquePtr<Error>;
+    }
 
-#[cxx::bridge(namespace = "usb::xhci")]
-mod xhci {
+    #[namespace = "usb::xhci"]
     unsafe extern "C++" {
         include!("mikanos-usb/usb/xhci/xhci.hpp");
         type Controller;
-        type Error = crate::cpp_error::Error;
-        fn initialize(self: &Controller) -> Error;
+        fn Initialize(self: Pin<&mut Controller>) -> UniquePtr<Error>;
     }
 }
 
@@ -49,5 +47,21 @@ unsafe fn put_string(s: *const c_char) -> bool {
         true
     } else {
         false
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn error_test() {
+        use core::ffi::CStr;
+        let error = ffi::new_success();
+        let name = unsafe { CStr::from_ptr(error.Name()) }.to_str().unwrap();
+        let file = unsafe { CStr::from_ptr(error.File()) }.to_str().unwrap();
+        let line = error.Line();
+        assert_eq!(name, "kSuccess");
+        assert_eq!(file, "test_cpp/test.cpp");
+        assert_eq!(line, 6);
     }
 }

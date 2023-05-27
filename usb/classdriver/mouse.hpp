@@ -9,21 +9,23 @@
 #include <functional>
 #include "usb/classdriver/hid.hpp"
 
-namespace usb {
-  class HIDMouseDriver : public HIDBaseDriver {
-   public:
-    HIDMouseDriver(Device* dev, int interface_index);
+namespace usb
+{
+  class HIDMouseDriver : public HIDBaseDriver
+  {
+  public:
+    HIDMouseDriver(Device *dev, int interface_index);
 
-    void* operator new(size_t size);
-    void operator delete(void* ptr) noexcept;
+    void *operator new(size_t size);
+    void operator delete(void *ptr) noexcept;
 
-    Error OnDataReceived() override;
+    std::unique_ptr<Error> OnDataReceived() override;
 
-    using ObserverType = void (int8_t displacement_x, int8_t displacement_y);
+    using ObserverType = void(int8_t displacement_x, int8_t displacement_y);
     void SubscribeMouseMove(std::function<ObserverType> observer);
     static std::function<ObserverType> default_observer;
 
-   private:
+  private:
     std::array<std::function<ObserverType>, 4> observers_;
     int num_observers_ = 0;
 

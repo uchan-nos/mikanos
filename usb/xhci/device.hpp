@@ -15,63 +15,67 @@
 #include "usb/xhci/context.hpp"
 #include "usb/xhci/trb.hpp"
 #include "usb/xhci/registers.hpp"
+#include <memory>
 
-namespace usb::xhci {
-  class Device : public usb::Device {
-   public:
-    enum class State {
+namespace usb::xhci
+{
+  class Device : public usb::Device
+  {
+  public:
+    enum class State
+    {
       kInvalid,
       kBlank,
       kSlotAssigning,
       kSlotAssigned
     };
 
-    using OnTransferredCallbackType = void (
-        Device* dev,
+    using OnTransferredCallbackType = void(
+        Device *dev,
         DeviceContextIndex dci,
         int completion_code,
         int trb_transfer_length,
-        TRB* issue_trb);
+        TRB *issue_trb);
 
-    Device(uint8_t slot_id, DoorbellRegister* dbreg);
+    Device(uint8_t slot_id, DoorbellRegister *dbreg);
 
-    Error Initialize();
+    std::unique_ptr<Error> Initialize();
 
-    DeviceContext* DeviceContext() { return &ctx_; }
-    InputContext* InputContext() { return &input_ctx_; }
-    //usb::Device* USBDevice() { return usb_device_; }
-    //void SetUSBDevice(usb::Device* value) { usb_device_ = value; }
+    DeviceContext *DeviceContext() { return &ctx_; }
+    InputContext *InputContext() { return &input_ctx_; }
+    // usb::Device* USBDevice() { return usb_device_; }
+    // void SetUSBDevice(usb::Device* value) { usb_device_ = value; }
 
     State State() const { return state_; }
     uint8_t SlotID() const { return slot_id_; }
 
     void SelectForSlotAssignment();
-    Ring* AllocTransferRing(DeviceContextIndex index, size_t buf_size);
+    Ring *AllocTransferRing(DeviceContextIndex index, size_t buf_size);
 
-    Error ControlIn(EndpointID ep_id, SetupData setup_data,
-                    void* buf, int len, ClassDriver* issuer) override;
-    Error ControlOut(EndpointID ep_id, SetupData setup_data,
-                     const void* buf, int len, ClassDriver* issuer) override;
-    Error InterruptIn(EndpointID ep_id, void* buf, int len) override;
-    Error InterruptOut(EndpointID ep_id, void* buf, int len) override;
+    std::unique_ptr<Error> ControlIn(EndpointID ep_id, SetupData setup_data,
+                                     void *buf, int len, ClassDriver *issuer) override;
+    std::unique_ptr<Error> ControlOut(EndpointID ep_id, SetupData setup_data,
+                                      const void *buf, int len, ClassDriver *issuer) override;
+    std::unique_ptr<Error> InterruptIn(EndpointID ep_id, void *buf, int len) override;
+    std::unique_ptr<Error> InterruptOut(EndpointID ep_id, void *buf, int len) override;
 
-    Error OnTransferEventReceived(const TransferEventTRB& trb);
+    std::unique_ptr<Error> OnTransferEventReceived(const TransferEventTRB &trb);
 
-   private:
+  private:
     alignas(64) struct DeviceContext ctx_;
     alignas(64) struct InputContext input_ctx_;
 
     const uint8_t slot_id_;
-    DoorbellRegister* const dbreg_;
+    DoorbellRegister *const dbreg_;
 
     enum State state_;
-    std::array<Ring*, 31> transfer_rings_; // index = dci - 1
+    std::array<Ring *, 31> transfer_rings_; // index = dci - 1
 
     /** コントロール転送が完了した際に DataStageTRB や StatusStageTRB
      * から対応する SetupStageTRB を検索するためのマップ．
      */
-    ArrayMap<const void*, const SetupStageTRB*, 16> setup_stage_map_{};
+    ArrayMap<const void *, const SetupStageTRB *, 16> setup_stage_map_{};
 
-    //usb::Device* usb_device_;
+    // usb::Device* usb_device_;
   };
 }

@@ -2,6 +2,7 @@ use glob::glob;
 
 fn main() {
     let cargo_home = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+    panic!();
     const PATH_LIB: &str =
         "/home/lemolatoon/workspace/mikanos-build/devenv_src/stdlib/target/x86_64-elf/lib";
     const PATH_INCLUDE: &str =
@@ -12,7 +13,7 @@ fn main() {
         "-Wall -g -ffreestanding -mno-red-zone -fno-exceptions -std=c++17 -fpermissive -fno-rtti -L {} -I {} -I {} -I {} -I {}/external -w",
         PATH_LIB, PATH_INCLUDE_CPP, PATH_INCLUDE, &cargo_home, &cargo_home
     );
-    let mut cc = cxx_build::bridge("src/lib.rs");
+    let mut cc = cxx_build::bridges(vec!["src/lib.rs", "tests/error.rs"]);
     for flag in cxx_flags.split_whitespace() {
         cc.flag(flag);
     }

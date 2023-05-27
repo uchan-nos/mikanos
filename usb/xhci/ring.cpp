@@ -2,6 +2,7 @@
 
 #include "usb/memory.hpp"
 #include <cstring>
+#include <memory>
 
 namespace usb::xhci
 {
@@ -13,7 +14,7 @@ namespace usb::xhci
     }
   }
 
-  Error Ring::Initialize(size_t buf_size)
+  std::unique_ptr<Error> Ring::Initialize(size_t buf_size)
   {
     if (buf_ != nullptr)
     {
@@ -63,8 +64,8 @@ namespace usb::xhci
     return trb_ptr;
   }
 
-  Error EventRing::Initialize(size_t buf_size,
-                              InterrupterRegisterSet *interrupter)
+  std::unique_ptr<Error> EventRing::Initialize(size_t buf_size,
+                                               InterrupterRegisterSet *interrupter)
   {
     if (buf_ != nullptr)
     {

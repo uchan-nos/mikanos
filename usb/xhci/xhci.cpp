@@ -128,7 +128,7 @@ namespace
     return MAKE_ERROR(Error::kSuccess);
   }
 
-  Error EnableSlot(Controller &xhc, Port &port)
+  std::unique_ptr<Error> EnableSlot(Controller &xhc, Port &port)
   {
     const bool is_enabled = port.IsEnabled();
     const bool reset_completed = port.IsPortResetChanged();
@@ -149,7 +149,7 @@ namespace
     return MAKE_ERROR(Error::kSuccess);
   }
 
-  Error AddressDevice(Controller &xhc, uint8_t port_id, uint8_t slot_id)
+  std::unique_ptr<Error> AddressDevice(Controller &xhc, uint8_t port_id, uint8_t slot_id)
   {
     Log(kDebug, "AddressDevice: port_id = %d, slot_id = %d\n", port_id, slot_id);
 
@@ -186,7 +186,7 @@ namespace
     return MAKE_ERROR(Error::kSuccess);
   }
 
-  Error InitializeDevice(Controller &xhc, uint8_t port_id, uint8_t slot_id)
+  std::unique_ptr<Error> InitializeDevice(Controller &xhc, uint8_t port_id, uint8_t slot_id)
   {
     Log(kDebug, "InitializeDevice: port_id = %d, slot_id = %d\n", port_id, slot_id);
 
@@ -202,7 +202,7 @@ namespace
     return MAKE_ERROR(Error::kSuccess);
   }
 
-  Error CompleteConfiguration(Controller &xhc, uint8_t port_id, uint8_t slot_id)
+  std::unique_ptr<Error> CompleteConfiguration(Controller &xhc, uint8_t port_id, uint8_t slot_id)
   {
     Log(kDebug, "CompleteConfiguration: port_id = %d, slot_id = %d\n", port_id, slot_id);
 
@@ -218,7 +218,7 @@ namespace
     return MAKE_ERROR(Error::kSuccess);
   }
 
-  Error OnEvent(Controller &xhc, PortStatusChangeEventTRB &trb)
+  std::unique_ptr<Error> OnEvent(Controller &xhc, PortStatusChangeEventTRB &trb)
   {
     Log(kDebug, "PortStatusChangeEvent: port_id = %d\n", trb.bits.port_id);
     auto port_id = trb.bits.port_id;
@@ -235,7 +235,7 @@ namespace
     }
   }
 
-  Error OnEvent(Controller &xhc, TransferEventTRB &trb)
+  std::unique_ptr<Error> OnEvent(Controller &xhc, TransferEventTRB &trb)
   {
     const uint8_t slot_id = trb.bits.slot_id;
     auto dev = xhc.DeviceManager()->FindBySlot(slot_id);
@@ -257,7 +257,7 @@ namespace
     return MAKE_ERROR(Error::kSuccess);
   }
 
-  Error OnEvent(Controller &xhc, CommandCompletionEventTRB &trb)
+  std::unique_ptr<Error> OnEvent(Controller &xhc, CommandCompletionEventTRB &trb)
   {
     const auto issuer_type = trb.Pointer()->bits.trb_type;
     const auto slot_id = trb.bits.slot_id;
@@ -376,7 +376,12 @@ namespace usb::xhci
   {
   }
 
-  Error Controller::Initialize()
+  std::unique_ptr<Controller> new_controller(uintptr_t mmio_base)
+  {
+    return std::make_unique<Controller>(mmio_base);
+  }
+
+  std::unique_ptr<::Error> Controller::Initialize()
   {
     if (auto err = devmgr_.Initialize(kDeviceSize))
     {
@@ -463,7 +468,7 @@ namespace usb::xhci
     return MAKE_ERROR(Error::kSuccess);
   }
 
-  Error Controller::Run()
+  std::unique_ptr<Error> Controller::Run()
   {
     // Run the controller
     auto usbcmd = op_->USBCMD.Read();
@@ -482,7 +487,7 @@ namespace usb::xhci
     return &DoorbellRegisters()[index];
   }
 
-  Error ConfigurePort(Controller &xhc, Port &port)
+  std::unique_ptr<Error> ConfigurePort(Controller &xhc, Port &port)
   {
     if (port_config_phase[port.Number()] == ConfigPhase::kNotConnected)
     {
@@ -491,7 +496,7 @@ namespace usb::xhci
     return MAKE_ERROR(Error::kSuccess);
   }
 
-  Error ConfigureEndpoints(Controller &xhc, Device &dev)
+  std::unique_ptr<Error> ConfigureEndpoints(Controller &xhc, Device &dev)
   {
     const auto configs = dev.EndpointConfigs();
     const auto len = dev.NumEndpointConfigs();
@@ -562,14 +567,14 @@ namespace usb::xhci
     return MAKE_ERROR(Error::kSuccess);
   }
 
-  Error ProcessEvent(Controller &xhc)
+  std::unique_ptr<Error> ProcessEvent(Controller &xhc)
   {
     if (!xhc.PrimaryEventRing()->HasFront())
     {
       return MAKE_ERROR(Error::kSuccess);
     }
 
-    Error err = MAKE_ERROR(Error::kNotImplemented);
+    std::unique_ptr<Error> err = MAKE_ERROR(Error::kNotImplemented);
     auto event_trb = xhc.PrimaryEventRing()->Front();
     if (auto trb = TRBDynamicCast<TransferEventTRB>(event_trb))
     {

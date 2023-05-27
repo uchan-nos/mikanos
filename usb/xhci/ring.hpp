@@ -14,31 +14,34 @@
 #include "usb/xhci/registers.hpp"
 #include "usb/xhci/trb.hpp"
 
-namespace usb::xhci {
+namespace usb::xhci
+{
   /** @brief Command/Transfer Ring を表すクラス． */
-  class Ring {
-   public:
+  class Ring
+  {
+  public:
     Ring() = default;
-    Ring(const Ring&) = delete;
+    Ring(const Ring &) = delete;
     ~Ring();
-    Ring& operator=(const Ring&) = delete;
+    Ring &operator=(const Ring &) = delete;
 
     /** @brief リングのメモリ領域を割り当て，メンバを初期化する． */
-    Error Initialize(size_t buf_size);
+    std::unique_ptr<Error> Initialize(size_t buf_size);
 
     /** @brief TRB に cycle bit を設定した上でリング末尾に追加する．
      *
      * @return 追加された（リング上の）TRB を指すポインタ．
      */
     template <typename TRBType>
-    TRB* Push(const TRBType& trb) {
+    TRB *Push(const TRBType &trb)
+    {
       return Push(trb.data);
     }
 
-    TRB* Buffer() const { return buf_; }
+    TRB *Buffer() const { return buf_; }
 
-   private:
-    TRB* buf_ = nullptr;
+  private:
+    TRB *buf_ = nullptr;
     size_t buf_size_ = 0;
 
     /** @brief プロデューサ・サイクル・ステートを表すビット */
@@ -50,7 +53,7 @@ namespace usb::xhci {
      *
      * write_index_ は変化させない．
      */
-    void CopyToLast(const std::array<uint32_t, 4>& data);
+    void CopyToLast(const std::array<uint32_t, 4> &data);
 
     /** @brief TRB に cycle bit を設定した上でリング末尾に追加する．
      *
@@ -60,13 +63,15 @@ namespace usb::xhci {
      *
      * @return 追加された（リング上の）TRB を指すポインタ．
      */
-    TRB* Push(const std::array<uint32_t, 4>& data);
+    TRB *Push(const std::array<uint32_t, 4> &data);
   };
 
-  union EventRingSegmentTableEntry {
+  union EventRingSegmentTableEntry
+  {
     std::array<uint32_t, 4> data;
-    struct {
-      uint64_t ring_segment_base_address;  // 64 バイトアライメント
+    struct
+    {
+      uint64_t ring_segment_base_address; // 64 バイトアライメント
 
       uint32_t ring_segment_size : 16;
       uint32_t : 16;
@@ -75,32 +80,36 @@ namespace usb::xhci {
     } __attribute__((packed)) bits;
   };
 
-  class EventRing {
-   public:
-    Error Initialize(size_t buf_size, InterrupterRegisterSet* interrupter);
+  class EventRing
+  {
+  public:
+    std::unique_ptr<Error> Initialize(size_t buf_size, InterrupterRegisterSet *interrupter);
 
-    TRB* ReadDequeuePointer() const {
-      return reinterpret_cast<TRB*>(interrupter_->ERDP.Read().Pointer());
+    TRB *ReadDequeuePointer() const
+    {
+      return reinterpret_cast<TRB *>(interrupter_->ERDP.Read().Pointer());
     }
 
-    void WriteDequeuePointer(TRB* p);
+    void WriteDequeuePointer(TRB *p);
 
-    bool HasFront() const {
+    bool HasFront() const
+    {
       return Front()->bits.cycle_bit == cycle_bit_;
     }
 
-    TRB* Front() const {
+    TRB *Front() const
+    {
       return ReadDequeuePointer();
     }
 
     void Pop();
 
-   private:
-    TRB* buf_;
+  private:
+    TRB *buf_;
     size_t buf_size_;
 
     bool cycle_bit_;
-    EventRingSegmentTableEntry* erst_;
-    InterrupterRegisterSet* interrupter_;
+    EventRingSegmentTableEntry *erst_;
+    InterrupterRegisterSet *interrupter_;
   };
 }
