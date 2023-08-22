@@ -417,7 +417,8 @@ void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pi
                 "failed to create a redirect file");
         return;
     }
-    const char* redir_dest = args[redir_idx+1].c_str();
+    char redir_dest[12]; // maximum file name size of FAT (8.3 format) is = 12
+    args[redir_idx+1].copy(redir_dest, 12);
     args.erase(args.begin() + redir_idx, args.end());
 
     auto [ file, post_slash ] = fat::FindFile(redir_dest);
