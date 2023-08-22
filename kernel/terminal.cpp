@@ -5,6 +5,7 @@
 #include <cstring>
 #include <limits>
 #include <vector>
+#include <memory>
 
 #include "font.hpp"
 #include "layer.hpp"
@@ -17,12 +18,14 @@
 #include "keyboard.hpp"
 #include "logger.hpp"
 #include "uefi.hpp"
+#include "tokenizer.hpp"
 #include "usb/classdriver/cdc.hpp"
 #include "usb/xhci/xhci.hpp"
 
+
 namespace {
 
-WithError<int> MakeArgVector(char* command, char* first_arg,
+WithError<int> MakeArgVector(const std::vector<std::string> &args,
     char** argv, int argv_len, char* argbuf, int argbuf_len) {
   int argc = 0;
   int argbuf_index = 0;
@@ -39,36 +42,14 @@ WithError<int> MakeArgVector(char* command, char* first_arg,
     return MAKE_ERROR(Error::kSuccess);
   };
 
-  if (auto err = push_to_argv(command)) {
-    return { argc, err };
-  }
-  if (!first_arg) {
+  if (!args.size()) {
     return { argc, MAKE_ERROR(Error::kSuccess) };
   }
 
-  char* p = first_arg;
-  while (true) {
-    while (isspace(p[0])) {
-      ++p;
-    }
-    if (p[0] == 0) {
-      break;
-    }
-    const char* arg = p;
-
-    while (p[0] != 0 && !isspace(p[0])) {
-      ++p;
-    }
-    // here: p[0] == 0 || isspace(p[0])
-    const bool is_end = p[0] == 0;
-    p[0] = 0;
-    if (auto err = push_to_argv(arg)) {
+  for (int i = 0; i < args.size(); i++) {
+    if (auto err = push_to_argv(args[i].c_str())) {
       return { argc, err };
     }
-    if (is_end) {
-      break;
-    }
-    ++p;
   }
 
   return { argc, MAKE_ERROR(Error::kSuccess) };
@@ -335,21 +316,37 @@ Rectangle<int> Terminal::InputKey(
 
   if (ascii == '\n') {
     linebuf_[linebuf_index_] = 0;
-    if (linebuf_index_ > 0) {
-      cmd_history_.pop_back();
-      cmd_history_.push_front(linebuf_);
-    }
-    linebuf_index_ = 0;
-    cmd_history_index_ = -1;
+    std::vector<std::string> tokens;
+    int redir_idx = -1;
+    int pipe_idx = -1;
+    std::unique_ptr<TokenizerInnerState> t = Tokenize(&linebuf_[0], tokens, &redir_idx, &pipe_idx, nullptr);
+    if (t) { // input not end
+      cursor_.x = 0;
+      if (cursor_.y < kRows - 1) {
+        ++cursor_.y;
+      } else {
+        Scroll1();
+      }
+      linebuf_[linebuf_index_] = ascii;
+      ++linebuf_index_;
+      Print("<");
+    } else { // input end
+      if (linebuf_index_ > 0) {
+        cmd_history_.pop_back();
+        cmd_history_.push_front(linebuf_);
+      }
+      linebuf_index_ = 0;
+      cmd_history_index_ = -1;
 
-    cursor_.x = 0;
-    if (cursor_.y < kRows - 1) {
-      ++cursor_.y;
-    } else {
-      Scroll1();
+      cursor_.x = 0;
+      if (cursor_.y < kRows - 1) {
+        ++cursor_.y;
+      } else {
+        Scroll1();
+      }
+      ExecuteLine(tokens, redir_idx, pipe_idx);
+      Print(">");
     }
-    ExecuteLine();
-    Print(">");
     draw_area.pos = ToplevelWindow::kTopLeftMargin;
     draw_area.size = window_->InnerSize();
   } else if (ascii == '\b') {
@@ -394,37 +391,35 @@ void Terminal::Scroll1() {
                 {4, 4 + 16*cursor_.y}, {8*kColumns, 16}, {0, 0, 0});
 }
 
-void Terminal::ExecuteLine() {
-  char* command = &linebuf_[0];
-  char* first_arg = strchr(&linebuf_[0], ' ');
-  char* redir_char = strchr(&linebuf_[0], '>');
-  char* pipe_char = strchr(&linebuf_[0], '|');
-  char* command_end = &linebuf_[strlen(&linebuf_[0])];
-
-  auto trim_space = [&command](char* end_ptr) {
-    while (command < end_ptr && isspace(end_ptr[-1])) {
-      *--end_ptr = 0;
-    }
-  };
-  trim_space(command_end);
-
-  if (first_arg) {
-    *first_arg = 0;
-    do {
-      ++first_arg;
-    } while (isspace(*first_arg));
-  }
+/**
+* Terminal::ExecuteLine
+*
+* リダイレクトが複数含まれる場合、最初のリダイレクトのに有効となる
+* リダイレクト以降の内容は処理しない簡易な実装となっているため、
+* コマンドの最後に書く必要がある。
+* リダイレクトを先頭に書くことはできない。
+*
+* @param[in] args ターミナルの入力をtokenに分割したもの
+* @param[in] redir_idx リダイレクト'>'が最初に登場するargsのインデックス
+*                      argsにリダイレクトが含まれない場合-1
+* @param[in] pipe_idx パイプ'|'が最初に登場するargsのインデックス
+*                      argsにパイプが含まれない場合-1
+*/
+void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pipe_idx) {
+  std::string command = args[0];
 
   auto original_stdout = files_[1];
   int exit_code = 0;
 
-  if (redir_char) {
-    *redir_char = 0;
-    trim_space(redir_char);
-    char* redir_dest = &redir_char[1];
-    while (isspace(*redir_dest)) {
-      ++redir_dest;
+  if (redir_idx != -1 && redir_idx != 0) {
+    if (args.size() < redir_idx + 2) {
+      PrintToFD(*files_[2],
+                "failed to create a redirect file");
+        return;
     }
+    char redir_dest[12]; // maximum file name size of FAT (8.3 format) is = 12
+    args[redir_idx+1].copy(redir_dest, 12);
+    args.erase(args.begin() + redir_idx, args.end());
 
     auto [ file, post_slash ] = fat::FindFile(redir_dest);
     if (file == nullptr) {
@@ -445,13 +440,14 @@ void Terminal::ExecuteLine() {
   std::shared_ptr<PipeDescriptor> pipe_fd;
   uint64_t subtask_id = 0;
 
-  if (pipe_char) {
-    *pipe_char = 0;
-    trim_space(pipe_char);
-    char* subcommand = &pipe_char[1];
-    while (isspace(*subcommand)) {
-      ++subcommand;
+  if (pipe_idx != -1 && pipe_idx != 0) {
+    std::string pipe_char = "";
+    for(auto s = args.begin()+pipe_idx + 1; s != args.end(); ++s) {
+        pipe_char += *s;
     }
+    args.erase(args.begin() + pipe_idx-1, args.end());
+
+    const char* subcommand = pipe_char.c_str();
 
     auto& subtask = task_manager->NewTask();
     pipe_fd = std::make_shared<PipeDescriptor>(subtask);
@@ -468,22 +464,30 @@ void Terminal::ExecuteLine() {
     (*layer_task_map)[layer_id_] = subtask_id;
   }
 
-  if (strcmp(command, "echo") == 0) {
-    if (first_arg && first_arg[0] == '$') {
-      if (strcmp(&first_arg[1], "?") == 0) {
+  if (command == ">") {
+    PrintToFD(*files_[2], "no command before > \n");
+    exit_code = 1;
+  } else if (command == "|") {
+    PrintToFD(*files_[2], "no command before | \n");
+    exit_code = 1;
+  } else if (command == "echo") {
+    if (args.size() > 1) {
+      if (args[1] == "$?") {
         PrintToFD(*files_[1], "%d", last_exit_code_);
+      } else {
+        for (int i = 1; i < args.size(); i++) {
+          PrintToFD(*files_[1], "%s ", args[i].c_str());
+        }
       }
-    } else if (first_arg) {
-      PrintToFD(*files_[1], "%s", first_arg);
     }
     PrintToFD(*files_[1], "\n");
-  } else if (strcmp(command, "clear") == 0) {
+  } else if (command == "clear") {
     if (show_window_) {
       FillRectangle(*window_->InnerWriter(),
                     {4, 4}, {8*kColumns, 16*kRows}, {0, 0, 0});
     }
     cursor_.y = 0;
-  } else if (strcmp(command, "lspci") == 0) {
+  } else if (command == "lspci") {
     for (int i = 0; i < pci::num_device; ++i) {
       const auto& dev = pci::devices[i];
       auto vendor_id = pci::ReadVendorId(dev.bus, dev.device, dev.function);
@@ -492,36 +496,32 @@ void Terminal::ExecuteLine() {
           dev.bus, dev.device, dev.function, vendor_id, dev.header_type,
           dev.class_code.base, dev.class_code.sub, dev.class_code.interface);
     }
-  } else if (strcmp(command, "ls") == 0) {
-    char* file_name = first_arg;
+  } else if (command == "ls") {
     bool verbose = false;
-    if (file_name && file_name[0] == '-') {
-      for (++file_name; *file_name && !isspace(*file_name); ++file_name) {
-        if (*file_name == 'l') verbose = true;
-      }
-      while (isspace(*file_name)) file_name++;
-    }
-    if (!file_name || file_name[0] == '\0') {
+    if (args.size() < 2) {
       ListAllEntries(*files_[1], fat::boot_volume_image->root_cluster, verbose);
     } else {
-      auto [ dir, post_slash ] = fat::FindFile(file_name);
-      if (dir == nullptr) {
-        PrintToFD(*files_[2], "No such file or directory: %s\n", file_name);
-        exit_code = 1;
-      } else if (dir->attr == fat::Attribute::kDirectory) {
-        ListAllEntries(*files_[1], dir->FirstCluster(), verbose);
-      } else {
-        char name[13];
-        fat::FormatName(*dir, name);
-        if (post_slash) {
-          PrintToFD(*files_[2], "%s is not a directory\n", name);
+      if (args[1] == "-l") {
+        verbose = true;
+        args.erase(args.begin() + 1);
+      }
+      for (int i = 1; i < args.size(); i++) {
+        const char* file_name = args[i].c_str();
+        auto [ dir, post_slash ] = fat::FindFile(file_name);
+        if (dir == nullptr) {
+          PrintToFD(*files_[2], "No such file or directory: %s\n", file_name);
           exit_code = 1;
+        } else if (dir->attr == fat::Attribute::kDirectory) {
+          ListAllEntries(*files_[1], dir->FirstCluster(), verbose);
         } else {
-          if (verbose) {
-            PrintFileAttr(*files_[1], *dir);
+          char name[13];
+          fat::FormatName(*dir, name);
+          if (post_slash) {
+            PrintToFD(*files_[2], "%s is not a directory\n", name);
+            exit_code = 1;
           } else {
-            if (files_[1]->IsTerminal() && dir->attr == fat::Attribute::kDirectory) {
-              PrintToFD(*files_[1], "\033[94m%s\033[0m\n", name);
+            if (verbose) {
+              PrintFileAttr(*files_[1], *dir);
             } else {
               PrintToFD(*files_[1], "%s\n", name);
             }
@@ -529,23 +529,24 @@ void Terminal::ExecuteLine() {
         }
       }
     }
-  } else if (strcmp(command, "cat") == 0) {
+
+  } else if (command == "cat") {
     std::shared_ptr<FileDescriptor> fd;
-    if (!first_arg || first_arg[0] == '\0') {
+    if (args.size() < 2) {
       fd = files_[0];
     } else {
-      auto [ file_entry, post_slash ] = fat::FindFile(first_arg);
-      if (!file_entry) {
-        PrintToFD(*files_[2], "no such file: %s\n", first_arg);
-        exit_code = 1;
-      } else if (file_entry->attr != fat::Attribute::kDirectory && post_slash) {
-        char name[13];
-        fat::FormatName(*file_entry, name);
-        PrintToFD(*files_[2], "%s is not a directory\n", name);
-        exit_code = 1;
-      } else {
-        fd = std::make_shared<fat::FileDescriptor>(*file_entry);
-      }
+        auto [ file_entry, post_slash ] = fat::FindFile(args[1].c_str());
+        if (!file_entry) {
+          PrintToFD(*files_[2], "no such file: %s\n", args[1].c_str());
+          exit_code = 1;
+        } else if (file_entry->attr != fat::Attribute::kDirectory && post_slash) {
+          char name[13];
+          fat::FormatName(*file_entry, name);
+          PrintToFD(*files_[2], "%s is not a directory\n", name);
+          exit_code = 1;
+        } else {
+          fd = std::make_shared<fat::FileDescriptor>(*file_entry);
+        }
     }
     if (fd) {
       char u8buf[1024];
@@ -559,14 +560,19 @@ void Terminal::ExecuteLine() {
       }
       DrawCursor(true);
     }
-  } else if (strcmp(command, "noterm") == 0) {
+  } else if (command == "noterm") {
+    std::string first_arg = "";
+    for(auto s = args.begin() + 1; s != args.end(); ++s) {
+        first_arg += *s;
+    }
+
     auto term_desc = new TerminalDescriptor{
       first_arg, true, false, files_
     };
     task_manager->NewTask()
       .InitContext(TaskTerminal, reinterpret_cast<int64_t>(term_desc))
       .Wakeup();
-  } else if (strcmp(command, "memstat") == 0) {
+  } else if (command == "memstat") {
     const auto p_stat = memory_manager->Stat();
     PrintToFD(*files_[1], "Phys used : %lu frames (%llu MiB)\n",
         p_stat.allocated_frames,
@@ -574,7 +580,7 @@ void Terminal::ExecuteLine() {
     PrintToFD(*files_[1], "Phys total: %lu frames (%llu MiB)\n",
         p_stat.total_frames,
         p_stat.total_frames * kBytesPerFrame / 1024 / 1024);
-  } else if (strcmp(command, "date") == 0) {
+  } else if (command == "date") {
     EFI_TIME t;
     uefi_rt->GetTime(&t, nullptr);
     if (t.TimeZone == EFI_UNSPECIFIED_TIMEZONE) {
@@ -589,11 +595,11 @@ void Terminal::ExecuteLine() {
         PrintToFD(*files_[1], "-%02d%02d\n", -t.TimeZone / 60, -t.TimeZone % 60);
       }
     }
-  } else if (strcmp(command, "reboot") == 0) {
+  } else if (command == "reboot") {
     uefi_rt->ResetSystem(EfiResetWarm, EFI_SUCCESS, 0, nullptr);
-  } else if (strcmp(command, "poweroff") == 0) {
+  } else if (command == "poweroff") {
     uefi_rt->ResetSystem(EfiResetShutdown, EFI_SUCCESS, 0, nullptr);
-  } else if (strcmp(command, "lsusb") == 0) {
+  } else if (command == "lsusb") {
     auto devmgr = usb::xhci::controller->DeviceManager();
     for (int slot = 1; slot < 256; ++slot) {
       auto dev = devmgr->FindBySlot(slot);
@@ -608,18 +614,19 @@ void Terminal::ExecuteLine() {
                 dev->DeviceDesc().device_sub_class,
                 dev->DeviceDesc().device_protocol);
     }
-  } else if (strcmp(command, "usbtest") == 0) {
+  } else if (command == "usbtest") {
     [&]{
       if (!usb::cdc::driver) {
         PrintToFD(*files_[2], "CDC device not exist\n");
         exit_code = 1;
         return;
       }
-
       size_t send_len;
-      if (first_arg && first_arg[0]) {
-        send_len = strlen(first_arg);
-        usb::cdc::driver->SendSerial(first_arg, send_len);
+      if (args.size() < 2) {
+        for (int i = 1; i < args.size(); i++) {
+          send_len = args[i].length();
+          usb::cdc::driver->SendSerial(args[i].c_str(), send_len);
+        }
       } else {
         send_len = 1;
         usb::cdc::driver->SendSerial("a", 1);
@@ -633,7 +640,7 @@ void Terminal::ExecuteLine() {
       files_[1]->Write(buf.data(), recv_len);
       PrintToFD(*files_[1], "\n");
     }();
-  } else if (strcmp(command, "setbaud") == 0) {
+  } else if (command == "setbaud") {
     [&]{
       usb::cdc::LineCoding line_coding{
         9600,
@@ -642,9 +649,9 @@ void Terminal::ExecuteLine() {
         8
       };
 
-      if (first_arg && first_arg[0]) {
+      if (args.size() < 2) {
         char *endp;
-        line_coding.dte_rate = strtol(first_arg, &endp, 0);
+        line_coding.dte_rate = strtol(args[1].c_str(), &endp, 0);
         if (*endp != '\0') {
           PrintToFD(*files_[2], "Baud rate must be an integer");
           exit_code = 1;
@@ -661,7 +668,7 @@ void Terminal::ExecuteLine() {
       PrintToFD(*files_[2], "Setting baud rate to %u\n", line_coding.dte_rate);
       usb::cdc::driver->SetLineCoding(line_coding);
     }();
-  } else if (strcmp(command, "comproc") == 0) {
+  } else if (command == "comproc") {
     [&]{
       if (!usb::cdc::driver) {
         PrintToFD(*files_[2], "CDC device not exist\n");
@@ -671,7 +678,7 @@ void Terminal::ExecuteLine() {
 
       std::vector<uint8_t> insn;
 
-      if (first_arg && strcmp(first_arg, "sample") == 0) {
+      if (args.size() < 2 && strcmp(args[1].c_str(), "sample") == 0) {
         const std::array<uint8_t, 14 * 2> kSample = {
           0x00, 0x20,
           0xC1, 0x00,
@@ -711,13 +718,13 @@ void Terminal::ExecuteLine() {
       }
       PrintToFD(*files_[1], "exit_code=%d\n", code);
     }();
-  } else if (command[0] != 0) {
-    auto file_entry = FindCommand(command);
+  } else if (!command.empty()) {
+    auto file_entry = FindCommand(command.c_str());
     if (!file_entry) {
-      PrintToFD(*files_[2], "no such command: %s\n", command);
+      PrintToFD(*files_[2], "no such command: %s\n", command.c_str());
       exit_code = 1;
     } else {
-      auto [ ec, err ] = ExecuteFile(*file_entry, command, first_arg);
+      auto [ ec, err ] = ExecuteFile(*file_entry, command.c_str(), args);
       if (err) {
         PrintToFD(*files_[2], "failed to exec file: %s\n", err.Name());
         exit_code = -ec;
@@ -744,7 +751,7 @@ void Terminal::ExecuteLine() {
 }
 
 WithError<int> Terminal::ExecuteFile(fat::DirectoryEntry& file_entry,
-                                     char* command, char* first_arg) {
+                                     const char* command, std::vector<std::string>& args) {
   __asm__("cli");
   auto& task = task_manager->CurrentTask();
   __asm__("sti");
@@ -762,7 +769,7 @@ WithError<int> Terminal::ExecuteFile(fat::DirectoryEntry& file_entry,
   int argv_len = 32; // argv = 8x32 = 256 bytes
   auto argbuf = reinterpret_cast<char*>(args_frame_addr.value + sizeof(char*) * argv_len);
   int argbuf_len = 4096 - sizeof(char*) * argv_len;
-  auto argc = MakeArgVector(command, first_arg, argv, argv_len, argbuf, argbuf_len);
+  auto argc = MakeArgVector(args, argv, argv_len, argbuf, argbuf_len);
   if (argc.error) {
     return { 0, argc.error };
   }

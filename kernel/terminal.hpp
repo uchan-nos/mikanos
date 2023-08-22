@@ -68,9 +68,9 @@ class Terminal {
   std::array<char, kLineMax> linebuf_{};
   void Scroll1();
 
-  void ExecuteLine();
+  void ExecuteLine(std::vector<std::string>& tokens, int redir, int pipes);
   WithError<int> ExecuteFile(fat::DirectoryEntry& file_entry,
-                             char* command, char* first_arg);
+                             const char* command, std::vector<std::string>& args);
   void Print(char32_t c);
 
   std::deque<std::array<char, kLineMax>> cmd_history_{};
