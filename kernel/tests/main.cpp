@@ -1,17 +1,22 @@
 
+#include <iostream>
 #include "tokenizer_test.hpp"
 
 int main() {
-  int ret = 0;
+  const int test_num = 1;
+  int success = 0;
 
-  printf("test: tokenizer\n");
-  ret = ret | TestTokenize();
-
-  if (ret) {
-    printf("\e[38;5;9mERR\e[0m\n");
-  } else {
-    printf("\e[38;5;10mOK\e[0m\n");
+  std::cout << "test: tokenizer" << std::endl;
+  if (TestTokenize()) {
+      success++;
   }
 
-  return ret;
+  std::cout << "test: " << success << "/" << test_num << " passed" << std::endl;
+  if (test_num == success) {
+      std::cout << "\e[38;5;10mOK\e[0m\n" << std::endl;
+      return 0;
+  } else {
+      std::cout << "\e[38;5;9mERR\e[0m\n" << std::endl;
+      return -1;
+  }
 }
