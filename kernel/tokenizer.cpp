@@ -6,7 +6,7 @@
 
 std::unique_ptr<TokenizerInnerState> Tokenize(const char *c, std::vector<std::string>& tokens,
                                               int *redir_idx, int *pipe_idx,
-                                              std::unique_ptr<TokenizerInnerState> last_istate) {
+                                              const std::unique_ptr<TokenizerInnerState> last_istate) {
   State state = Init;
   State last_state = Init;
   std::string tmp_token; 
@@ -106,13 +106,7 @@ std::unique_ptr<TokenizerInnerState> Tokenize(const char *c, std::vector<std::st
     }
   }
   if (state != Init || (state == Init && last_state == BackSlash)) {
-    if (!last_istate) {
-      last_istate = std::make_unique<TokenizerInnerState>() ;
-    }
-    last_istate->state = state;
-    last_istate->last_state = last_state;
-    last_istate->tmp_token = tmp_token;
-    return last_istate;
+    return std::make_unique<TokenizerInnerState>(state, last_state, tmp_token);
   } else {
     return nullptr;
   }
