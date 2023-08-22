@@ -25,7 +25,7 @@
 
 namespace {
 
-WithError<int> MakeArgVector(std::vector<std::string> args,
+WithError<int> MakeArgVector(const std::vector<std::string> &args,
     char** argv, int argv_len, char* argbuf, int argbuf_len) {
   int argc = 0;
   int argbuf_index = 0;
