@@ -531,14 +531,13 @@ void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pi
     }
 
   } else if (command == "cat") {
-    std::vector<std::shared_ptr<FileDescriptor>> fd_vec;
+    std::shared_ptr<FileDescriptor> fd;
     if (args.size() < 2) {
-      fd_vec.push_back(files_[0]);
+      fd = files_[0];
     } else {
-      for (int i = 1; i < args.size(); i++) {
-        auto [ file_entry, post_slash ] = fat::FindFile(args[i].c_str());
+        auto [ file_entry, post_slash ] = fat::FindFile(args[1].c_str());
         if (!file_entry) {
-          PrintToFD(*files_[2], "no such file: %s\n", args[i].c_str());
+          PrintToFD(*files_[2], "no such file: %s\n", args[1].c_str());
           exit_code = 1;
         } else if (file_entry->attr != fat::Attribute::kDirectory && post_slash) {
           char name[13];
@@ -546,24 +545,20 @@ void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pi
           PrintToFD(*files_[2], "%s is not a directory\n", name);
           exit_code = 1;
         } else {
-          fd_vec.push_back(std::make_shared<fat::FileDescriptor>(*file_entry));
+          fd = std::make_shared<fat::FileDescriptor>(*file_entry);
         }
-      }
     }
-    for (int i = 0; i < fd_vec.size(); i++) {
-      auto fd = fd_vec[i];
-      if (fd) {
-        char u8buf[1024];
-        DrawCursor(false);
-        while (true) {
-          size_t read_size = ReadDelim(*fd, '\n', u8buf, sizeof(u8buf));
-          if (read_size == 0) {
-            break;
-          }
-          files_[1]->Write(u8buf, read_size);
+    if (fd) {
+      char u8buf[1024];
+      DrawCursor(false);
+      while (true) {
+        size_t read_size = ReadDelim(*fd, '\n', u8buf, sizeof(u8buf));
+        if (read_size == 0) {
+          break;
         }
-        DrawCursor(true);
+        files_[1]->Write(u8buf, read_size);
       }
+      DrawCursor(true);
     }
   } else if (command == "noterm") {
     std::string first_arg = "";
