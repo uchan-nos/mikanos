@@ -8,7 +8,7 @@
 
 #include "../tokenizer.hpp"
 
-bool IsTISSame(struct TokenizerInnerState *tis1, struct TokenizerInnerState *tis2) {
+bool IsTISSame(const std::unique_ptr<TokenizerInnerState> &tis1, const std::unique_ptr<TokenizerInnerState> &tis2) {
   if (tis1 == nullptr ^ tis2 == nullptr) { return false; }
   if (tis1 == nullptr && tis2 == nullptr) { return true; }
   if (tis1->last_state != tis2->last_state) { return false; }
@@ -17,7 +17,7 @@ bool IsTISSame(struct TokenizerInnerState *tis1, struct TokenizerInnerState *tis
   return true;
 }
 
-void PrintTIS(struct TokenizerInnerState *tis) {
+void PrintTIS(const std::unique_ptr<TokenizerInnerState> &tis) {
   std::cout << "    >>>>>>>>>>>>>>>>>>>>>>>>>>>" << std::endl;
   if (!tis) { std::cout << "    nullptr" << std::endl; }
   else {
@@ -31,22 +31,22 @@ void PrintTIS(struct TokenizerInnerState *tis) {
 
 int TestTokenize() {
   int ret = 0;
-  struct TokenizerInnerState t0 = { InToken, BackSlash, "hoge"};
-  struct TokenizerInnerState t5 = { InDoubleQuoted, Init, "piyo"};
-  struct TokenizerInnerState t2 = { Init, BackSlash, ""};
-  struct TokenizerInnerState t9 = { InDoubleQuoted, Init, "ed> hoge"};
+  auto t0 = std::make_unique<TokenizerInnerState>(InToken, BackSlash, "hoge");
+  auto t5 = std::make_unique<TokenizerInnerState>(InDoubleQuoted, Init, "piyo");
+  auto t2 = std::make_unique<TokenizerInnerState>(Init, BackSlash, "");
+  auto t9 = std::make_unique<TokenizerInnerState>(InDoubleQuoted, Init, "ed> hoge");
   struct {
     const int expected;
     const char* result[32];
     int redir;
     int pipe;
     char linebuf[100];
-    struct TokenizerInnerState *eis; // expected
-    struct TokenizerInnerState *iis; // input
+    std::unique_ptr<TokenizerInnerState> eis; // expected
+    std::unique_ptr<TokenizerInnerState> iis; // input
   } tbl[] = {
     /* 00 */ {9, {"hoge",  "|", "fuga", "|", "piyo", ">", "foo", ">", "bar"}, 5, 1, R"(hoge |fuga| piyo >foo> bar)", nullptr, nullptr},
     // パイプ, 空白の前後が空白、複数のリダイレクト
-    /* 01 */ {3, {"minied",  "-p", "mini|ed>"}, -1, -1, R"(minied   -p "mini|ed>" hoge\)", &t0, nullptr},
+    /* 01 */ {3, {"minied",  "-p", "mini|ed>"}, -1, -1, R"(minied   -p "mini|ed>" hoge\)", std::move(t0), nullptr},
     // ダブルクォート中のリダイレクト, パイプ、\終端
     /* 02 */  {4, {"hoge", ">", "piyo", "|"}, -1, -1, R"(hoge ">" piyo '|')", nullptr, nullptr},
     // クウォーテーションの中にパイプ、リダイレクト単体
@@ -54,7 +54,7 @@ int TestTokenize() {
     // tokenの中のバックスラッシュ
     /* 04 */ {3, {"ho'ge", "fuga", "piyo"}, -1, -1, R"(ho\'ge fu"ga" pi'yo)", nullptr, nullptr},
     // token中のクウォーテーション、token中の\'
-    /* 05 */ {1, {"hoge fuga"}, -1, -1, R"('hoge fuga' "piyo)", &t5, nullptr},
+    /* 05 */ {1, {"hoge fuga"}, -1, -1, R"('hoge fuga' "piyo)", std::move(t5), nullptr},
     // 閉じていないクウォーテーション
     /* 06 */ {2, {"hoge", "fugapiyo"}, -1, -1, R"(hoge fuga\
 piyo)", nullptr, nullptr},
@@ -71,9 +71,9 @@ piyo")", nullptr, nullptr},
     std::vector<std::string> tokens;
     int redir = -1, *p_redir = &redir;
     int pipe = -1, *p_pipe = &pipe;
-    struct TokenizerInnerState *t = tbl[i].iis;
+    auto t = std::move(tbl[i].iis);
 
-    t = Tokenize(tbl[i].linebuf, tokens, p_redir, p_pipe, t);
+    t = Tokenize(tbl[i].linebuf, tokens, p_redir, p_pipe, std::move(t));
     // return val check
     
     if (!IsTISSame(t, tbl[i].eis)) { PrintTIS(t); PrintTIS(tbl[i].eis); printf("    \e[38;5;9mERR: invalid return val\e[0m\n"); ret = -1; }
