@@ -1,21 +1,21 @@
 CFLAGS   += -O2 -Wall -g
-CPPFLAGS   += -O2 -Wall -g -std=c++17
+CPPFLAGS   += -O2 -Wall -g -std=c++17 -MMD -MP -MF $(@:.o=.d)
 
 TARGET = tests
-OBJS = main.o tokenizer.o tokenizer_test.o
+VPATH = ../
+SRC = main.cpp tokenizer.cpp tokenizer_test.cpp
+OBJS = $(SRC:.cpp=.o)
+DEPS = $(SRC:.cpp=.d)
 
 .PHONY: all
 all: $(TARGET)
 
 .PHONY: clean
 clean:
-	rm -rf *.o $(TARGET)
+	rm -rf *.o $(TARGET) $(DEPS)
 
 $(TARGET): $(OBJS) Makefile  
 	clang++ $(LDFLAGS) -o $@ $(OBJS) -fuse-ld=lld
-
-tokenizer.o: ../tokenizer.cpp Makefile
-	clang++ $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 %.o: %.cpp Makefile
 	clang++ $(CPPFLAGS) $(CFLAGS) -c $< -o $@
@@ -24,3 +24,5 @@ tokenizer.o: ../tokenizer.cpp Makefile
 test: $(TARGET)
 	./$(TARGET)
 
+-include $(DEPS)
+.SECONDARY: $(OBJS)
