@@ -441,10 +441,13 @@ void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pi
   uint64_t subtask_id = 0;
 
   if (pipe_idx != -1 && pipe_idx != 0) {
+    std::string pipe_char = "";
+    for(auto s = args.begin()+pipe_idx + 1; s != args.end(); ++s) {
+        pipe_char += *s;
+    }
     args.erase(args.begin() + pipe_idx-1, args.end());
 
-    char* pipe_char = strchr(&linebuf_[0], '|');
-    char* subcommand = &pipe_char[1];
+    const char* subcommand = pipe_char.c_str();
 
     auto& subtask = task_manager->NewTask();
     pipe_fd = std::make_shared<PipeDescriptor>(subtask);
@@ -563,7 +566,11 @@ void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pi
       }
     }
   } else if (command == "noterm") {
-    char* first_arg = strchr(&linebuf_[0], ' ');
+    std::string first_arg = "";
+    for(auto s = args.begin() + 1; s != args.end(); ++s) {
+        first_arg += *s;
+    }
+
     auto term_desc = new TerminalDescriptor{
       first_arg, true, false, files_
     };
