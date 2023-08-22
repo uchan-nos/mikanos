@@ -5,7 +5,8 @@
 #include <memory>
 
 std::unique_ptr<TokenizerInnerState> Tokenize(const char *c, std::vector<std::string>& tokens,
-  int *redir_idx, int *pipe_idx, std::unique_ptr<TokenizerInnerState> last_istate) {
+                                              int *redir_idx, int *pipe_idx,
+                                              std::unique_ptr<TokenizerInnerState> last_istate) {
   State state = Init;
   State last_state = Init;
   std::string tmp_token; 
