@@ -391,6 +391,20 @@ void Terminal::Scroll1() {
                 {4, 4 + 16*cursor_.y}, {8*kColumns, 16}, {0, 0, 0});
 }
 
+/**
+* Terminal::ExecuteLine
+*
+* リダイレクトが複数含まれる場合、最初のリダイレクトのに有効となる
+* リダイレクト以降の内容は処理しない簡易な実装となっているため、
+* コマンドの最後に書く必要がある。
+* リダイレクトを先頭に書くことはできない。
+*
+* @param[in] args ターミナルの入力をtokenに分割したもの
+* @param[in] redir_idx リダイレクト'>'が最初に登場するargsのインデックス
+*                      argsにリダイレクトが含まれない場合-1
+* @param[in] pipe_idx パイプ'|'が最初に登場するargsのインデックス
+*                      argsにパイプが含まれない場合-1
+*/
 void Terminal::ExecuteLine(std::vector<std::string>& args, int redir_idx, int pipe_idx) {
   std::string command = args[0];
 
