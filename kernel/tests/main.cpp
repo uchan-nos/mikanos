@@ -5,9 +5,10 @@
 int main() {
   const int test_num = 1;
   int success = 0;
+  const bool verbose = false;
 
-  std::cout << "test: tokenizer" << std::endl;
-  if (TestTokenize()) {
+  if (verbose) std::cout << "test: tokenizer" << std::endl;
+  if (TestTokenize(verbose)) {
       success++;
   }
 

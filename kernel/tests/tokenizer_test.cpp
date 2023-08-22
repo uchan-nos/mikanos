@@ -29,7 +29,7 @@ void PrintTIS(const std::unique_ptr<TokenizerInnerState> &tis) {
   std::cout << "    <<<<<<<<<<<<<<<<<<<<<<<<<<<<" << std::endl;
 }
 
-bool TestTokenize() {
+bool TestTokenize(bool verbose) {
   bool ret = true;
   auto t0 = std::make_unique<TokenizerInnerState>(InToken, BackSlash, "hoge");
   auto t5 = std::make_unique<TokenizerInnerState>(InDoubleQuoted, Init, "piyo");
@@ -67,7 +67,7 @@ piyo")", nullptr, nullptr},
     //ダブルクォート中のバックスラッシュ,スペース,改行
   };
   for (size_t i = 0; i < sizeof(tbl) / sizeof(tbl[0]); i++) {
-    printf("case %zd: `%s`\n", i, tbl[i].linebuf);
+    if (verbose) printf("case %zd: `%s`\n", i, tbl[i].linebuf);
     std::vector<std::string> tokens;
     int redir = -1, *p_redir = &redir;
     int pipe = -1, *p_pipe = &pipe;
@@ -79,18 +79,24 @@ piyo")", nullptr, nullptr},
     if (!IsTISSame(t, tbl[i].eis)) { PrintTIS(t); PrintTIS(tbl[i].eis); printf("    \e[38;5;9mERR: invalid return val\e[0m\n"); ret = false; }
     // size of tokens check
     if (tokens.size() != tbl[i].expected) {
-      printf("    \e[38;5;9mERR: num of tokens. expected %d but %zu.\e[0m\n", tbl[i].expected, tokens.size());
+      if (verbose) printf("    \e[38;5;9mERR: num of tokens. expected %d but %zu.\e[0m\n", tbl[i].expected, tokens.size());
       ret = false;
     }
     // redir & pipe check
-    if (redir != tbl[i].redir) { printf("   `%d`, `%d`\n", tbl[i].redir, redir); printf("    \e[38;5;9mredir ERR\e[0m\n"); ret = false; }
-    if (pipe != tbl[i].pipe) { printf("    \e[38;5;9mpipe ERR\e[0m\n"); ret = false; }
+    if (redir != tbl[i].redir) {
+      if (verbose) {
+        printf("   `%d`, `%d`\n", tbl[i].redir, redir);
+        printf("    \e[38;5;9mredir ERR\e[0m\n");
+      }
+      ret = false;
+    }
+    if (pipe != tbl[i].pipe) { if (verbose) printf("    \e[38;5;9mpipe ERR\e[0m\n"); ret = false; }
     // token check
     for (size_t j = 0; j < tokens.size(); j++) {
-      printf("    cmp `%s`, `%s`\n", tbl[i].result[j], tokens[j].c_str());
-      if (tokens[j].c_str() == NULL || tbl[i].result[j] == NULL) { printf("    \e[38;5;9mERR\e[0m\n");ret = false; continue; }
+      if (verbose) printf("    cmp `%s`, `%s`\n", tbl[i].result[j], tokens[j].c_str());
+      if (tokens[j].c_str() == NULL || tbl[i].result[j] == NULL) { if (verbose) printf("    \e[38;5;9mERR\e[0m\n");ret = false; continue; }
       if (strcmp(tokens[j].c_str(), tbl[i].result[j])) {
-        printf("    \e[38;5;9mERR\e[0m\n"); ret = false;
+        if (verbose) printf("    \e[38;5;9mERR\e[0m\n"); ret = false;
       }
     }
   }
