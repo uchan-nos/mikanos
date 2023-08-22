@@ -29,8 +29,8 @@ void PrintTIS(const std::unique_ptr<TokenizerInnerState> &tis) {
   std::cout << "    <<<<<<<<<<<<<<<<<<<<<<<<<<<<" << std::endl;
 }
 
-int TestTokenize() {
-  int ret = 0;
+bool TestTokenize() {
+  bool ret = true;
   auto t0 = std::make_unique<TokenizerInnerState>(InToken, BackSlash, "hoge");
   auto t5 = std::make_unique<TokenizerInnerState>(InDoubleQuoted, Init, "piyo");
   auto t2 = std::make_unique<TokenizerInnerState>(Init, BackSlash, "");
@@ -76,21 +76,21 @@ piyo")", nullptr, nullptr},
     t = Tokenize(tbl[i].linebuf, tokens, p_redir, p_pipe, std::move(t));
     // return val check
     
-    if (!IsTISSame(t, tbl[i].eis)) { PrintTIS(t); PrintTIS(tbl[i].eis); printf("    \e[38;5;9mERR: invalid return val\e[0m\n"); ret = -1; }
+    if (!IsTISSame(t, tbl[i].eis)) { PrintTIS(t); PrintTIS(tbl[i].eis); printf("    \e[38;5;9mERR: invalid return val\e[0m\n"); ret = false; }
     // size of tokens check
     if (tokens.size() != tbl[i].expected) {
       printf("    \e[38;5;9mERR: num of tokens. expected %d but %zu.\e[0m\n", tbl[i].expected, tokens.size());
-      ret = -1;
+      ret = false;
     }
     // redir & pipe check
-    if (redir != tbl[i].redir) { printf("   `%d`, `%d`\n", tbl[i].redir, redir); printf("    \e[38;5;9mredir ERR\e[0m\n"); ret = -1; }
-    if (pipe != tbl[i].pipe) { printf("    \e[38;5;9mpipe ERR\e[0m\n"); ret = -1; }
+    if (redir != tbl[i].redir) { printf("   `%d`, `%d`\n", tbl[i].redir, redir); printf("    \e[38;5;9mredir ERR\e[0m\n"); ret = false; }
+    if (pipe != tbl[i].pipe) { printf("    \e[38;5;9mpipe ERR\e[0m\n"); ret = false; }
     // token check
     for (size_t j = 0; j < tokens.size(); j++) {
       printf("    cmp `%s`, `%s`\n", tbl[i].result[j], tokens[j].c_str());
-      if (tokens[j].c_str() == NULL || tbl[i].result[j] == NULL) { printf("    \e[38;5;9mERR\e[0m\n");ret = -1; continue; }
+      if (tokens[j].c_str() == NULL || tbl[i].result[j] == NULL) { printf("    \e[38;5;9mERR\e[0m\n");ret = false; continue; }
       if (strcmp(tokens[j].c_str(), tbl[i].result[j])) {
-        printf("    \e[38;5;9mERR\e[0m\n"); ret = -1;
+        printf("    \e[38;5;9mERR\e[0m\n"); ret = false;
       }
     }
   }
