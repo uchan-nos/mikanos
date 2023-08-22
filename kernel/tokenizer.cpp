@@ -4,6 +4,27 @@
 #include <string>
 #include <memory>
 
+/**
+* Tokenize
+*
+* ターミナルが受け取った文字列をtokenizeする
+*
+* @param[in] *c ターミナルからの入力文字列
+* @param[out] tokens tokenを格納するvector
+* @param[out] *redir_idx リダイレクト文字'>'が最初に登場するtokenのインデックス
+                         tokenize未完了から続きをtokenizeする場合には、Tokenizeが返した値、
+                         新たにtokenizeする場合-1を初期値とする
+* @param[out] *pipe_idx パイプ文字'|'が最初に登場するtokenのインデックス
+                         tokenize未完了から続きをtokenizeする場合には、Tokenizeが返した値、
+                         新たにtokenizeする場合-1を初期値とする
+* @param[in] last_state 前にtokenizeが完了しなかった時の、前のTokenizerの内部状態
+                         tokenize未完了から続きをtokenizeする場合には、Tokenizeが返した値、
+                         新たにtokenizeする場合nullptrを初期値とする
+* @return std::unique_ptr<TokenizerInnerState> 入力が完全でtokenizeが完了した場合
+*                                              nullptr, tokenizeが完了しなかった場合
+*                                              Tokenizerの内部状態を返す
+*/
+
 std::unique_ptr<TokenizerInnerState> Tokenize(const char *c, std::vector<std::string>& tokens,
                                               int *redir_idx, int *pipe_idx,
                                               const std::unique_ptr<TokenizerInnerState> last_istate) {
