@@ -22,7 +22,9 @@ struct TokenizerInnerState {
   State state; // 現在の状態
   State last_state; // １つ前の状態
   std::string tmp_token; // 現在受理している文字列
+  TokenizerInnerState(State state=Init, State last_state=Init, const char *tmp_token=""): state(state), last_state(last_state), tmp_token(tmp_token) {}
 };
+using tis_uniq = std::unique_ptr<TokenizerInnerState>;
 
-std::unique_ptr<TokenizerInnerState> Tokenize(const char *c, std::vector<std::string>& tokens,
-  int *redir_idx, int *pipe_idx, std::unique_ptr<TokenizerInnerState> last_istate);
+tis_uniq Tokenize(const char *c, std::vector<std::string>& tokens,
+  int *redir_idx, int *pipe_idx, tis_uniq last_istate);
