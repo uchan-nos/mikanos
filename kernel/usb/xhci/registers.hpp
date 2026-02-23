@@ -34,9 +34,9 @@ namespace usb::xhci {
   union HCSPARAMS3_Bitmap {
     uint32_t data[1];
     struct {
-      uint32_t u1_device_eixt_latency : 8;
+      uint32_t u1_device_exit_latency : 8;
       uint32_t : 8;
-      uint32_t u2_device_eixt_latency : 16;
+      uint32_t u2_device_exit_latency : 16;
     } __attribute__((packed)) bits;
   } __attribute__((packed));
 
@@ -114,7 +114,7 @@ namespace usb::xhci {
       uint32_t interrupter_enable : 1;
       uint32_t host_system_error_enable : 1;
       uint32_t : 3;
-      uint32_t lignt_host_controller_reset : 1;
+      uint32_t light_host_controller_reset : 1;
       uint32_t controller_save_state : 1;
       uint32_t controller_restore_state : 1;
       uint32_t enable_wrap_event : 1;
