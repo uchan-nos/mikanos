@@ -408,6 +408,14 @@ SYSCALL(IsTerminal) {
   return { task.Files()[fd]->IsTerminal(), 0 };
 }
 
+SYSCALL(GetPid) {
+  // 当前任务不会为 nullptr，且 ID 总是有效
+  __asm__("cli");
+  uint64_t pid = task_manager->CurrentTask().ID();
+  __asm__("sti");
+  return { pid, 0 };
+}
+  
 #undef SYSCALL
 
 } // namespace syscall
@@ -432,6 +440,7 @@ extern "C" std::array<SyscallFuncType*, 0x11> syscall_table{
   /* 0x0e */ syscall::DemandPages,
   /* 0x0f */ syscall::MapFile,
   /* 0x10 */ syscall::IsTerminal,
+  /* 0x11 */ syscall::GetPid,
 };
 
 void InitializeSyscall() {
